@@ -37,54 +37,32 @@ import java.util.stream.Collectors;
 public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder> implements WorkOrderService {
     private final WorkOrderHelper workOrderHelper;
     private final HandleUserInfoService iHandleUserInfoService;
+
     @Override
     public IPage<WorkOrderPageVO> pageWorkOrder(WorkOrderPageParam param) {
-        List<HandleUserInfo>queryHandleUserInfos=new ArrayList<>();
         //查询操作信息对应orderIds，or关系
-        workOrderHelper.setQueryWorkOrderIds(queryHandleUserInfos,param.getSubmitterInfo(), HandleUserInfoHandleTypeEnum.SUBMITTER);
-        workOrderHelper.setQueryWorkOrderIds(queryHandleUserInfos,param.getAuditorInfo(), HandleUserInfoHandleTypeEnum.AUDITOR);
-        workOrderHelper.setQueryWorkOrderIds(queryHandleUserInfos,param.getDistributerInfo(), HandleUserInfoHandleTypeEnum.DISTRIBUTOR);
-        workOrderHelper.setQueryWorkOrderIds(queryHandleUserInfos,param.getHandleInfo(), HandleUserInfoHandleTypeEnum.HANDLER);
-        workOrderHelper.setQueryWorkOrderIds(queryHandleUserInfos,param.getCheckerInfo(), HandleUserInfoHandleTypeEnum.CHECKER);
-        //关联工单主表orderId
-        List<Long>queryOrderIds=queryHandleUserInfos.stream().map(HandleUserInfo::getOrderId).distinct().toList();
+        List<HandleUserInfo> queryHandleUserInfos = workOrderHelper.getQueryWorkOrderIds(param);
+        List<Long> queryOrderIds = queryHandleUserInfos.stream().map(HandleUserInfo::getOrderId).distinct().toList();
         //查询工单主表
-        LambdaQueryWrapper<WorkOrder> workWrapper= WorkOrderQuery.getPageWorkWrapper(param,queryOrderIds);
-        Page<WorkOrder> pageWrapper=new Page<WorkOrder>();
-        pageWrapper.setCurrent(param.getPageNum());
-        pageWrapper.setSize(param.getPageSize());
-        IPage<WorkOrder>pageWorkOrders=page(pageWrapper,workWrapper);
+        LambdaQueryWrapper<WorkOrder> workWrapper = WorkOrderQuery.getPageWorkWrapper(param, queryOrderIds);
+        Page<WorkOrder> pageWrapper = WorkOrderQuery.getPageInfoWrapper(param);
+        IPage<WorkOrder> pageWorkOrders = page(pageWrapper, workWrapper);
         //查询操作信息
-        List<Long>orderIds=pageWorkOrders.getRecords().stream().map(WorkOrder::getId).toList();
-        LambdaQueryWrapper<HandleUserInfo>handleUserInfoWrapper=HandleUserInfoQuery.getPageHandleUserInfoWrapper(orderIds);
-        List<HandleUserInfo>pageHandleUserInfos=iHandleUserInfoService.list(handleUserInfoWrapper);
-        Map<Long,List<HandleUserInfo>>handleUserInfoMap=pageHandleUserInfos.stream().collect(Collectors.groupingBy(HandleUserInfo::getOrderId));
+        List<Long> orderIds = pageWorkOrders.getRecords().stream().map(WorkOrder::getId).toList();
+        LambdaQueryWrapper<HandleUserInfo> handleUserInfoWrapper = HandleUserInfoQuery.getPageHandleUserInfoWrapper(orderIds);
+        List<HandleUserInfo> pageHandleUserInfos = iHandleUserInfoService.list(handleUserInfoWrapper);
         //组装操作信息
-        List<WorkOrder>workOrders=pageWorkOrders.getRecords();
-        for (WorkOrder workOrder : workOrders) {
-            List<HandleUserInfo> handleUserInfos = handleUserInfoMap.get(workOrder.getId());
-            if(CollectionUtils.isEmpty(handleUserInfos)){
-                continue;
-            }
-            workOrder.setSubmitterInfo(handleUserInfos.stream().filter(handleUserInfo-> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.SUBMITTER.getValue())).findFirst().orElse(null));
-            workOrder.setAuditorInfo(handleUserInfos.stream().filter(handleUserInfo-> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.AUDITOR.getValue())).collect(Collectors.toList()));
-            workOrder.setDistributerInfo(handleUserInfos.stream().filter(handleUserInfo-> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.DISTRIBUTOR.getValue())).findFirst().orElse(null));
-            workOrder.setHandlerInfo(handleUserInfos.stream().filter(handleUserInfo-> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.HANDLER.getValue())).collect(Collectors.toList()));
-            workOrder.setCheckerInfo(handleUserInfos.stream().filter(handleUserInfo-> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.CHECKER.getValue())).findFirst().orElse(null));
-        }
+        List<WorkOrder> workOrders = workOrderHelper.addHandleInfo(pageHandleUserInfos, pageWorkOrders);
         //转换vo
-        List<WorkOrderPageVO>workOrderVOS= WorkOrderConverter.INSTANCE.toPageVOS(workOrders);
-        IPage<WorkOrderPageVO>workOrderPageVOS=new Page<>();
-        workOrderPageVOS.setRecords(workOrderVOS);
-        workOrderPageVOS.setPages(pageWorkOrders.getPages());
-        workOrderPageVOS.setCurrent(pageWorkOrders.getCurrent());
-        workOrderPageVOS.setSize(pageWorkOrders.getSize());
-        workOrderPageVOS.setTotal(pageWorkOrders.getTotal());
+        List<WorkOrderPageVO> workOrderVOS = WorkOrderConverter.INSTANCE.toPageVOS(workOrders);
+        //设置分页信息
+        IPage<WorkOrderPageVO> workOrderPageVOS = workOrderHelper.setPageInfo(workOrderVOS, pageWorkOrders);
         return workOrderPageVOS;
     }
 
     @Override
     public WorkOrderDetailVO detail(WorkOrderDetailParam param) {
+
         return null;
     }
 
@@ -120,6 +98,11 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
 
     @Override
     public WorkOrderUpdateStatusVO checkWorkOrder(WorkOrderUpdateStatusParam param) {
+        return null;
+    }
+
+    @Override
+    public Object distribute(Object param) {
         return null;
     }
 }

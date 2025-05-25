@@ -40,12 +40,6 @@ public class WorkOrderController {
         return workOrderService.detail(param);
     }
 
-//    @Operation(summary = "指派")
-//    @PostMapping("/distribute")
-//    public Object distribute(@RequestBody Object param){
-//        return workOrderService.distribute(param);
-//    }
-
     @ApiOperationSupport(order = 3)
     @Operation(summary = "处理完成")
     @PostMapping("/finish")
@@ -87,6 +81,10 @@ public class WorkOrderController {
     public Object cancel(@RequestBody Object param){
         return workOrderService.cancel(param);
     }
-
-
+    @ApiOperationSupport(order = 9)
+    @Operation(summary = "指派")
+    @PostMapping("/distribute")
+    public Object distribute(@RequestBody Object param){
+        return workOrderService.distribute(param);
+    }
 }

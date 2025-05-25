@@ -55,5 +55,6 @@ public class HandleUserInfo {
     private String updateTime;
 
     @TableLogic
+    @Schema(description = "删除位")
     private Integer deleted;
 }

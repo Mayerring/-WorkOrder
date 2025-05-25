@@ -2,6 +2,7 @@ package com.example.spring_vue_demo.service.query;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.spring_vue_demo.entity.WorkOrder;
 import com.example.spring_vue_demo.param.WorkOrderPageParam;
 import io.micrometer.common.util.StringUtils;
@@ -29,5 +30,10 @@ public class WorkOrderQuery {
         return pageWrapper;
     }
 
-
+    public static Page<WorkOrder> getPageInfoWrapper(WorkOrderPageParam param){
+        Page<WorkOrder> pageWrapper=new Page<WorkOrder>();
+        pageWrapper.setCurrent(param.getPageNum());
+        pageWrapper.setSize(param.getPageSize());
+        return pageWrapper;
+    }
 }

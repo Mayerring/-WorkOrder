@@ -32,4 +32,6 @@ public interface WorkOrderService extends IService<WorkOrder> {
     Object cancel(Object param);
 
     WorkOrderUpdateStatusVO checkWorkOrder(WorkOrderUpdateStatusParam param);
+
+    Object distribute(Object param);
 }

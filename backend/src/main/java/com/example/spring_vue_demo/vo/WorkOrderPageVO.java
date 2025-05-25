@@ -13,7 +13,7 @@ import java.util.List;
  */
 @Data
 public class WorkOrderPageVO {
-    @TableId(type = IdType.AUTO)
+
     @Schema(description = "工单id")
     private Long id;
 
@@ -67,10 +67,4 @@ public class WorkOrderPageVO {
 
     @Schema(description = "删除时间")
     private String deleteTime;
-
-    @Schema(description = "附件url")
-    private String accessoryUrl;
-
-    @Schema(description = "附件文件名")
-    private String accessoryName;
 }

@@ -84,5 +84,6 @@ public class WorkOrder {
     private String accessoryName;
 
     @TableLogic
+    @Schema(description = "删除位")
     private Integer deleted;
 }
