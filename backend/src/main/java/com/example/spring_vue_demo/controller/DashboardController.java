@@ -2,6 +2,7 @@ package com.example.spring_vue_demo.controller;
 
 import com.example.spring_vue_demo.service.DashboardService;
 import com.example.spring_vue_demo.service.WorkOrderService;
+import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
@@ -22,30 +23,34 @@ import org.springframework.web.bind.annotation.RestController;
 public class DashboardController {
     @Autowired
     private static DashboardService dashboardService;
-
+    @ApiOperationSupport(order = 1)
     @Operation(summary = "数据看板")
     @PostMapping("/data")
     public Object getData(){
         return dashboardService.getData();
     }
+    @ApiOperationSupport(order = 2)
     @Operation(summary = "待办事项")
     @PostMapping("/todo")
     public Object getTodo(@RequestBody Object param){
         return dashboardService.getTodo(param);
     }
 
+    @ApiOperationSupport(order = 3)
     @Operation(summary = "工单状态统计")
     @PostMapping("/status")
     public Object countStatus(@RequestBody Object param){
         return dashboardService.getStatus(param);
     }
 
+    @ApiOperationSupport(order = 4)
     @Operation(summary = "本周处理数量")
     @PostMapping("/handleQuantity")
     public Object getHandleQuantity(@RequestBody Object param){
         return dashboardService.getHandleQuantity(param);
     }
 
+    @ApiOperationSupport(order = 5)
     @Operation(summary = "消息中心")
     @PostMapping("/getMessages")
     public Object getMessages(@RequestBody Object param){

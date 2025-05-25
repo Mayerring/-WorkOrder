@@ -20,10 +20,10 @@ public class SwaggerConfig {
     public OpenAPI customOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("API文档")
+                        .title("工单系统API文档")
                         .version("1.0")
-                        .description("API接口文档")
-                        .contact(new Contact().name("开发者").url("https://example.com")))
+                        .description("工单系统API接口文档")
+                        .contact(new Contact().name("wtt")))
                 .externalDocs(new ExternalDocumentation()
                         .description("更多文档")
                         .url("https://example.com/docs"));
