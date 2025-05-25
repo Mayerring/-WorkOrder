@@ -59,4 +59,9 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     public Object cancel(Object param) {
         return null;
     }
+
+    @Override
+    public WorkOrderUpdateStatusVO checkWorkOrder(WorkOrderUpdateStatusParam param) {
+        return null;
+    }
 }

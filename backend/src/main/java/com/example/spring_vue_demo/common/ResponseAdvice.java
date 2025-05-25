@@ -8,6 +8,8 @@ import org.springframework.http.converter.HttpMessageConverter;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseBodyAdvice;
 
 
@@ -21,6 +23,19 @@ public class ResponseAdvice implements ResponseBodyAdvice<Object> {
 
     @Override
     public boolean supports(MethodParameter returnType, Class<? extends HttpMessageConverter<?>> converterType) {
+        // 获取当前请求路径
+        ServletRequestAttributes attributes = (ServletRequestAttributes) RequestContextHolder.getRequestAttributes();
+        if (attributes != null) {
+            String requestURI = attributes.getRequest().getRequestURI();
+
+            // 如果是 Knife4j 相关路径，则不拦截
+            if (requestURI.startsWith("/doc.html")
+                    || requestURI.startsWith("/webjars/")
+                    || requestURI.startsWith("/v3/api-docs")
+                    || requestURI.startsWith("/swagger-resources")) {
+                return false;
+            }
+        }
         return true;
     }
 

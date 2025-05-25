@@ -7,8 +7,8 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import com.example.spring_vue_demo.common.TimeTypeHandler;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
-import org.apache.ibatis.type.LongTypeHandler;
-import org.apache.ibatis.type.TypeHandler;
+
+import java.util.List;
 
 /**
  * @author wtt
@@ -27,23 +27,29 @@ public class WorkOrder {
 
     @Schema(description = "工单类型")
     private Integer type;
+    //todo:把信息改成String，在param中存的HandlerInfo转成json落库
+    @Schema(description = "提交信息")
+    private UserInfo submitterInfo;
 
-    @Schema(description = "提出部门id")
-    private Long departmentId;
+    @Schema(description = "审批信息")
+    private List<UserInfo> auditorInfo;
 
-    @Schema(description = "提出部门名称")
-    private String departmentName;
+    @Schema(description = "派单信息")
+    private UserInfo distributerInfo ;
 
-    @Schema(description = "审批人")
-    private String approver;
+    @Schema(description = "处理信息")
+    private List<UserInfo> userInfo;
 
-    @Schema(description = "优先级")
+    @Schema(description = "确认信息")
+    private UserInfo checkerInfo ;
+
+    @Schema(description = "优先级，0高，1中，2低")
     private Integer priorityLevel;
 
     @Schema(description = "处理人")
     private String handler;
 
-    @Schema(description = "状态")
+    @Schema(description = "状态，100未审核，200审核中，300未派单，400处理中，410已超时，500已完成，600已确认完成，700已取消，800异常（审核失败）")
     private Integer status;
 
     @TableField(typeHandler = TimeTypeHandler.class)
@@ -62,13 +68,8 @@ public class WorkOrder {
     @Schema(description = "删除时间")
     private String deleteTime;
 
-    @TableField(typeHandler = TimeTypeHandler.class)
-    @Schema(description = "截止时间")
-    private String deadlineTime;
-
-    @TableField(typeHandler = TimeTypeHandler.class)
-    @Schema(description = "完成时间")
-    private String finishTime;
+    @Schema(description = "详情")
+    private String content;
 
     @Schema(description = "附件url")
     private String accessoryUrl;

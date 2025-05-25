@@ -10,7 +10,7 @@ create table work_order(
     handler_info varchar(1024) comment '处理信息',
     checker_info varchar(1024) comment '确认信息',
     priority_level tinyint comment '优先级',
-    status tinyint not null comment '状态',
+    status int not null comment '状态',
     create_time bigint not null comment '创建时间',
     update_time bigint comment '更新时间',
     cancel_time  bigint comment '取消时间',

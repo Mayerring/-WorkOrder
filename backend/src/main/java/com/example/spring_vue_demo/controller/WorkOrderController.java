@@ -41,16 +41,22 @@ public class WorkOrderController {
         return workOrderService.detail(param);
     }
 
+//    @Operation(summary = "指派")
+//    @PostMapping("/distribute")
+//    public Object distribute(@RequestBody Object param){
+//        return workOrderService.distribute(param);
+//    }
+
     @Operation(summary = "处理完成")
     @PostMapping("/finish")
     public WorkOrderUpdateStatusVO finishWorkOrder(@RequestBody WorkOrderUpdateStatusParam param){
         return workOrderService.finishWorkOrder(param);
     }
 
-    @Operation(summary = "验收通过")
-    @PostMapping("/pass")
-    public WorkOrderUpdateStatusVO passWorkOrder(@RequestBody WorkOrderUpdateStatusParam param){
-        return workOrderService.passWorkOrder(param);
+    @Operation(summary = "验收")
+    @PostMapping("/check")
+    public WorkOrderUpdateStatusVO checkWorkOrder(@RequestBody WorkOrderUpdateStatusParam param){
+        return workOrderService.checkWorkOrder(param);
     }
 
     @Operation(summary="申请协助处理")
@@ -65,6 +71,7 @@ public class WorkOrderController {
         return workOrderService.urgeOrder(workOrderUrgeOrderParam);
     }
 
+
     @Operation(summary = "删除")
     @PostMapping("/delete")
     public Object delete(@RequestBody Object param){
@@ -76,4 +83,6 @@ public class WorkOrderController {
     public Object cancel(@RequestBody Object param){
         return workOrderService.cancel(param);
     }
+
+
 }

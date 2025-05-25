@@ -25,7 +25,7 @@ public class DashboardController {
 
     @Operation(summary = "数据看板")
     @PostMapping("/data")
-    public Object getData(@RequestBody Object param){
+    public Object getData(){
         return dashboardService.getData();
     }
     @Operation(summary = "待办事项")
@@ -41,11 +41,13 @@ public class DashboardController {
     }
 
     @Operation(summary = "本周处理数量")
+    @PostMapping("/handleQuantity")
     public Object getHandleQuantity(@RequestBody Object param){
         return dashboardService.getHandleQuantity(param);
     }
 
     @Operation(summary = "消息中心")
+    @PostMapping("/getMessages")
     public Object getMessages(@RequestBody Object param){
         return dashboardService.getMessages(param);
     }
