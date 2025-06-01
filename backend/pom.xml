@@ -101,6 +101,12 @@
 			<version>5.8.21</version> <!-- 确保版本较新 -->
 		</dependency>
 
+		<dependency>
+			<groupId>cn.hutool</groupId>
+			<artifactId>hutool-core</artifactId>
+			<version>5.8.21</version> <!-- 确保版本较新 -->
+		</dependency>
+
 	</dependencies>
 
 	<build>

@@ -34,6 +34,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
 import java.util.*;
@@ -123,7 +125,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     public Result create(WorkOrderCreateParam param){
         //参数校验
         if(param == null || StringUtils.isBlank(param.getTitle())
-            || param.getType()==null ||param.getPriorityLevel()==null)
+                || param.getType()==null ||param.getPriorityLevel()==null)
         {
             return Result.error("信息不完整");
         }
@@ -133,13 +135,19 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         workOrder.setContent(param.getContent());
         workOrder.setPriorityLevel(param.getPriorityLevel());
         workOrder.setStatus(100);
+        workOrder.setContent(param.getContent());
         //时间
-        workOrder.setCreateTime(1L);
-        //删除位
+        LocalDateTime now=LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")
+                .withZone(ZoneId.systemDefault());
+        String formatNow = formatter.format(now.atZone(ZoneId.systemDefault()).toInstant());
+        log.debug(formatNow);
+        workOrder.setCreateTime(formatNow);
 
         String orderCode = OrderCodeUtils.generateWorkOrderCode();
         log.info(orderCode);
         workOrder.setCode(orderCode);
+        workOrder.setDeleted(0);
         if(param.getAccessoryUrl()!=null)
         {
             workOrder.setAccessoryUrl(param.getAccessoryUrl());

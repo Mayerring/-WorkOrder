@@ -47,6 +47,12 @@ public class WorkOrderController {
         return workOrderService.detail(param);
     }
 
+//    @Operation(summary = "指派")
+//    @PostMapping("/distribute")
+//    public Object distribute(@RequestBody Object param){
+//        return workOrderService.distribute(param);
+//    }
+
     @ApiOperationSupport(order = 3)
     @Operation(summary = "处理完成")
     @PostMapping("/finish")
