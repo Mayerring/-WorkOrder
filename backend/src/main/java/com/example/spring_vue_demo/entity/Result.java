@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
+import java.io.Serializable;
 import java.util.List;
 
 /**
@@ -13,7 +14,7 @@ import java.util.List;
  */
 @Data
 @AllArgsConstructor
-public class Result {
+public class Result{
     @Schema(description = "响应码")
     private Integer code;//响应码，1 代表成功; 0 代表失败
     private String msg;  //响应信息 描述字符串

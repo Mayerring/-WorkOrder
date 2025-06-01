@@ -81,6 +81,13 @@
 			<artifactId>mapstruct-processor</artifactId>
 			<version>1.5.5.Final</version>
 		</dependency>
+
+		<dependency>
+			<groupId>cn.hutool</groupId>
+			<artifactId>hutool-core</artifactId>
+			<version>5.8.21</version> <!-- 确保版本较新 -->
+		</dependency>
+
 	</dependencies>
 
 	<build>
