@@ -1,9 +1,9 @@
 create database wos;
 use wos;
-drop table work_order;
+drop table if exists work_order;
 create table work_order(
     id bigint primary key NOT NULL auto_increment comment 'id',
-    code varchar(20) NOT NULL comment '编号',
+    code varchar(64) NOT NULL comment '编号',
     type tinyint not null  comment '类型',
     title varchar(128) comment '工单标题',
     priority_level tinyint comment '优先级',
@@ -18,7 +18,7 @@ create table work_order(
     deleted tinyint not null comment '删除位'
 )comment '工单';
 
-drop table handle_log;
+drop table if exists handle_log;
 create table handle_log(
     id bigint primary key NOT NULL auto_increment comment 'id',
     order_id bigint NOT NULL comment '工单id',
@@ -27,7 +27,7 @@ create table handle_log(
     deleted tinyint not null comment '删除位'
 ) comment '操作日志';
 
-drop table message;
+drop table if exists message;
 create table message(
    id bigint primary key NOT NULL auto_increment comment 'id',
    receiver_id bigint NOT NULL comment '接收人id',
