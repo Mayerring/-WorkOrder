@@ -1,9 +1,7 @@
 package com.example.spring_vue_demo.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableLogic;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
+import com.example.spring_vue_demo.common.TimeTypeHandler;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -13,7 +11,7 @@ import lombok.Data;
  * @date 2025/05/25
  */
 @Data
-@TableName("handle_user_info")
+@TableName(value="handle_user_info",autoResultMap = true)
 @AllArgsConstructor
 public class HandleUserInfo {
 
@@ -45,12 +43,15 @@ public class HandleUserInfo {
     @Schema(description = "部门名")
     private String departmentName;
 
+    @TableField(typeHandler = TimeTypeHandler.class)
     @Schema(description = "操作时间")
     private String handleTime;
 
+    @TableField(typeHandler = TimeTypeHandler.class)
     @Schema(description = "创建时间")
     private String createTime;
 
+    @TableField(typeHandler = TimeTypeHandler.class)
     @Schema(description = "更新时间")
     private String updateTime;
 

@@ -14,7 +14,7 @@ import java.util.List;
  * @date 2025/05/24
  */
 @Data
-@TableName("work_order")
+@TableName(value="work_order",autoResultMap = true)
 @AllArgsConstructor
 @NoArgsConstructor
 public class WorkOrder {

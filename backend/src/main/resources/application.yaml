@@ -9,7 +9,7 @@ mybatis-plus:
     type-aliases-package: com.example.spring_vue_demo.entity
 
 server:
-    port:8080
+    port: 8080
 
 spring:
     datasource:
