@@ -3,13 +3,15 @@ package com.example.spring_vue_demo.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
-import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.example.spring_vue_demo.entity.Message;
 import com.example.spring_vue_demo.entity.Result;
 import com.example.spring_vue_demo.entity.HandleUserInfo;
 import com.example.spring_vue_demo.entity.WorkOrder;
 import com.example.spring_vue_demo.enums.ErrorCode;
+import com.example.spring_vue_demo.enums.HandleUserInfoHandleTypeEnum;
+import com.example.spring_vue_demo.enums.WorkOrderStatusEnum;
 import com.example.spring_vue_demo.exception.UserSideException;
 import com.example.spring_vue_demo.mapper.WorkOrderMapper;
 import com.example.spring_vue_demo.param.*;
@@ -18,26 +20,22 @@ import com.example.spring_vue_demo.param.WorkOrderHelpParam;
 import com.example.spring_vue_demo.param.WorkOrderPageParam;
 import com.example.spring_vue_demo.param.WorkOrderUpdateStatusParam;
 import com.example.spring_vue_demo.service.HandleUserInfoService;
+import com.example.spring_vue_demo.service.MessageService;
 import com.example.spring_vue_demo.service.WorkOrderService;
 import com.example.spring_vue_demo.utils.OrderCodeUtils;
-import com.example.spring_vue_demo.vo.WorkOrderCreateVO;
+import com.example.spring_vue_demo.vo.*;
 import com.example.spring_vue_demo.service.convert.WorkOrderConverter;
 import com.example.spring_vue_demo.service.helper.WorkOrderHelper;
 import com.example.spring_vue_demo.service.query.HandleUserInfoQuery;
 import com.example.spring_vue_demo.service.query.WorkOrderQuery;
-import com.example.spring_vue_demo.vo.WorkOrderDetailVO;
-import com.example.spring_vue_demo.vo.WorkOrderPageVO;
-import com.example.spring_vue_demo.vo.WorkOrderUpdateStatusVO;
 import lombok.extern.slf4j.Slf4j;
-import lombok.val;
-import org.springframework.core.annotation.Order;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Date;
 
 import java.util.*;
 
@@ -51,7 +49,7 @@ import java.util.*;
 public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder> implements WorkOrderService {
     private final WorkOrderHelper workOrderHelper;
     private final HandleUserInfoService iHandleUserInfoService;
-
+    private final MessageService messageService;
 
     @Override
     public IPage<WorkOrderPageVO> pageWorkOrder(WorkOrderPageParam param) {
@@ -78,12 +76,12 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     @Override
     public WorkOrderDetailVO detail(WorkOrderDetailParam param) {
         //校验id和code不能全为空
-        if (param.getId() == null && param.getCode() == null) {
-            throw new UserSideException(ErrorCode.ID_AND_CODE_IS_NULL);
-        }
+        workOrderHelper.checkIdAndCodeNotNull(param.getId(),param.getCode());
         //查询工单主表
-        LambdaQueryWrapper<WorkOrder> workWrapper = WorkOrderQuery.getDetailWorkWrapper(param);
-        WorkOrder workOrder = getOne(workWrapper);
+        LambdaQueryWrapper<WorkOrder> workOrderWrapper = WorkOrderQuery.getWorkOrderWrapper(param.getId(),param.getCode());
+        WorkOrder workOrder = getOne(workOrderWrapper);
+        //校验工单不为空
+        workOrderHelper.checkWorkOrderExist(workOrder);
         //查询操作信息
         LambdaQueryWrapper<HandleUserInfo> handleUserInfoWrapper = HandleUserInfoQuery.getDetailHandleUserInfoWrapper(workOrder.getId());
         List<HandleUserInfo> pageHandleUserInfos = iHandleUserInfoService.list(handleUserInfoWrapper);
@@ -96,8 +94,35 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     }
 
     @Override
+    @Transactional
     public WorkOrderUpdateStatusVO finishWorkOrder(WorkOrderUpdateStatusParam param) {
-        return null;
+        //校验工单id和code不能全为空
+        workOrderHelper.checkIdAndCodeNotNull(param.getId(),param.getCode());
+        //查询工单，如果不存在返回错误信息
+        LambdaQueryWrapper<WorkOrder> workOrderWrapper = WorkOrderQuery.getWorkOrderWrapper(param.getId(),param.getCode());
+        WorkOrder workOrder = getOne(workOrderWrapper);
+        //校验工单不为空
+        workOrderHelper.checkWorkOrderExist(workOrder);
+        //校验工单状态为待完成或已延时
+        boolean isStatusTrue=workOrderHelper.checkWorkOrderStatus(workOrder,List.of(WorkOrderStatusEnum.HANDLING,WorkOrderStatusEnum.DELAYED));
+        if(!isStatusTrue) {
+            throw new UserSideException(ErrorCode.FINISH_STATUS_WRONG);
+        }
+        //更新工单主表状态
+        workOrder.setStatus(WorkOrderStatusEnum.FINISHED.getValue());
+        boolean updateSuccess= updateById(workOrder);
+        //发送信息给确认人
+        //todo:消息队列
+        //todo:要用户信息接口，增加用户信息
+        //todo:确认人信息在创建时应该创建，查询确认人信息作为接收人信息，查询本用户信息作为发送人信息
+        Message message=workOrderHelper.buildMessage(HandleUserInfoHandleTypeEnum.CHECK,workOrder.getCode());
+        boolean msgSuccess=messageService.save(message);
+        //构建返回VO
+        WorkOrderUpdateStatusVO vo=new WorkOrderUpdateStatusVO();
+        vo.setSuccess(updateSuccess&&msgSuccess);
+        vo.setCode(workOrder.getCode());
+        vo.setId(workOrder.getId());
+        return vo;
     }
 
     @Override

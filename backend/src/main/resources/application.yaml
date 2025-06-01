@@ -16,7 +16,7 @@ spring:
         driver-class-name: com.mysql.cj.jdbc.Driver
         url: jdbc:mysql://localhost/wos?useUnicode=true&characterEncoding=UTF-8
         username: root
-        password: root
+        password: 123456
 
 knife4j:
     enable: true

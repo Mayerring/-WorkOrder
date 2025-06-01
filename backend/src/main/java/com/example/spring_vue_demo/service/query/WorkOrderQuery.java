@@ -38,10 +38,12 @@ public class WorkOrderQuery {
         return pageWrapper;
     }
 
-    public static LambdaQueryWrapper<WorkOrder> getDetailWorkWrapper(WorkOrderDetailParam param) {
+    public static LambdaQueryWrapper<WorkOrder> getWorkOrderWrapper(Long id,String code) {
         LambdaQueryWrapper<WorkOrder>wrapper=new LambdaQueryWrapper<WorkOrder>()
-                .eq(Objects.nonNull(param.getId()),WorkOrder::getId,param.getId())
-                .eq(StringUtils.isNotBlank(param.getCode()),WorkOrder::getCode,param.getCode());
+                .eq(Objects.nonNull(id),WorkOrder::getId,id)
+                .eq(StringUtils.isNotBlank(code),WorkOrder::getCode,code);
         return wrapper;
     }
+
+
 }

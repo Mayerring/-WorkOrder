@@ -5,8 +5,12 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.spring_vue_demo.entity.HandleUserInfo;
+import com.example.spring_vue_demo.entity.Message;
 import com.example.spring_vue_demo.entity.WorkOrder;
+import com.example.spring_vue_demo.enums.ErrorCode;
 import com.example.spring_vue_demo.enums.HandleUserInfoHandleTypeEnum;
+import com.example.spring_vue_demo.enums.WorkOrderStatusEnum;
+import com.example.spring_vue_demo.exception.UserSideException;
 import com.example.spring_vue_demo.param.HandleUserInfoParam;
 import com.example.spring_vue_demo.param.WorkOrderPageParam;
 import com.example.spring_vue_demo.service.HandleUserInfoService;
@@ -41,11 +45,11 @@ public class WorkOrderHelper {
 
     public List<HandleUserInfo> getQueryWorkOrderIds(WorkOrderPageParam param) {
         List<HandleUserInfo> queryHandleUserInfos = new ArrayList<>();
-        gatherQueryWorkOrderId(queryHandleUserInfos, param.getSubmitterInfo(), HandleUserInfoHandleTypeEnum.SUBMITTER);
-        gatherQueryWorkOrderId(queryHandleUserInfos, param.getAuditorInfo(), HandleUserInfoHandleTypeEnum.AUDITOR);
-        gatherQueryWorkOrderId(queryHandleUserInfos, param.getDistributerInfo(), HandleUserInfoHandleTypeEnum.DISTRIBUTOR);
-        gatherQueryWorkOrderId(queryHandleUserInfos, param.getHandleInfo(), HandleUserInfoHandleTypeEnum.HANDLER);
-        gatherQueryWorkOrderId(queryHandleUserInfos, param.getCheckerInfo(), HandleUserInfoHandleTypeEnum.CHECKER);
+        gatherQueryWorkOrderId(queryHandleUserInfos, param.getSubmitterInfo(), HandleUserInfoHandleTypeEnum.SUBMIT);
+        gatherQueryWorkOrderId(queryHandleUserInfos, param.getAuditorInfo(), HandleUserInfoHandleTypeEnum.AUDIT);
+        gatherQueryWorkOrderId(queryHandleUserInfos, param.getDistributerInfo(), HandleUserInfoHandleTypeEnum.DISTRIBUTE);
+        gatherQueryWorkOrderId(queryHandleUserInfos, param.getHandleInfo(), HandleUserInfoHandleTypeEnum.HANDLE);
+        gatherQueryWorkOrderId(queryHandleUserInfos, param.getCheckerInfo(), HandleUserInfoHandleTypeEnum.CHECK);
         return queryHandleUserInfos;
     }
 
@@ -58,11 +62,11 @@ public class WorkOrderHelper {
             if (CollectionUtils.isEmpty(handleUserInfos)) {
                 continue;
             }
-            workOrder.setSubmitterInfo(handleUserInfos.stream().filter(handleUserInfo -> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.SUBMITTER.getValue())).findFirst().orElse(null));
-            workOrder.setAuditorInfo(handleUserInfos.stream().filter(handleUserInfo -> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.AUDITOR.getValue())).collect(Collectors.toList()));
-            workOrder.setDistributerInfo(handleUserInfos.stream().filter(handleUserInfo -> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.DISTRIBUTOR.getValue())).findFirst().orElse(null));
-            workOrder.setHandlerInfo(handleUserInfos.stream().filter(handleUserInfo -> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.HANDLER.getValue())).collect(Collectors.toList()));
-            workOrder.setCheckerInfo(handleUserInfos.stream().filter(handleUserInfo -> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.CHECKER.getValue())).findFirst().orElse(null));
+            workOrder.setSubmitterInfo(handleUserInfos.stream().filter(handleUserInfo -> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.SUBMIT.getValue())).findFirst().orElse(null));
+            workOrder.setAuditorInfo(handleUserInfos.stream().filter(handleUserInfo -> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.AUDIT.getValue())).collect(Collectors.toList()));
+            workOrder.setDistributerInfo(handleUserInfos.stream().filter(handleUserInfo -> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.DISTRIBUTE.getValue())).findFirst().orElse(null));
+            workOrder.setHandlerInfo(handleUserInfos.stream().filter(handleUserInfo -> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.HANDLE.getValue())).collect(Collectors.toList()));
+            workOrder.setCheckerInfo(handleUserInfos.stream().filter(handleUserInfo -> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.CHECK.getValue())).findFirst().orElse(null));
         }
         return workOrders;
     }
@@ -81,11 +85,44 @@ public class WorkOrderHelper {
             if (CollectionUtils.isEmpty(handleUserInfos)) {
                 return workOrder;
             }
-            workOrder.setSubmitterInfo(handleUserInfos.stream().filter(handleUserInfo -> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.SUBMITTER.getValue())).findFirst().orElse(null));
-            workOrder.setAuditorInfo(handleUserInfos.stream().filter(handleUserInfo -> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.AUDITOR.getValue())).collect(Collectors.toList()));
-            workOrder.setDistributerInfo(handleUserInfos.stream().filter(handleUserInfo -> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.DISTRIBUTOR.getValue())).findFirst().orElse(null));
-            workOrder.setHandlerInfo(handleUserInfos.stream().filter(handleUserInfo -> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.HANDLER.getValue())).collect(Collectors.toList()));
-            workOrder.setCheckerInfo(handleUserInfos.stream().filter(handleUserInfo -> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.CHECKER.getValue())).findFirst().orElse(null));
+            workOrder.setSubmitterInfo(handleUserInfos.stream().filter(handleUserInfo -> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.SUBMIT.getValue())).findFirst().orElse(null));
+            workOrder.setAuditorInfo(handleUserInfos.stream().filter(handleUserInfo -> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.AUDIT.getValue())).collect(Collectors.toList()));
+            workOrder.setDistributerInfo(handleUserInfos.stream().filter(handleUserInfo -> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.DISTRIBUTE.getValue())).findFirst().orElse(null));
+            workOrder.setHandlerInfo(handleUserInfos.stream().filter(handleUserInfo -> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.HANDLE.getValue())).collect(Collectors.toList()));
+            workOrder.setCheckerInfo(handleUserInfos.stream().filter(handleUserInfo -> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.CHECK.getValue())).findFirst().orElse(null));
             return workOrder;
+    }
+
+    public void checkIdAndCodeNotNull(Long id, String code) {
+        if (id == null && code == null) {
+            throw new UserSideException(ErrorCode.ID_AND_CODE_IS_NULL);
+        }
+    }
+
+    public void checkWorkOrderExist(WorkOrder workOrder){
+        if(workOrder==null){
+            throw new UserSideException(ErrorCode.WORK_ORDER_NOT_EXIST);
+        }
+    }
+
+    public boolean checkWorkOrderStatus(WorkOrder workOrder, List<WorkOrderStatusEnum> correctStatusEnums) {
+        Integer workOrderStatus= workOrder.getStatus();
+        for(WorkOrderStatusEnum correctWorkOrderStatusEnum:correctStatusEnums){
+            if(workOrderStatus.equals(correctWorkOrderStatusEnum.getValue())){
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public Message buildMessage(HandleUserInfoHandleTypeEnum typeEnum,String code) {
+        Message message=new Message();
+        String content="您收到编号为"+code+"的工单,"+"请尽快"+typeEnum.getDesc();
+        message.setContent(content);
+        //todo:设置发送人和接收人id
+        message.setType(typeEnum.getValue());
+        message.setSenderId(1L);
+        message.setReceiverId(2L);
+        return message;
     }
 }

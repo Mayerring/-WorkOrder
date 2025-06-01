@@ -58,11 +58,11 @@ public class WorkOrder {
     @Schema(description = "状态，100未审核，200审核中，300未派单，400处理中，410已超时，500已完成，600已确认完成，700已取消，800异常（审核失败）")
     private Integer status;
 
-    @TableField(typeHandler = TimeTypeHandler.class)
+    @TableField(typeHandler = TimeTypeHandler.class,fill=FieldFill.INSERT)
     @Schema(description = "创建时间")
     private String createTime;
 
-    @TableField(typeHandler = TimeTypeHandler.class)
+    @TableField(typeHandler = TimeTypeHandler.class,fill=FieldFill.INSERT_UPDATE)
     @Schema(description = "更新时间")
     private String updateTime;
 
@@ -73,6 +73,10 @@ public class WorkOrder {
     @TableField(typeHandler = TimeTypeHandler.class)
     @Schema(description = "删除时间")
     private String deleteTime;
+
+    @TableField(typeHandler = TimeTypeHandler.class)
+    @Schema(description = "截止时间")
+    private String deadlineTime;
 
     @Schema(description = "详情")
     private String content;

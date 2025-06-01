@@ -10,6 +10,8 @@ import com.example.spring_vue_demo.vo.WorkOrderDetailVO;
 import com.example.spring_vue_demo.vo.WorkOrderPageVO;
 import com.example.spring_vue_demo.vo.WorkOrderUpdateStatusVO;
 
+import java.util.List;
+
 
 public interface WorkOrderService extends IService<WorkOrder> {
 

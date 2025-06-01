@@ -1,7 +1,9 @@
 package com.example.spring_vue_demo.vo;
 
 import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.example.spring_vue_demo.common.TimeTypeHandler;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -67,4 +69,7 @@ public class WorkOrderPageVO {
 
     @Schema(description = "删除时间")
     private String deleteTime;
+
+    @Schema(description = "截止时间")
+    private String deadlineTime;
 }

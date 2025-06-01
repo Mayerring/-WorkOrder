@@ -33,13 +33,13 @@ public class WorkOrderDetailVO {
     private List<HandleUserInfoVO> auditorInfo;
 
     @Schema(description = "派单信息")
-    private HandleUserInfoVO distributerInfo ;
+    private HandleUserInfoVO distributerInfo;
 
     @Schema(description = "处理信息")
     private List<HandleUserInfoVO> handlerInfo;
 
     @Schema(description = "确认信息")
-    private HandleUserInfoVO checkerInfo ;
+    private HandleUserInfoVO checkerInfo;
 
     @Schema(description = "优先级，0高，1中，2低")
     private Integer priorityLevel;
@@ -65,6 +65,9 @@ public class WorkOrderDetailVO {
     @Schema(description = "删除时间")
     private String deleteTime;
 
+    @Schema(description = "截止时间")
+    private String deadlineTime;
+
     @Schema(description = "详情")
     private String content;
 
@@ -73,5 +76,7 @@ public class WorkOrderDetailVO {
 
     @Schema(description = "附件文件名")
     private String accessoryName;
+
+
 
 }

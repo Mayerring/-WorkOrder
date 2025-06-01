@@ -25,7 +25,7 @@ public class HandleUserInfo {
     @Schema(description = "用户id")
     private Long userId;
 
-    @Schema(description = "处理类型（1：提交人，2：审核人，3：派单人，4：处理人，5：确认人")
+    @Schema(description = "处理类型（1：提交，2：审核，3：派单，4：处理，5：确认")
     private Integer handleType;
 
     @Schema(description = "姓名")
@@ -47,11 +47,11 @@ public class HandleUserInfo {
     @Schema(description = "操作时间")
     private String handleTime;
 
-    @TableField(typeHandler = TimeTypeHandler.class)
+    @TableField(typeHandler = TimeTypeHandler.class,fill = FieldFill.INSERT)
     @Schema(description = "创建时间")
     private String createTime;
 
-    @TableField(typeHandler = TimeTypeHandler.class)
+    @TableField(typeHandler = TimeTypeHandler.class,fill = FieldFill.INSERT_UPDATE)
     @Schema(description = "更新时间")
     private String updateTime;
 

@@ -7,11 +7,11 @@ import java.util.Objects;
  * @date 2025/05/31
  */
 public enum HandleUserInfoHandleTypeEnum {
-    SUBMITTER(1,"提交人"),
-    AUDITOR(2,"审核人"),
-    DISTRIBUTOR(3,"派单人"),
-    HANDLER(4,"处理人"),
-    CHECKER(5,"确认人")
+    SUBMIT(1,"提交"),
+    AUDIT(2,"审核"),
+    DISTRIBUTE(3,"派单"),
+    HANDLE(4,"处理"),
+    CHECK(5,"确认")
     ;
     private final Integer value;
     private final String desc;
