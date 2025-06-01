@@ -11,7 +11,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.example.spring_vue_demo.common.TimeTypeHandler;
-import com.example.spring_vue_demo.entity.UserInfo;
+import com.example.spring_vue_demo.entity.HandleUserInfo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
@@ -32,7 +32,7 @@ public class WorkOrderCreateParam {
     @Schema(description = "详情")
     private String content;
     @Schema(description = "提交信息")
-    private UserInfo submitterInfo;
+    private HandleUserInfo submitterInfo;
 
     @Schema(description = "优先级，0高，1中，2低")
     private Integer priorityLevel;

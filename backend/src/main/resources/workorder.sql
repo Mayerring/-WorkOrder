@@ -3,7 +3,7 @@ use wos;
 drop table if exists work_order;
 create table work_order(
     id bigint primary key NOT NULL auto_increment comment 'id',
-    code varchar(20) NOT NULL comment '编号',
+    code varchar(64) NOT NULL comment '编号',
     type tinyint not null  comment '类型',
     title varchar(128) comment '工单标题',
     priority_level tinyint comment '优先级',

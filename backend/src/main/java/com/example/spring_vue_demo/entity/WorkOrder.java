@@ -1,9 +1,6 @@
 package com.example.spring_vue_demo.entity;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
+import com.baomidou.mybatisplus.annotation.*;
 import com.example.spring_vue_demo.common.TimeTypeHandler;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -63,7 +60,7 @@ public class WorkOrder {
 
     @TableField(typeHandler = TimeTypeHandler.class)
     @Schema(description = "创建时间")
-    private String createTime;
+    private Long createTime;
 
     @TableField(typeHandler = TimeTypeHandler.class)
     @Schema(description = "更新时间")
@@ -85,4 +82,7 @@ public class WorkOrder {
 
     @Schema(description = "附件文件名")
     private String accessoryName;
+
+    @TableLogic
+    private Integer deleted;
 }

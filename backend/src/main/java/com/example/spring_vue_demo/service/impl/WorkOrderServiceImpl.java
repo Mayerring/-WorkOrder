@@ -34,6 +34,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
 import java.util.*;
@@ -150,8 +152,12 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         workOrder.setPriorityLevel(param.getPriorityLevel());
         workOrder.setStatus(100);
         //时间
+        LocalDateTime now=LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")
+                .withZone(ZoneId.systemDefault());
+        String formatNow = formatter.format(now.atZone(ZoneId.systemDefault()).toInstant());
+        log.debug(formatNow);
         workOrder.setCreateTime(1L);
-        //删除位
 
         String orderCode = OrderCodeUtils.generateWorkOrderCode();
         log.info(orderCode);
