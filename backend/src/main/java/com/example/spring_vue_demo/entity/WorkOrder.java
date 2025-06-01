@@ -60,7 +60,7 @@ public class WorkOrder {
 
     @TableField(typeHandler = TimeTypeHandler.class)
     @Schema(description = "创建时间")
-    private Long createTime;
+    private String createTime;
 
     @TableField(typeHandler = TimeTypeHandler.class)
     @Schema(description = "更新时间")

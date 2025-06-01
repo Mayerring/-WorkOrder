@@ -157,11 +157,12 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
                 .withZone(ZoneId.systemDefault());
         String formatNow = formatter.format(now.atZone(ZoneId.systemDefault()).toInstant());
         log.debug(formatNow);
-        workOrder.setCreateTime(1L);
+        workOrder.setCreateTime(formatNow);
 
         String orderCode = OrderCodeUtils.generateWorkOrderCode();
         log.info(orderCode);
         workOrder.setCode(orderCode);
+        workOrder.setDeleted(0);
         if(param.getAccessoryUrl()!=null)
         {
             workOrder.setAccessoryUrl(param.getAccessoryUrl());
