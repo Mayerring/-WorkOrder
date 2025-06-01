@@ -2,6 +2,7 @@ package com.example.spring_vue_demo.entity;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableLogic;
 import com.baomidou.mybatisplus.annotation.TableName;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -53,4 +54,6 @@ public class HandleUserInfo {
     @Schema(description = "更新时间")
     private String updateTime;
 
+    @TableLogic
+    private Integer deleted;
 }

@@ -23,7 +23,8 @@ create table handle_log(
     id bigint primary key NOT NULL auto_increment comment 'id',
     order_id bigint NOT NULL comment '工单id',
     content text not null comment '内容',
-    create_time bigint comment '创建时间'
+    create_time bigint comment '创建时间',
+    deleted tinyint not null comment '删除位'
 ) comment '操作日志';
 
 drop table message;
@@ -33,7 +34,8 @@ create table message(
    sender_id bigint NOT NULL comment '发送人id',
    type tinyint NOT NULL comment '类型',
    content text not null comment '内容',
-   send_time bigint comment '发送时间'
+   send_time bigint comment '发送时间',
+   deleted tinyint not null comment '删除位'
 ) comment '消息';
 
 Drop table handle_user_info;
@@ -50,7 +52,8 @@ create table handle_user_info(
     handle_time bigint comment '处理时间',
     create_time bigint NOT NULL comment '创建时间',
     update_time bigint comment '修改时间',
-    remark varchar(255) comment '备注'
+    remark varchar(255) comment '备注',
+    deleted tinyint not null comment '删除位'
 )comment '工单操作信息';
 
 
