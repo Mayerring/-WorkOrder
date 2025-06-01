@@ -2,12 +2,12 @@ package com.example.spring_vue_demo.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
-import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.spring_vue_demo.entity.HandleUserInfo;
 import com.example.spring_vue_demo.entity.WorkOrder;
-import com.example.spring_vue_demo.enums.HandleUserInfoHandleTypeEnum;
+import com.example.spring_vue_demo.enums.ErrorCode;
+import com.example.spring_vue_demo.exception.UserSideException;
 import com.example.spring_vue_demo.mapper.WorkOrderMapper;
 import com.example.spring_vue_demo.param.WorkOrderDetailParam;
 import com.example.spring_vue_demo.param.WorkOrderHelpParam;
@@ -26,7 +26,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * @author wtt
@@ -52,7 +51,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         LambdaQueryWrapper<HandleUserInfo> handleUserInfoWrapper = HandleUserInfoQuery.getPageHandleUserInfoWrapper(orderIds);
         List<HandleUserInfo> pageHandleUserInfos = iHandleUserInfoService.list(handleUserInfoWrapper);
         //组装操作信息
-        List<WorkOrder> workOrders = workOrderHelper.addHandleInfo(pageHandleUserInfos, pageWorkOrders);
+        List<WorkOrder> workOrders = workOrderHelper.addPageHandleInfo(pageHandleUserInfos, pageWorkOrders);
         //转换vo
         List<WorkOrderPageVO> workOrderVOS = WorkOrderConverter.INSTANCE.toPageVOS(workOrders);
         //设置分页信息
@@ -62,8 +61,22 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
 
     @Override
     public WorkOrderDetailVO detail(WorkOrderDetailParam param) {
-
-        return null;
+        //校验id和code不能全为空
+        if (param.getId() == null && param.getCode() == null) {
+            throw new UserSideException(ErrorCode.ID_AND_CODE_IS_NULL);
+        }
+        //查询工单主表
+        LambdaQueryWrapper<WorkOrder> workWrapper = WorkOrderQuery.getDetailWorkWrapper(param);
+        WorkOrder workOrder = getOne(workWrapper);
+        //查询操作信息
+        LambdaQueryWrapper<HandleUserInfo> handleUserInfoWrapper = HandleUserInfoQuery.getDetailHandleUserInfoWrapper(workOrder.getId());
+        List<HandleUserInfo> pageHandleUserInfos = iHandleUserInfoService.list(handleUserInfoWrapper);
+        //组装操作信息
+        workOrder = workOrderHelper.addDetailHandleInfo(pageHandleUserInfos, workOrder);
+        //转换vo
+        WorkOrderDetailVO workOrderDetailVO = WorkOrderConverter.INSTANCE.toDetailVO(workOrder);
+        //设置分页信息
+        return workOrderDetailVO;
     }
 
     @Override

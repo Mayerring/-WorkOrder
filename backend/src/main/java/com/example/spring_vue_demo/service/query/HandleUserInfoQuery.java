@@ -6,6 +6,7 @@ import com.example.spring_vue_demo.entity.HandleUserInfo;
 import com.example.spring_vue_demo.param.HandleUserInfoParam;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * @author wtt
@@ -32,6 +33,12 @@ public class HandleUserInfoQuery {
             return wrapper;
         }
         wrapper.in(HandleUserInfo::getOrderId,orderIds);
+        return wrapper;
+    }
+
+    public static LambdaQueryWrapper<HandleUserInfo> getDetailHandleUserInfoWrapper(Long orderId) {
+        LambdaQueryWrapper<HandleUserInfo>wrapper=new LambdaQueryWrapper<HandleUserInfo>()
+                .eq(Objects.nonNull(orderId),HandleUserInfo::getOrderId,orderId);
         return wrapper;
     }
 }

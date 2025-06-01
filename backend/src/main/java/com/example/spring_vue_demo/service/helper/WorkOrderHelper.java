@@ -11,7 +11,6 @@ import com.example.spring_vue_demo.param.HandleUserInfoParam;
 import com.example.spring_vue_demo.param.WorkOrderPageParam;
 import com.example.spring_vue_demo.service.HandleUserInfoService;
 import com.example.spring_vue_demo.service.query.HandleUserInfoQuery;
-import com.example.spring_vue_demo.service.query.WorkOrderQuery;
 import com.example.spring_vue_demo.vo.WorkOrderPageVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -51,7 +50,7 @@ public class WorkOrderHelper {
     }
 
 
-    public List<WorkOrder> addHandleInfo(List<HandleUserInfo> pageHandleUserInfos, IPage<WorkOrder> pageWorkOrders) {
+    public List<WorkOrder> addPageHandleInfo(List<HandleUserInfo> pageHandleUserInfos, IPage<WorkOrder> pageWorkOrders) {
         Map<Long, List<HandleUserInfo>> handleUserInfoMap = pageHandleUserInfos.stream().collect(Collectors.groupingBy(HandleUserInfo::getOrderId));
         List<WorkOrder> workOrders = pageWorkOrders.getRecords();
         for (WorkOrder workOrder : workOrders) {
@@ -78,4 +77,15 @@ public class WorkOrderHelper {
         return workOrderPageVOS;
     }
 
+    public WorkOrder addDetailHandleInfo(List<HandleUserInfo>  handleUserInfos, WorkOrder workOrder) {
+            if (CollectionUtils.isEmpty(handleUserInfos)) {
+                return workOrder;
+            }
+            workOrder.setSubmitterInfo(handleUserInfos.stream().filter(handleUserInfo -> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.SUBMITTER.getValue())).findFirst().orElse(null));
+            workOrder.setAuditorInfo(handleUserInfos.stream().filter(handleUserInfo -> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.AUDITOR.getValue())).collect(Collectors.toList()));
+            workOrder.setDistributerInfo(handleUserInfos.stream().filter(handleUserInfo -> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.DISTRIBUTOR.getValue())).findFirst().orElse(null));
+            workOrder.setHandlerInfo(handleUserInfos.stream().filter(handleUserInfo -> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.HANDLER.getValue())).collect(Collectors.toList()));
+            workOrder.setCheckerInfo(handleUserInfos.stream().filter(handleUserInfo -> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.CHECKER.getValue())).findFirst().orElse(null));
+            return workOrder;
+    }
 }

@@ -28,8 +28,13 @@ public class Result {
     public static Result success(Object data){
         return new Result(1,"success",data);
     }
+
     //失败响应
     public static Result error(String msg){
         return new Result(0,msg,null);
+    }
+    //失败响应（自定义异常）
+    public static Result error(Integer code,String msg){
+        return new Result(code,msg,null);
     }
 }

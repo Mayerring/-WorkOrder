@@ -18,8 +18,8 @@ public enum WorkOrderStatusEnum {
     AUDIT_FAILURE(810,"审核失败"),
     CHECK_FAILURE(820,"确认失败")
     ;
-    private Integer value;
-    private String desc;
+    private final Integer value;
+    private final String desc;
     WorkOrderStatusEnum(Integer value,String desc){
         this.value=value;
         this.desc=desc;

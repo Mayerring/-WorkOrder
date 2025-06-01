@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.spring_vue_demo.entity.WorkOrder;
+import com.example.spring_vue_demo.param.WorkOrderDetailParam;
 import com.example.spring_vue_demo.param.WorkOrderPageParam;
 import io.micrometer.common.util.StringUtils;
 
@@ -35,5 +36,12 @@ public class WorkOrderQuery {
         pageWrapper.setCurrent(param.getPageNum());
         pageWrapper.setSize(param.getPageSize());
         return pageWrapper;
+    }
+
+    public static LambdaQueryWrapper<WorkOrder> getDetailWorkWrapper(WorkOrderDetailParam param) {
+        LambdaQueryWrapper<WorkOrder>wrapper=new LambdaQueryWrapper<WorkOrder>()
+                .eq(Objects.nonNull(param.getId()),WorkOrder::getId,param.getId())
+                .eq(StringUtils.isNotBlank(param.getCode()),WorkOrder::getCode,param.getCode());
+        return wrapper;
     }
 }

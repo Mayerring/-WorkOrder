@@ -7,8 +7,8 @@ public enum WorkOrderPriorityLevelEnum {
     MID(1,"中"),
     LOW(2,"低")
     ;
-    private Integer value;
-    private String desc;
+    private final Integer value;
+    private final String desc;
     WorkOrderPriorityLevelEnum(Integer value,String desc){
         this.value=value;
         this.desc=desc;
