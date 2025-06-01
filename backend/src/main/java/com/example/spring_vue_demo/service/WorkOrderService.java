@@ -9,12 +9,11 @@ import com.example.spring_vue_demo.vo.WorkOrderCreateVO;
 import com.example.spring_vue_demo.vo.WorkOrderDetailVO;
 import com.example.spring_vue_demo.vo.WorkOrderPageVO;
 import com.example.spring_vue_demo.vo.WorkOrderUpdateStatusVO;
-import org.springframework.stereotype.Service;
 
 
 public interface WorkOrderService extends IService<WorkOrder> {
 
-    IPage<WorkOrderPageVO> pageWorkOrder(IPage<WorkOrderPageParam> param);
+    IPage<WorkOrderPageVO> pageWorkOrder(WorkOrderPageParam param);
 
     WorkOrderDetailVO detail(WorkOrderDetailParam param);
 

@@ -6,7 +6,9 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import com.example.spring_vue_demo.common.TimeTypeHandler;
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
@@ -16,6 +18,8 @@ import java.util.List;
  */
 @Data
 @TableName("work_order")
+@AllArgsConstructor
+@NoArgsConstructor
 public class WorkOrder {
 
     @TableId(type = IdType.AUTO)
@@ -25,40 +29,41 @@ public class WorkOrder {
     @Schema(description = "工单编号")
     private String code;
 
-    @Schema(description = "工单类型")
+    @Schema(description = "工单类型，0需求，1故障")
     private Integer type;
 
     @Schema(description = "工单标题")
     private String title;
 
-    //todo:把信息改成String，在param中存的HandlerInfo转成json落库
+    @TableField(exist = false)
     @Schema(description = "提交信息")
-    private UserInfo submitterInfo;
+    private HandleUserInfo submitterInfo;
 
+    @TableField(exist = false)
     @Schema(description = "审批信息")
-    private List<UserInfo> auditorInfo;
+    private List<HandleUserInfo> auditorInfo;
 
+    @TableField(exist = false)
     @Schema(description = "派单信息")
-    private UserInfo distributerInfo ;
+    private HandleUserInfo distributerInfo ;
 
+    @TableField(exist = false)
     @Schema(description = "处理信息")
-    private List<UserInfo> userInfo;
+    private List<HandleUserInfo> handlerInfo;
 
+    @TableField(exist = false)
     @Schema(description = "确认信息")
-    private UserInfo checkerInfo ;
+    private HandleUserInfo checkerInfo ;
 
     @Schema(description = "优先级，0高，1中，2低")
     private Integer priorityLevel;
 
-    @Schema(description = "处理人")
-    private String handler;
-
     @Schema(description = "状态，100未审核，200审核中，300未派单，400处理中，410已超时，500已完成，600已确认完成，700已取消，800异常（审核失败）")
     private Integer status;
 
-    //@TableField(typeHandler = TimeTypeHandler.class)
+    @TableField(typeHandler = TimeTypeHandler.class)
     @Schema(description = "创建时间")
-    private Long createTime;
+    private String createTime;
 
     @TableField(typeHandler = TimeTypeHandler.class)
     @Schema(description = "更新时间")

@@ -1,25 +1,43 @@
 package com.example.spring_vue_demo.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
+import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.spring_vue_demo.entity.Result;
+import com.example.spring_vue_demo.entity.HandleUserInfo;
 import com.example.spring_vue_demo.entity.WorkOrder;
+import com.example.spring_vue_demo.enums.HandleUserInfoHandleTypeEnum;
 import com.example.spring_vue_demo.mapper.WorkOrderMapper;
 import com.example.spring_vue_demo.param.*;
+import com.example.spring_vue_demo.param.WorkOrderDetailParam;
+import com.example.spring_vue_demo.param.WorkOrderHelpParam;
+import com.example.spring_vue_demo.param.WorkOrderPageParam;
+import com.example.spring_vue_demo.param.WorkOrderUpdateStatusParam;
+import com.example.spring_vue_demo.service.HandleUserInfoService;
 import com.example.spring_vue_demo.service.WorkOrderService;
 import com.example.spring_vue_demo.utils.OrderCodeUtils;
 import com.example.spring_vue_demo.vo.WorkOrderCreateVO;
+import com.example.spring_vue_demo.service.convert.WorkOrderConverter;
+import com.example.spring_vue_demo.service.helper.WorkOrderHelper;
+import com.example.spring_vue_demo.service.query.HandleUserInfoQuery;
+import com.example.spring_vue_demo.service.query.WorkOrderQuery;
 import com.example.spring_vue_demo.vo.WorkOrderDetailVO;
 import com.example.spring_vue_demo.vo.WorkOrderPageVO;
 import com.example.spring_vue_demo.vo.WorkOrderUpdateStatusVO;
 import lombok.extern.slf4j.Slf4j;
 import lombok.val;
 import org.springframework.core.annotation.Order;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.Date;
+
+import java.util.*;
+import java.util.stream.Collectors;
 
 /**
  * @author wtt
@@ -27,11 +45,54 @@ import java.util.Date;
  */
 @Slf4j
 @Service
+@RequiredArgsConstructor
 public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder> implements WorkOrderService {
-
+    private final WorkOrderHelper workOrderHelper;
+    private final HandleUserInfoService iHandleUserInfoService;
     @Override
-    public IPage<WorkOrderPageVO> pageWorkOrder(IPage<WorkOrderPageParam> param) {
-        return null;
+    public IPage<WorkOrderPageVO> pageWorkOrder(WorkOrderPageParam param) {
+        List<HandleUserInfo>queryHandleUserInfos=new ArrayList<>();
+        //查询操作信息对应orderIds，or关系
+        workOrderHelper.setQueryWorkOrderIds(queryHandleUserInfos,param.getSubmitterInfo(), HandleUserInfoHandleTypeEnum.SUBMITTER);
+        workOrderHelper.setQueryWorkOrderIds(queryHandleUserInfos,param.getAuditorInfo(), HandleUserInfoHandleTypeEnum.AUDITOR);
+        workOrderHelper.setQueryWorkOrderIds(queryHandleUserInfos,param.getDistributerInfo(), HandleUserInfoHandleTypeEnum.DISTRIBUTOR);
+        workOrderHelper.setQueryWorkOrderIds(queryHandleUserInfos,param.getHandleInfo(), HandleUserInfoHandleTypeEnum.HANDLER);
+        workOrderHelper.setQueryWorkOrderIds(queryHandleUserInfos,param.getCheckerInfo(), HandleUserInfoHandleTypeEnum.CHECKER);
+        //关联工单主表orderId
+        List<Long>queryOrderIds=queryHandleUserInfos.stream().map(HandleUserInfo::getOrderId).distinct().toList();
+        //查询工单主表
+        LambdaQueryWrapper<WorkOrder> workWrapper= WorkOrderQuery.getPageWorkWrapper(param,queryOrderIds);
+        Page<WorkOrder> pageWrapper=new Page<WorkOrder>();
+        pageWrapper.setCurrent(param.getPageNum());
+        pageWrapper.setSize(param.getPageSize());
+        IPage<WorkOrder>pageWorkOrders=page(pageWrapper,workWrapper);
+        //查询操作信息
+        List<Long>orderIds=pageWorkOrders.getRecords().stream().map(WorkOrder::getId).toList();
+        LambdaQueryWrapper<HandleUserInfo>handleUserInfoWrapper=HandleUserInfoQuery.getPageHandleUserInfoWrapper(orderIds);
+        List<HandleUserInfo>pageHandleUserInfos=iHandleUserInfoService.list(handleUserInfoWrapper);
+        Map<Long,List<HandleUserInfo>>handleUserInfoMap=pageHandleUserInfos.stream().collect(Collectors.groupingBy(HandleUserInfo::getOrderId));
+        //组装操作信息
+        List<WorkOrder>workOrders=pageWorkOrders.getRecords();
+        for (WorkOrder workOrder : workOrders) {
+            List<HandleUserInfo> handleUserInfos = handleUserInfoMap.get(workOrder.getId());
+            if(CollectionUtils.isEmpty(handleUserInfos)){
+                continue;
+            }
+            workOrder.setSubmitterInfo(handleUserInfos.stream().filter(handleUserInfo-> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.SUBMITTER.getValue())).findFirst().orElse(null));
+            workOrder.setAuditorInfo(handleUserInfos.stream().filter(handleUserInfo-> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.AUDITOR.getValue())).collect(Collectors.toList()));
+            workOrder.setDistributerInfo(handleUserInfos.stream().filter(handleUserInfo-> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.DISTRIBUTOR.getValue())).findFirst().orElse(null));
+            workOrder.setHandlerInfo(handleUserInfos.stream().filter(handleUserInfo-> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.HANDLER.getValue())).collect(Collectors.toList()));
+            workOrder.setCheckerInfo(handleUserInfos.stream().filter(handleUserInfo-> Objects.equals(handleUserInfo.getHandleType(), HandleUserInfoHandleTypeEnum.CHECKER.getValue())).findFirst().orElse(null));
+        }
+        //转换vo
+        List<WorkOrderPageVO>workOrderVOS= WorkOrderConverter.INSTANCE.toPageVOS(workOrders);
+        IPage<WorkOrderPageVO>workOrderPageVOS=new Page<>();
+        workOrderPageVOS.setRecords(workOrderVOS);
+        workOrderPageVOS.setPages(pageWorkOrders.getPages());
+        workOrderPageVOS.setCurrent(pageWorkOrders.getCurrent());
+        workOrderPageVOS.setSize(pageWorkOrders.getSize());
+        workOrderPageVOS.setTotal(pageWorkOrders.getTotal());
+        return workOrderPageVOS;
     }
 
     @Override

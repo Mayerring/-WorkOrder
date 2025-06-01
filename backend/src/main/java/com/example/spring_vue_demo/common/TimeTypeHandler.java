@@ -7,7 +7,6 @@ import java.sql.CallableStatement;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.text.SimpleDateFormat;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -40,18 +39,27 @@ public class TimeTypeHandler extends BaseTypeHandler<String> {
     @Override
     public String getNullableResult(ResultSet rs, String columnName) throws SQLException {
         long time = rs.getLong(columnName);
+        if (rs.wasNull()) {
+            return null;
+        }
         return formatter.format(Instant.ofEpochSecond(time));
     }
 
     @Override
     public String getNullableResult(ResultSet rs, int columnIndex) throws SQLException {
         long time = rs.getLong(columnIndex);
+        if (rs.wasNull()) {
+            return null;
+        }
         return formatter.format(Instant.ofEpochSecond(time));
     }
 
     @Override
     public String getNullableResult(CallableStatement cs, int columnIndex) throws SQLException {
         long time = cs.getLong(columnIndex);
+        if (cs.wasNull()) {
+            return null;
+        }
         return formatter.format(Instant.ofEpochSecond(time));
     }
 }

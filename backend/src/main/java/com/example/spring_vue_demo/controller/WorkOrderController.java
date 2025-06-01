@@ -4,6 +4,10 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.example.spring_vue_demo.entity.Result;
 import com.example.spring_vue_demo.entity.WorkOrder;
 import com.example.spring_vue_demo.param.*;
+import com.example.spring_vue_demo.param.WorkOrderDetailParam;
+import com.example.spring_vue_demo.param.WorkOrderHelpParam;
+import com.example.spring_vue_demo.param.WorkOrderPageParam;
+import com.example.spring_vue_demo.param.WorkOrderUpdateStatusParam;
 import com.example.spring_vue_demo.service.WorkOrderService;
 import com.example.spring_vue_demo.vo.WorkOrderCreateVO;
 import com.example.spring_vue_demo.vo.WorkOrderDetailVO;
@@ -12,7 +16,7 @@ import com.example.spring_vue_demo.vo.WorkOrderUpdateStatusVO;
 import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,18 +26,17 @@ import org.springframework.web.bind.annotation.*;
  * @date 2025/05/24
  */
 @RestController
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Tag(name="工单管理")
 @RequestMapping("/workOrder")
 public class WorkOrderController {
 
     @Autowired
-    private WorkOrderService workOrderService;
-
+    private final WorkOrderService workOrderService;
     @ApiOperationSupport(order = 1)
     @Operation(summary = "分页")
     @PostMapping("/page")
-    public IPage<WorkOrderPageVO> page(@RequestBody IPage<WorkOrderPageParam> param){
+    public IPage<WorkOrderPageVO> page(@RequestBody WorkOrderPageParam param){
         return workOrderService.pageWorkOrder(param);
     }
 
