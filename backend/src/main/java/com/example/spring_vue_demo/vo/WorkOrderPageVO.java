@@ -1,14 +1,9 @@
 package com.example.spring_vue_demo.vo;
 
 import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
-import com.example.spring_vue_demo.common.TimeTypeHandler;
-import com.example.spring_vue_demo.entity.UserInfo;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
-import org.apache.ibatis.type.LongTypeHandler;
-import org.apache.ibatis.type.TypeHandler;
 
 import java.util.List;
 
@@ -25,46 +20,51 @@ public class WorkOrderPageVO {
     @Schema(description = "工单编号")
     private String code;
 
-    @Schema(description = "工单类型")
+    @Schema(description = "工单类型，0需求，1故障")
     private Integer type;
-    //todo:把信息改成String，在param中存的HandlerInfo转成json落库
+
+    @Schema(description = "工单类型desc")
+    private String typeDesc;
+
+    @Schema(description = "工单标题")
+    private String title;
+
     @Schema(description = "提交信息")
-    private UserInfo submitterInfo;
+    private HandleUserInfoVO submitterInfo;
 
     @Schema(description = "审批信息")
-    private List<UserInfo> auditorInfo;
+    private List<HandleUserInfoVO> auditorInfo;
 
     @Schema(description = "派单信息")
-    private UserInfo distributerInfo ;
+    private HandleUserInfoVO distributerInfo ;
 
     @Schema(description = "处理信息")
-    private List<UserInfo> userInfo;
+    private List<HandleUserInfoVO> handlerInfo;
 
     @Schema(description = "确认信息")
-    private UserInfo checkerInfo ;
+    private HandleUserInfoVO checkerInfo ;
 
     @Schema(description = "优先级，0高，1中，2低")
     private Integer priorityLevel;
 
-    @Schema(description = "处理人")
-    private String handler;
+    @Schema(description = "优先级desc")
+    private String priorityLevelDesc;
 
-    @Schema(description = "状态，100未审核，200审核中，300未派单，400处理中，410已超时，500已完成，600已确认完成，700已取消，800异常（审核失败）")
+    @Schema(description = "状态，100未审核，200审核中，300未派单，400处理中，410已超时，500已完成，600已确认完成，700已取消，810审核失败，820确认失败")
     private Integer status;
 
-    @TableField(typeHandler = TimeTypeHandler.class)
+    @Schema(description = "状态desc")
+    private String statusDesc;
+
     @Schema(description = "创建时间")
     private String createTime;
 
-    @TableField(typeHandler = TimeTypeHandler.class)
     @Schema(description = "更新时间")
     private String updateTime;
 
-    @TableField(typeHandler = TimeTypeHandler.class)
     @Schema(description = "取消时间")
     private String cancelTime;
 
-    @TableField(typeHandler = TimeTypeHandler.class)
     @Schema(description = "删除时间")
     private String deleteTime;
 

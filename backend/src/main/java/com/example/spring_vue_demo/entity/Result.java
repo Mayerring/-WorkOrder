@@ -3,9 +3,6 @@ package com.example.spring_vue_demo.entity;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.NoArgsConstructor;
-
-import java.util.List;
 
 /**
  * @author wtt
@@ -16,7 +13,11 @@ import java.util.List;
 public class Result {
     @Schema(description = "响应码")
     private Integer code;//响应码，1 代表成功; 0 代表失败
+
+    @Schema(description = "响应信息")
     private String msg;  //响应信息 描述字符串
+
+    @Schema(description = "返回的数据")
     private Object data; //返回的数据
 
     //成功响应(无数据）

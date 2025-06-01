@@ -1,12 +1,10 @@
 package com.example.spring_vue_demo.controller;
 
 import com.example.spring_vue_demo.service.DashboardService;
-import com.example.spring_vue_demo.service.WorkOrderService;
 import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import lombok.AllArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,12 +15,11 @@ import org.springframework.web.bind.annotation.RestController;
  * @date 2025/05/25
  */
 @RestController
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Tag(name="工作台")
 @RequestMapping("/dashboard")
 public class DashboardController {
-    @Autowired
-    private static DashboardService dashboardService;
+    private final DashboardService dashboardService;
     @ApiOperationSupport(order = 1)
     @Operation(summary = "数据看板")
     @PostMapping("/data")

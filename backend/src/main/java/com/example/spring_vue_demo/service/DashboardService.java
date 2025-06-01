@@ -1,8 +1,7 @@
 package com.example.spring_vue_demo.service;
 
-import org.springframework.stereotype.Service;
 
-@Service
+
 public interface DashboardService {
 
     Object getData();
