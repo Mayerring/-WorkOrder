@@ -151,6 +151,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         workOrder.setContent(param.getContent());
         workOrder.setPriorityLevel(param.getPriorityLevel());
         workOrder.setStatus(100);
+        workOrder.setContent(param.getContent());
         //时间
         LocalDateTime now=LocalDateTime.now();
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")
