@@ -1,7 +1,9 @@
 package com.example.spring_vue_demo.enums;
 
-import java.util.Objects;
+import lombok.Getter;
 
+import java.util.Objects;
+@Getter
 public enum WorkOrderTypeEnum {
     REQUIREMENTS(0,"需求"),
     FAULT(1,"故障")
@@ -20,9 +22,5 @@ public enum WorkOrderTypeEnum {
         }
         return null;
     }
-    public Integer getValue(){
-        return value;
-    }
-    public String getDesc(){return desc;}
 
 }

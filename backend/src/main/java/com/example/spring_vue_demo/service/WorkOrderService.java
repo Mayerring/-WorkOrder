@@ -5,12 +5,9 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.spring_vue_demo.entity.Result;
 import com.example.spring_vue_demo.entity.WorkOrder;
 import com.example.spring_vue_demo.param.*;
-import com.example.spring_vue_demo.vo.WorkOrderCreateVO;
 import com.example.spring_vue_demo.vo.WorkOrderDetailVO;
 import com.example.spring_vue_demo.vo.WorkOrderPageVO;
 import com.example.spring_vue_demo.vo.WorkOrderUpdateStatusVO;
-
-import java.util.List;
 
 
 public interface WorkOrderService extends IService<WorkOrder> {
@@ -19,22 +16,13 @@ public interface WorkOrderService extends IService<WorkOrder> {
 
     WorkOrderDetailVO detail(WorkOrderDetailParam param);
 
-    WorkOrderUpdateStatusVO finishWorkOrder(WorkOrderUpdateStatusParam param);
-
-    WorkOrderUpdateStatusVO passWorkOrder(WorkOrderUpdateStatusParam param);
-
-    Object applyHelp(WorkOrderHelpParam param);
-
-
-    Object urgeOrder(Object workOrderUrgeOrderParam);
+    WorkOrderUpdateStatusVO handleWorkOrder(WorkOrderUpdateStatusParam param);
 
     Object deleteOrder(Object param);
 
     Object cancel(Object param);
 
-    WorkOrderUpdateStatusVO checkWorkOrder(WorkOrderUpdateStatusParam param);
-
-    Object distribute(Object param);
-
     Result create(WorkOrderCreateParam param);
+
+
 }

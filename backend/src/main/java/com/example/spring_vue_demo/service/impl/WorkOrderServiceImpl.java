@@ -9,14 +9,11 @@ import com.example.spring_vue_demo.entity.Message;
 import com.example.spring_vue_demo.entity.Result;
 import com.example.spring_vue_demo.entity.HandleUserInfo;
 import com.example.spring_vue_demo.entity.WorkOrder;
-import com.example.spring_vue_demo.enums.ErrorCode;
-import com.example.spring_vue_demo.enums.HandleUserInfoHandleTypeEnum;
+import com.example.spring_vue_demo.enums.HandleTypeEnum;
 import com.example.spring_vue_demo.enums.WorkOrderStatusEnum;
-import com.example.spring_vue_demo.exception.UserSideException;
 import com.example.spring_vue_demo.mapper.WorkOrderMapper;
 import com.example.spring_vue_demo.param.*;
 import com.example.spring_vue_demo.param.WorkOrderDetailParam;
-import com.example.spring_vue_demo.param.WorkOrderHelpParam;
 import com.example.spring_vue_demo.param.WorkOrderPageParam;
 import com.example.spring_vue_demo.param.WorkOrderUpdateStatusParam;
 import com.example.spring_vue_demo.service.HandleUserInfoService;
@@ -95,28 +92,30 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
 
     @Override
     @Transactional
-    public WorkOrderUpdateStatusVO finishWorkOrder(WorkOrderUpdateStatusParam param) {
+    public WorkOrderUpdateStatusVO handleWorkOrder(WorkOrderUpdateStatusParam param) {
+        HandleTypeEnum handleType=HandleTypeEnum.getByValue(param.getHandleType());
+        assert handleType != null;
         //校验工单id和code不能全为空
         workOrderHelper.checkIdAndCodeNotNull(param.getId(),param.getCode());
+        //校验分配和协助的用户信息是否填写
+        workOrderHelper.checkAssignedUserInfo(handleType,param.getAssignedUserId());
         //查询工单，如果不存在返回错误信息
         LambdaQueryWrapper<WorkOrder> workOrderWrapper = WorkOrderQuery.getWorkOrderWrapper(param.getId(),param.getCode());
         WorkOrder workOrder = getOne(workOrderWrapper);
         //校验工单不为空
         workOrderHelper.checkWorkOrderExist(workOrder);
-        //校验工单状态为待完成或已延时
-        boolean isStatusTrue=workOrderHelper.checkWorkOrderStatus(workOrder,List.of(WorkOrderStatusEnum.HANDLING,WorkOrderStatusEnum.DELAYED));
-        if(!isStatusTrue) {
-            throw new UserSideException(ErrorCode.FINISH_STATUS_WRONG);
-        }
+        //校验工单状态和操作是否匹配
+        workOrderHelper.checkWorkOrderStatus(workOrder,handleType);
         //更新工单主表状态
-        workOrder.setStatus(WorkOrderStatusEnum.FINISHED.getValue());
-        boolean updateSuccess= updateById(workOrder);
-        //发送信息给确认人
-        //todo:消息队列
-        //todo:要用户信息接口，增加用户信息
-        //todo:确认人信息在创建时应该创建，查询确认人信息作为接收人信息，查询本用户信息作为发送人信息
-        Message message=workOrderHelper.buildMessage(HandleUserInfoHandleTypeEnum.CHECK,workOrder.getCode());
+        workOrderHelper.updateNextStatus(handleType,workOrder);
+        boolean updateSuccess=updateById(workOrder);
+        //发送信息
+        Message message=workOrderHelper.buildMessage(WorkOrderStatusEnum.getByValue(workOrder.getStatus()), workOrder.getCode());
         boolean msgSuccess=messageService.save(message);
+        //添加操作信息
+        if(handleType.equals(HandleTypeEnum.APPLY_HELP)||handleType.equals(HandleTypeEnum.DISTRIBUTE)) {
+            workOrderHelper.addHandleInfo(workOrder.getId(), handleType, param.getAssignedUserId());
+        }
         //构建返回VO
         WorkOrderUpdateStatusVO vo=new WorkOrderUpdateStatusVO();
         vo.setSuccess(updateSuccess&&msgSuccess);
@@ -126,37 +125,12 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     }
 
     @Override
-    public WorkOrderUpdateStatusVO passWorkOrder(WorkOrderUpdateStatusParam param) {
-        return null;
-    }
-
-    @Override
-    public Object applyHelp(WorkOrderHelpParam param) {
-        return null;
-    }
-
-    @Override
-    public Object urgeOrder(Object workOrderUrgeOrderParam) {
-        return null;
-    }
-
-    @Override
     public Object deleteOrder(Object param) {
         return null;
     }
 
     @Override
     public Object cancel(Object param) {
-        return null;
-    }
-
-    @Override
-    public WorkOrderUpdateStatusVO checkWorkOrder(WorkOrderUpdateStatusParam param) {
-        return null;
-    }
-
-    @Override
-    public Object distribute(Object param) {
         return null;
     }
 

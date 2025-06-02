@@ -1,11 +1,14 @@
 package com.example.spring_vue_demo.enums;
 
+import lombok.Getter;
+
 import java.util.Objects;
 
 /**
  * @author wtt
  * @date 2025/06/01
  */
+@Getter
 public enum WorkOrderStatusEnum {
     UNAUDITED(100,"未审核"),
     AUDITING(200,"审核中"),
@@ -32,8 +35,4 @@ public enum WorkOrderStatusEnum {
         }
         return null;
     }
-    public Integer getValue(){
-        return value;
-    }
-    public String getDesc(){return desc;}
 }

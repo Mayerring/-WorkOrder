@@ -33,7 +33,7 @@ create table message(
    id bigint primary key NOT NULL auto_increment comment 'id',
    receiver_id bigint NOT NULL comment '接收人id',
    sender_id bigint NOT NULL comment '发送人id',
-   type tinyint NOT NULL comment '类型，',
+   type int NOT NULL comment '类型，',
    content text not null comment '内容',
    send_time bigint comment '发送时间',
    deleted tinyint not null DEFAULT 0 comment '删除位'

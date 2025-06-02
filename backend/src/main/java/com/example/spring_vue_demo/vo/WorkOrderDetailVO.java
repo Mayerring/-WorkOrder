@@ -47,7 +47,7 @@ public class WorkOrderDetailVO {
     @Schema(description = "优先级desc")
     private String priorityLevelDesc;
 
-    @Schema(description = "状态，100未审核，200审核中，300未派单，400处理中，410已超时，500已完成，600已确认完成，700已取消，800异常（审核失败）")
+    @Schema(description = "状态，100未审核，200审核中，300未派单，400处理中，410已超时，500已完成，600已确认完成，700已取消，810审核失败，820确认失败")
     private Integer status;
 
     @Schema(description = "状态desc")

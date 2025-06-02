@@ -5,6 +5,7 @@ import com.example.spring_vue_demo.common.TimeTypeHandler;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * @author wtt
@@ -13,6 +14,7 @@ import lombok.Data;
 @Data
 @TableName(value="handle_user_info",autoResultMap = true)
 @AllArgsConstructor
+@NoArgsConstructor
 public class HandleUserInfo {
 
     @TableId(type = IdType.AUTO)

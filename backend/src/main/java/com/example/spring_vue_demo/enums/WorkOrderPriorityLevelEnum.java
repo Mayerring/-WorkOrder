@@ -1,7 +1,9 @@
 package com.example.spring_vue_demo.enums;
 
-import java.util.Objects;
+import lombok.Getter;
 
+import java.util.Objects;
+@Getter
 public enum WorkOrderPriorityLevelEnum {
     HIGH(0,"高"),
     MID(1,"中"),
@@ -21,8 +23,4 @@ public enum WorkOrderPriorityLevelEnum {
         }
         return null;
     }
-    public Integer getValue(){
-        return value;
-    }
-    public String getDesc(){return desc;}
 }

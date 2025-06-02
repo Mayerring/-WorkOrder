@@ -27,13 +27,17 @@ public class Message {
     @Schema(description = "发送人id")
     private Long senderId;
 
-    @Schema(description = "类型，2：审核，3：派单，4：处理，5：确认")
+    @Schema(description = "消息类型（对应工单状态）")
     private Integer type;
+
+    @TableField(exist = false)
+    @Schema(description = "类型desc")
+    private String typeDesc;
 
     @Schema(description = "内容")
     private String content;
 
-    @TableField(typeHandler = TimeTypeHandler.class,fill = FieldFill.INSERT)
+    @TableField(typeHandler = TimeTypeHandler.class)
     @Schema(description = "发送时间")
     private String sendTime;
 
