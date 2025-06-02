@@ -30,6 +30,9 @@ public class HandleUserInfo {
     @Schema(description = "处理类型（1：提交，2：审核，3：派单，4：处理，5：确认")
     private Integer handleType;
 
+    @Schema(description = "已完成操作")
+    private Boolean finished;
+
     @Schema(description = "姓名")
     private String userName;
 

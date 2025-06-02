@@ -15,7 +15,7 @@ import com.example.spring_vue_demo.mapper.WorkOrderMapper;
 import com.example.spring_vue_demo.param.*;
 import com.example.spring_vue_demo.param.WorkOrderDetailParam;
 import com.example.spring_vue_demo.param.WorkOrderPageParam;
-import com.example.spring_vue_demo.param.WorkOrderUpdateStatusParam;
+import com.example.spring_vue_demo.param.WorkOrderHandleParam;
 import com.example.spring_vue_demo.service.HandleUserInfoService;
 import com.example.spring_vue_demo.service.MessageService;
 import com.example.spring_vue_demo.service.WorkOrderService;
@@ -92,7 +92,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
 
     @Override
     @Transactional
-    public WorkOrderUpdateStatusVO handleWorkOrder(WorkOrderUpdateStatusParam param) {
+    public WorkOrderUpdateStatusVO handleWorkOrder(WorkOrderHandleParam param) {
         HandleTypeEnum handleType=HandleTypeEnum.getByValue(param.getHandleType());
         assert handleType != null;
         //校验工单id和code不能全为空
@@ -106,16 +106,16 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         workOrderHelper.checkWorkOrderExist(workOrder);
         //校验工单状态和操作是否匹配
         workOrderHelper.checkWorkOrderStatus(workOrder,handleType);
+        //添加操作信息
+        workOrderHelper.addHandleInfo(workOrder.getId(), handleType, param.getAssignedUserId());
+        //更新操作信息
+        workOrderHelper.updateFinishHandleInfo(workOrder.getId(),handleType);
         //更新工单主表状态
         workOrderHelper.updateNextStatus(handleType,workOrder);
         boolean updateSuccess=updateById(workOrder);
         //发送信息
         Message message=workOrderHelper.buildMessage(WorkOrderStatusEnum.getByValue(workOrder.getStatus()), workOrder.getCode());
         boolean msgSuccess=messageService.save(message);
-        //添加操作信息
-        if(handleType.equals(HandleTypeEnum.APPLY_HELP)||handleType.equals(HandleTypeEnum.DISTRIBUTE)) {
-            workOrderHelper.addHandleInfo(workOrder.getId(), handleType, param.getAssignedUserId());
-        }
         //构建返回VO
         WorkOrderUpdateStatusVO vo=new WorkOrderUpdateStatusVO();
         vo.setSuccess(updateSuccess&&msgSuccess);
@@ -125,12 +125,13 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     }
 
     @Override
-    public Object deleteOrder(Object param) {
+    public WorkOrderUpdateStatusVO deleteOrder(WorkOrderDeleteParam param) {
         return null;
     }
 
     @Override
-    public Object cancel(Object param) {
+    public WorkOrderUpdateStatusVO  cancel(Object param) {
+
         return null;
     }
 

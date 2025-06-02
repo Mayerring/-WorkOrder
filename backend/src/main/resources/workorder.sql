@@ -20,13 +20,6 @@ create table work_order(
 )comment '工单';
 
 drop table if exists handle_log;
-create table handle_log(
-    id bigint primary key NOT NULL auto_increment comment 'id',
-    order_id bigint NOT NULL comment '工单id',
-    content text not null comment '内容',
-    create_time bigint comment '创建时间',
-    deleted tinyint not null DEFAULT 0 comment '删除位'
-) comment '操作日志';
 
 drop table if exists message;
 create table message(
@@ -39,13 +32,14 @@ create table message(
    deleted tinyint not null DEFAULT 0 comment '删除位'
 ) comment '消息';
 
-Drop table handle_user_info;
+Drop table if exists handle_user_info;
 create table handle_user_info(
     id bigint primary key NOT NULL auto_increment comment 'id',
     order_id bigint NOT NULL comment '工单id',
     user_id bigint NOT NULL COMMENT '用户id',
     user_name varchar(64) NOT NULL COMMENT '用户名',
     handle_type tinyint NOT NULL COMMENT '用户类型（1：提交，2：审核，3：派单，4：处理，5：确认）',
+    finished tinyint NOT NULL comment '已完成操作，0未完成，1已完成',
     company_id bigint NOT NULL COMMENT '公司id',
     company_name varchar(128) NOT NULL COMMENT '公司名',
     department_id bigint NOT NULL COMMENT '部门id',

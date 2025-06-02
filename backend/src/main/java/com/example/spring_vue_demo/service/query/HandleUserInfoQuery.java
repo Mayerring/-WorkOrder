@@ -1,8 +1,11 @@
 package com.example.spring_vue_demo.service.query;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.example.spring_vue_demo.entity.HandleUserInfo;
+import com.example.spring_vue_demo.enums.HandleUserInfoHandleTypeEnum;
 import com.example.spring_vue_demo.param.HandleUserInfoParam;
 
 import java.util.List;
@@ -39,6 +42,13 @@ public class HandleUserInfoQuery {
     public static LambdaQueryWrapper<HandleUserInfo> getDetailHandleUserInfoWrapper(Long orderId) {
         LambdaQueryWrapper<HandleUserInfo>wrapper=new LambdaQueryWrapper<HandleUserInfo>()
                 .eq(Objects.nonNull(orderId),HandleUserInfo::getOrderId,orderId);
+        return wrapper;
+    }
+
+    public static LambdaUpdateWrapper<HandleUserInfo> getUpdateStatusWrapper(Long orderId) {
+        LambdaUpdateWrapper<HandleUserInfo>wrapper=new LambdaUpdateWrapper<HandleUserInfo>()
+                .eq(true,HandleUserInfo::getOrderId,orderId)
+                .set(HandleUserInfo::getFinished,Boolean.TRUE);
         return wrapper;
     }
 }

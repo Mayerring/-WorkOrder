@@ -5,7 +5,7 @@ import com.example.spring_vue_demo.entity.Result;
 import com.example.spring_vue_demo.param.*;
 import com.example.spring_vue_demo.param.WorkOrderDetailParam;
 import com.example.spring_vue_demo.param.WorkOrderPageParam;
-import com.example.spring_vue_demo.param.WorkOrderUpdateStatusParam;
+import com.example.spring_vue_demo.param.WorkOrderHandleParam;
 import com.example.spring_vue_demo.service.WorkOrderService;
 import com.example.spring_vue_demo.vo.WorkOrderDetailVO;
 import com.example.spring_vue_demo.vo.WorkOrderPageVO;
@@ -47,14 +47,14 @@ public class WorkOrderController {
     @ApiOperationSupport(order = 3)
     @Operation(summary = "工单操作")
     @PostMapping("/handle")
-    public WorkOrderUpdateStatusVO updateWorkOrderStatus(@RequestBody WorkOrderUpdateStatusParam param) {
+    public WorkOrderUpdateStatusVO updateWorkOrderStatus(@RequestBody WorkOrderHandleParam param) {
         return workOrderService.handleWorkOrder(param);
     }
 
     @ApiOperationSupport(order = 4)
     @Operation(summary = "删除")
     @PostMapping("/delete")
-    public Object delete(@RequestBody Object param) {
+    public WorkOrderUpdateStatusVO delete(@RequestBody WorkOrderDeleteParam param) {
         return workOrderService.deleteOrder(param);
     }
 

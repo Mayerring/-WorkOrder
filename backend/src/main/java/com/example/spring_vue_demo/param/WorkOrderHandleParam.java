@@ -1,6 +1,5 @@
 package com.example.spring_vue_demo.param;
 
-import com.example.spring_vue_demo.enums.HandleTypeEnum;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -10,7 +9,7 @@ import lombok.Data;
  * @date 2025/05/25
  */
 @Data
-public class WorkOrderUpdateStatusParam {
+public class WorkOrderHandleParam {
     @Schema(description = "工单id")
     private Long id;
 
