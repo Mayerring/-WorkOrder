@@ -27,6 +27,13 @@ public class TokenUtil {
         return Jwts.builder()
                 .setSubject(staff.getName())
                 .claim("id", staff.getId())
+                .claim("name", staff.getName())
+                .claim("company", staff.getCompany())
+                .claim("department", staff.getDepartment())
+                .claim("position", staff.getPosition())
+                .claim("status", staff.getStatus())
+                .claim("phone", staff.getPhone())
+                .claim("email", staff.getEmail())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + 86400000)) // 1天有效期
                 .signWith(KEY, SignatureAlgorithm.HS256)
@@ -61,6 +68,13 @@ public class TokenUtil {
         Staff staff = new Staff();
         staff.setId(Long.valueOf(claims.get("id").toString()));
         staff.setName(claims.getSubject());
+        staff.setCompany(claims.get("company").toString());
+        staff.setDepartment(claims.get("department").toString());
+        staff.setPosition(claims.get("position").toString());
+        staff.setStatus((Integer) claims.get("status"));
+        staff.setEmail(claims.get("email").toString());
+        staff.setPhone(claims.get("phone").toString());
+
         return staff;
     }
 }
