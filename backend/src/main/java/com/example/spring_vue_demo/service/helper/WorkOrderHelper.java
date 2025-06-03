@@ -7,18 +7,23 @@ import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.spring_vue_demo.entity.HandleUserInfo;
 import com.example.spring_vue_demo.entity.Message;
+import com.example.spring_vue_demo.entity.Staff;
 import com.example.spring_vue_demo.entity.WorkOrder;
 import com.example.spring_vue_demo.enums.ErrorCode;
 import com.example.spring_vue_demo.enums.HandleTypeEnum;
 import com.example.spring_vue_demo.enums.HandleUserInfoHandleTypeEnum;
 import com.example.spring_vue_demo.enums.WorkOrderStatusEnum;
 import com.example.spring_vue_demo.exception.UserSideException;
+import com.example.spring_vue_demo.mapper.HandleUserInfoMapper;
+import com.example.spring_vue_demo.mapper.StaffMapper;
 import com.example.spring_vue_demo.param.HandleUserInfoParam;
 import com.example.spring_vue_demo.param.WorkOrderPageParam;
-import com.example.spring_vue_demo.service.HandleUserInfoService;
 import com.example.spring_vue_demo.service.query.HandleUserInfoQuery;
+import com.example.spring_vue_demo.utils.StaffHolder;
 import com.example.spring_vue_demo.vo.WorkOrderPageVO;
+import com.example.spring_vue_demo.vo.WorkOrderUpdateStatusVO;
 import lombok.RequiredArgsConstructor;
+import org.apache.catalina.User;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -36,15 +41,16 @@ import java.util.stream.Collectors;
 @Component
 @RequiredArgsConstructor
 public class WorkOrderHelper {
-    private final HandleUserInfoService handleUserInfoService;
+    private final HandleUserInfoMapper handleUserInfoMapper;
+    private final StaffMapper staffMapper;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
 
     private void gatherQueryWorkOrderId(List<HandleUserInfo> handleUserInfos, List<HandleUserInfoParam> userInfoParams, HandleUserInfoHandleTypeEnum userInfoType) {
         if (CollectionUtils.isEmpty(userInfoParams)) {
             return;
         }
-        LambdaQueryWrapper<HandleUserInfo> checkerWrapper = HandleUserInfoQuery.getQueryHandleUserInfoWrapper(userInfoParams, userInfoType.getValue());
-        List<HandleUserInfo> submitterInfolist = handleUserInfoService.list(checkerWrapper);
+        LambdaQueryWrapper<HandleUserInfo> checkerWrapper = HandleUserInfoQuery.getWorkOrderPageWrapper(userInfoParams, userInfoType.getValue());
+        List<HandleUserInfo> submitterInfolist = handleUserInfoMapper.selectList(checkerWrapper);
         handleUserInfos.addAll(submitterInfolist);
     }
 
@@ -151,7 +157,7 @@ public class WorkOrderHelper {
         }
     }
 
-    public Message buildMessage(WorkOrderStatusEnum status, String code) {
+    public Message buildMessage(WorkOrderStatusEnum status, String code, Long assignedUserId) {
         //todo:消息队列
         Message message = new Message();
         String nextHandleType = "";
@@ -181,11 +187,12 @@ public class WorkOrderHelper {
                 break;
             }
         }
-        //todo:设置发送人和接收人id
+        //设置发送人和接收人id
+        Long userId = StaffHolder.get().getId();
         message.setType(status.getValue());
         message.setTypeDesc(status.getDesc());
-        message.setSenderId(1L);
-        message.setReceiverId(2L);
+        message.setSenderId(userId);
+        message.setReceiverId(assignedUserId);
         message.setSendTime(formatter.format(LocalDateTime.now()));
         return message;
     }
@@ -204,10 +211,10 @@ public class WorkOrderHelper {
                 statusEnum = WorkOrderStatusEnum.CHECK_FAILURE;
             }
             case FINISH -> {
-                LambdaQueryWrapper<HandleUserInfo>wrapper=HandleUserInfoQuery.getDetailHandleUserInfoWrapper(workOrder.getId());
-                List<HandleUserInfo> handleUserInfos = handleUserInfoService.list(wrapper);
-                boolean finished=checkAllFinishedBeforeUpdateStatus(handleUserInfos);
-                if(finished) {
+                LambdaQueryWrapper<HandleUserInfo> wrapper = HandleUserInfoQuery.getHandleTypeWrapper(workOrder.getId(), HandleUserInfoHandleTypeEnum.HANDLE.getValue());
+                List<HandleUserInfo> handleUserInfos = handleUserInfoMapper.selectList(wrapper);
+                boolean finished = checkAllFinishedBeforeUpdateStatus(handleUserInfos);
+                if (finished) {
                     statusEnum = WorkOrderStatusEnum.FINISHED;
                 }
             }
@@ -217,32 +224,34 @@ public class WorkOrderHelper {
     }
 
     private boolean checkAllFinishedBeforeUpdateStatus(List<HandleUserInfo> handleUserInfos) {
-        for(HandleUserInfo handleUserInfo:handleUserInfos){
-            if(handleUserInfo.getFinished()==Boolean.FALSE){
+        for (HandleUserInfo handleUserInfo : handleUserInfos) {
+            if (handleUserInfo.getFinished() == Boolean.FALSE) {
                 return false;
             }
         }
         return true;
     }
 
-    public void addHandleInfo(Long orderId, HandleTypeEnum handleTypeEnum, Long assignedUserId) {
+    public void addHandleInfo(Long orderId, HandleTypeEnum handleTypeEnum, Long assignedUserId, String remark) {
         if (handleTypeEnum.equals(HandleTypeEnum.APPLY_HELP) || handleTypeEnum.equals(HandleTypeEnum.DISTRIBUTE)) {
             HandleUserInfo handleUserInfo = new HandleUserInfo();
             handleUserInfo.setUserId(assignedUserId);
-            //todo：查询被分配人的信息并填充
-            handleUserInfo.setUserName("");
-            handleUserInfo.setCompanyId(0L);
-            handleUserInfo.setCompanyName("");
-            handleUserInfo.setDepartmentId(0L);
-            handleUserInfo.setDepartmentName("");
+            //查询被分配人的信息并填充
+            Staff staff = staffMapper.selectById(assignedUserId);
+            handleUserInfo.setUserName(staff.getName());
+            handleUserInfo.setCompanyCode(staff.getCompanyCode());
+            handleUserInfo.setCompanyName(staff.getCompany());
+            handleUserInfo.setDepartmentCode(staff.getDepartmentCode());
+            handleUserInfo.setDepartmentName(staff.getDepartment());
             handleUserInfo.setOrderId(orderId);
+            handleUserInfo.setRemark(remark);
             switch (handleTypeEnum) {
                 case DISTRIBUTE -> handleUserInfo.setHandleType(HandleUserInfoHandleTypeEnum.HANDLE.getValue());
                 case APPLY_HELP -> handleUserInfo.setHandleType(HandleUserInfoHandleTypeEnum.HANDLE.getValue());
             }
             handleUserInfo.setFinished(Boolean.FALSE);
             handleUserInfo.setHandleTime(formatter.format(LocalDateTime.now()));
-            handleUserInfoService.save(handleUserInfo);
+            handleUserInfoMapper.insert(handleUserInfo);
         }
     }
 
@@ -250,16 +259,77 @@ public class WorkOrderHelper {
         if (handleType.equals(HandleTypeEnum.DISTRIBUTE) && assignedUserId == null) {
             throw new UserSideException(ErrorCode.DISTRIBUTE_REQUIRE_ASSIGNED_USER_ID);
         }
-        if (handleType.equals(HandleTypeEnum.APPLY_HELP) && assignedUserId == null) {
-            throw new UserSideException(ErrorCode.HELP_REQUIRE_ASSIGNED_USER_ID);
+        if (handleType.equals(HandleTypeEnum.APPLY_HELP)) {
+            if (assignedUserId == null) {
+                throw new UserSideException(ErrorCode.HELP_REQUIRE_ASSIGNED_USER_ID);
+            }
+            Long userId = StaffHolder.get().getId();
+            if (userId.equals(assignedUserId)) {
+                throw new UserSideException(ErrorCode.ASSIGNED_USER_EQUALS_CURRENT_USER);
+            }
         }
+        if (handleType.equals(HandleTypeEnum.URGE_ORDER) || handleType.equals(HandleTypeEnum.CHECK_SUCCESS)
+                || handleType.equals(HandleTypeEnum.CHECK_FAILURE)) {
+            throw new UserSideException(ErrorCode.NOT_NEED_ASSIGNED_USER_ID);
+        }
+
     }
 
     public void updateFinishHandleInfo(Long orderId, HandleTypeEnum handleType) {
-        if (handleType.equals(HandleTypeEnum.FINISH) || handleType.equals(HandleTypeEnum.DISTRIBUTE) || handleType.equals(HandleTypeEnum.CHECK_SUCCESS)) {
-            //todo：取本用户，筛选本用户对应的操作信息
-            LambdaUpdateWrapper<HandleUserInfo> wrapper = HandleUserInfoQuery.getUpdateStatusWrapper(orderId);
-            handleUserInfoService.update(wrapper);
+        if (handleType.equals(HandleTypeEnum.DISTRIBUTE)) {
+            //筛选本用户对应状态的操作信息
+            Long staffId = StaffHolder.get().getId();
+            LambdaUpdateWrapper<HandleUserInfo> wrapper = HandleUserInfoQuery.getUpdateStatusWrapper(orderId, List.of(staffId), HandleUserInfoHandleTypeEnum.DISTRIBUTE.getValue(), Boolean.TRUE);
+            handleUserInfoMapper.update(wrapper);
+        } else if (handleType.equals(HandleTypeEnum.FINISH) || handleType.equals(HandleTypeEnum.CHECK_SUCCESS)) {
+            //筛选本用户对应状态的操作信息
+            Long staffId = StaffHolder.get().getId();
+            LambdaUpdateWrapper<HandleUserInfo> wrapper = HandleUserInfoQuery.getUpdateStatusWrapper(orderId, List.of(staffId), HandleUserInfoHandleTypeEnum.HANDLE.getValue(), Boolean.TRUE);
+            handleUserInfoMapper.update(wrapper);
+        } else if (handleType.equals(HandleTypeEnum.CHECK_FAILURE)) {
+            //回退所有处理完成状态的操作信息
+            LambdaQueryWrapper<HandleUserInfo> handleTypeWrapper = HandleUserInfoQuery.getHandleTypeWrapper(orderId, HandleUserInfoHandleTypeEnum.HANDLE.getValue());
+            List<HandleUserInfo> handleUserInfos = handleUserInfoMapper.selectList(handleTypeWrapper);
+            List<Long> handleUserIds = handleUserInfos.stream().map(HandleUserInfo::getUserId).collect(Collectors.toList());
+            LambdaUpdateWrapper<HandleUserInfo> wrapper = HandleUserInfoQuery.getUpdateStatusWrapper(orderId, handleUserIds, HandleUserInfoHandleTypeEnum.HANDLE.getValue(), Boolean.FALSE);
+            handleUserInfoMapper.update(wrapper);
         }
     }
+
+    public void checkAssignedUserInfoExist(WorkOrder workOrder, Long assignedUserId, HandleTypeEnum handleType) {
+        if (assignedUserId != null && (handleType.equals(HandleTypeEnum.DISTRIBUTE) || handleType.equals(HandleTypeEnum.APPLY_HELP))) {
+            HandleUserInfoHandleTypeEnum handleUserInfoHandleType = HandleUserInfoHandleTypeEnum.HANDLE;
+            LambdaQueryWrapper<HandleUserInfo> wrapper = HandleUserInfoQuery.getHandleTypeUserIdWrapper(workOrder.getId(),handleUserInfoHandleType.getValue(),assignedUserId);
+            List<HandleUserInfo> handleUserInfos = handleUserInfoMapper.selectList(wrapper);
+            if(CollectionUtils.isNotEmpty(handleUserInfos)){
+                throw new UserSideException(ErrorCode.ASSIGNED_USER_ALREADY_EXIST);
+            }
+        }
+    }
+
+    public WorkOrderUpdateStatusVO setUpdateReturnVO(boolean flag, String code, Long id) {
+        WorkOrderUpdateStatusVO vo = new WorkOrderUpdateStatusVO();
+        vo.setSuccess(flag);
+        vo.setCode(code);
+        vo.setId(id);
+        return vo;
+    }
+
+    public void checkWorkOrderUser(WorkOrder workOrder, HandleTypeEnum handleType) {
+        Long staffId = StaffHolder.get().getId();
+        HandleUserInfoHandleTypeEnum handleTypeInfo = null;
+        switch (handleType) {
+            case DISTRIBUTE -> handleTypeInfo = HandleUserInfoHandleTypeEnum.DISTRIBUTE;
+            case APPLY_HELP, URGE_ORDER, FINISH -> handleTypeInfo = HandleUserInfoHandleTypeEnum.HANDLE;
+            case CHECK_SUCCESS, CHECK_FAILURE -> handleTypeInfo = HandleUserInfoHandleTypeEnum.CHECK;
+        }
+        LambdaQueryWrapper<HandleUserInfo> wrapper = HandleUserInfoQuery.getHandleTypeUserIdWrapper(workOrder.getId(), handleTypeInfo.getValue(), staffId);
+        HandleUserInfo currentHandleInfo = handleUserInfoMapper.selectOne(wrapper);
+        if (currentHandleInfo == null) {
+            throw new UserSideException(ErrorCode.CURRENT_USER_IS_NOT_HANDLE_USER);
+        }
+
+    }
+
+
 }

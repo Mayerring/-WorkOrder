@@ -80,13 +80,12 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         //校验工单不为空
         workOrderHelper.checkWorkOrderExist(workOrder);
         //查询操作信息
-        LambdaQueryWrapper<HandleUserInfo> handleUserInfoWrapper = HandleUserInfoQuery.getDetailHandleUserInfoWrapper(workOrder.getId());
+        LambdaQueryWrapper<HandleUserInfo> handleUserInfoWrapper = HandleUserInfoQuery.getOrderIdWrapper(workOrder.getId());
         List<HandleUserInfo> pageHandleUserInfos = iHandleUserInfoService.list(handleUserInfoWrapper);
         //组装操作信息
         workOrder = workOrderHelper.addDetailHandleInfo(pageHandleUserInfos, workOrder);
         //转换vo
         WorkOrderDetailVO workOrderDetailVO = WorkOrderConverter.INSTANCE.toDetailVO(workOrder);
-        //设置分页信息
         return workOrderDetailVO;
     }
 
@@ -102,31 +101,39 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         //查询工单，如果不存在返回错误信息
         LambdaQueryWrapper<WorkOrder> workOrderWrapper = WorkOrderQuery.getWorkOrderWrapper(param.getId(),param.getCode());
         WorkOrder workOrder = getOne(workOrderWrapper);
-        //校验工单不为空
         workOrderHelper.checkWorkOrderExist(workOrder);
         //校验工单状态和操作是否匹配
         workOrderHelper.checkWorkOrderStatus(workOrder,handleType);
+        //校验当前用户是否是工单当前状态的操作人
+        workOrderHelper.checkWorkOrderUser(workOrder,handleType);
+        //校验安排的用户是否已经被添加（接口幂等）
+        workOrderHelper.checkAssignedUserInfoExist(workOrder,param.getAssignedUserId(),handleType);
         //添加操作信息
-        workOrderHelper.addHandleInfo(workOrder.getId(), handleType, param.getAssignedUserId());
-        //更新操作信息
+        workOrderHelper.addHandleInfo(workOrder.getId(), handleType, param.getAssignedUserId(),param.getRemark());
+        //更新操作信息完成状态
         workOrderHelper.updateFinishHandleInfo(workOrder.getId(),handleType);
         //更新工单主表状态
         workOrderHelper.updateNextStatus(handleType,workOrder);
         boolean updateSuccess=updateById(workOrder);
         //发送信息
-        Message message=workOrderHelper.buildMessage(WorkOrderStatusEnum.getByValue(workOrder.getStatus()), workOrder.getCode());
+        Message message=workOrderHelper.buildMessage(WorkOrderStatusEnum.getByValue(workOrder.getStatus()), workOrder.getCode(),param.getAssignedUserId());
         boolean msgSuccess=messageService.save(message);
         //构建返回VO
-        WorkOrderUpdateStatusVO vo=new WorkOrderUpdateStatusVO();
-        vo.setSuccess(updateSuccess&&msgSuccess);
-        vo.setCode(workOrder.getCode());
-        vo.setId(workOrder.getId());
+        WorkOrderUpdateStatusVO vo=workOrderHelper.setUpdateReturnVO(updateSuccess&&msgSuccess,workOrder.getCode(),workOrder.getId());
         return vo;
     }
 
     @Override
     public WorkOrderUpdateStatusVO deleteOrder(WorkOrderDeleteParam param) {
-        return null;
+        //校验工单id和code不能全为空
+        workOrderHelper.checkIdAndCodeNotNull(param.getId(),param.getCode());
+        //查询工单，如果不存在返回错误信息
+        LambdaQueryWrapper<WorkOrder> workOrderWrapper = WorkOrderQuery.getWorkOrderWrapper(param.getId(),param.getCode());
+        WorkOrder workOrder = getOne(workOrderWrapper);
+        workOrderHelper.checkWorkOrderExist(workOrder);
+        boolean success=removeById(workOrder.getId());
+        WorkOrderUpdateStatusVO vo=workOrderHelper.setUpdateReturnVO(success,workOrder.getCode(),workOrder.getId());
+        return vo;
     }
 
     @Override

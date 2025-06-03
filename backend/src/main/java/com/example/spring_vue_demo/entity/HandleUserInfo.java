@@ -36,14 +36,14 @@ public class HandleUserInfo {
     @Schema(description = "姓名")
     private String userName;
 
-    @Schema(description = "公司id")
-    private Long companyId;
+    @Schema(description = "公司编码")
+    private String companyCode;
 
     @Schema(description = "公司名")
     private String companyName;
 
-    @Schema(description = "部门id")
-    private Long departmentId;
+    @Schema(description = "部门编码")
+    private String departmentCode;
 
     @Schema(description = "部门名")
     private String departmentName;
@@ -59,6 +59,9 @@ public class HandleUserInfo {
     @TableField(typeHandler = TimeTypeHandler.class,fill = FieldFill.INSERT_UPDATE)
     @Schema(description = "更新时间")
     private String updateTime;
+
+    @Schema(description = "操作备注")
+    private String remark;
 
     @TableLogic
     @Schema(description = "删除位")

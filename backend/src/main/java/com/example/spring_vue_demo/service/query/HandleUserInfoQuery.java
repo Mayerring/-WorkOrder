@@ -1,7 +1,6 @@
 package com.example.spring_vue_demo.service.query;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.example.spring_vue_demo.entity.HandleUserInfo;
@@ -9,22 +8,21 @@ import com.example.spring_vue_demo.enums.HandleUserInfoHandleTypeEnum;
 import com.example.spring_vue_demo.param.HandleUserInfoParam;
 
 import java.util.List;
-import java.util.Objects;
 
 /**
  * @author wtt
  * @date 2025/05/31
  */
 public class HandleUserInfoQuery {
-    public static LambdaQueryWrapper<HandleUserInfo> getQueryHandleUserInfoWrapper(List<HandleUserInfoParam> handleUserInfos, Integer type) {
+    public static LambdaQueryWrapper<HandleUserInfo> getWorkOrderPageWrapper(List<HandleUserInfoParam> handleUserInfos, Integer type) {
         List<Long>userIds = handleUserInfos.stream().map(HandleUserInfoParam::getUserId).toList();
-        List<Long>departmentIds=handleUserInfos.stream().map(HandleUserInfoParam::getDepartmentId).toList();
-        List<Long>companyIds=handleUserInfos.stream().map(HandleUserInfoParam::getCompanyId).toList();
+        List<String>departmentCodes=handleUserInfos.stream().map(HandleUserInfoParam::getDepartmentCode).toList();
+        List<String>companyCodes=handleUserInfos.stream().map(HandleUserInfoParam::getCompanyCode).toList();
         LambdaQueryWrapper<HandleUserInfo>wrapper=new LambdaQueryWrapper<HandleUserInfo>()
                 .eq(true,HandleUserInfo::getHandleType,type)
                 .in(CollectionUtils.isNotEmpty(userIds),HandleUserInfo::getUserId,userIds)
-                .in(CollectionUtils.isNotEmpty(departmentIds),HandleUserInfo::getDepartmentId,departmentIds)
-                .in(CollectionUtils.isNotEmpty(companyIds),HandleUserInfo::getCompanyId,departmentIds);
+                .in(CollectionUtils.isNotEmpty(departmentCodes),HandleUserInfo::getDepartmentCode,departmentCodes)
+                .in(CollectionUtils.isNotEmpty(companyCodes),HandleUserInfo::getCompanyCode,departmentCodes);
         return wrapper;
     }
 
@@ -39,16 +37,38 @@ public class HandleUserInfoQuery {
         return wrapper;
     }
 
-    public static LambdaQueryWrapper<HandleUserInfo> getDetailHandleUserInfoWrapper(Long orderId) {
+    public static LambdaQueryWrapper<HandleUserInfo> getOrderIdWrapper(Long orderId) {
         LambdaQueryWrapper<HandleUserInfo>wrapper=new LambdaQueryWrapper<HandleUserInfo>()
-                .eq(Objects.nonNull(orderId),HandleUserInfo::getOrderId,orderId);
+                .eq(true,HandleUserInfo::getOrderId,orderId);
         return wrapper;
     }
 
-    public static LambdaUpdateWrapper<HandleUserInfo> getUpdateStatusWrapper(Long orderId) {
-        LambdaUpdateWrapper<HandleUserInfo>wrapper=new LambdaUpdateWrapper<HandleUserInfo>()
+    public static LambdaUpdateWrapper<HandleUserInfo> getUpdateStatusWrapper(Long orderId, List<Long> staffIds,Integer handleType,Boolean finished) {
+        LambdaUpdateWrapper<HandleUserInfo>wrapper=new LambdaUpdateWrapper<HandleUserInfo>();
+        if(CollectionUtils.isEmpty(staffIds)) {
+            // 添加一个不可能满足的条件
+            wrapper.apply("1=0");
+            return wrapper;
+        }
+        wrapper.eq(true,HandleUserInfo::getOrderId,orderId)
+                .in(true,HandleUserInfo::getUserId,staffIds)
+                .eq(true,HandleUserInfo::getHandleType,handleType)
+                .set(HandleUserInfo::getFinished,finished);
+        return wrapper;
+    }
+
+    public static LambdaQueryWrapper<HandleUserInfo> getHandleTypeWrapper(Long orderId, Integer handleType) {
+        LambdaQueryWrapper<HandleUserInfo>wrapper=new LambdaQueryWrapper<HandleUserInfo>()
                 .eq(true,HandleUserInfo::getOrderId,orderId)
-                .set(HandleUserInfo::getFinished,Boolean.TRUE);
+                .eq(true,HandleUserInfo::getHandleType,handleType);
+        return wrapper;
+    }
+
+    public static LambdaQueryWrapper<HandleUserInfo> getHandleTypeUserIdWrapper(Long orderId, Integer handleType, Long staffId) {
+        LambdaQueryWrapper<HandleUserInfo>wrapper=new LambdaQueryWrapper<HandleUserInfo>()
+                .eq(true,HandleUserInfo::getOrderId,orderId)
+                .eq(true,HandleUserInfo::getHandleType,handleType)
+                .eq(true,HandleUserInfo::getUserId,staffId);
         return wrapper;
     }
 }

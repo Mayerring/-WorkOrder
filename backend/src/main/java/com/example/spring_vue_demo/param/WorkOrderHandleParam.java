@@ -23,4 +23,7 @@ public class WorkOrderHandleParam {
     @Schema(description = "安排的用户Id（分配处理人/协助处理人）")
     private Long assignedUserId;
 
+    @Schema(description = "操作备注")
+    private String remark;
+
 }
