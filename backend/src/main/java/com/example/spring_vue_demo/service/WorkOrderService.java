@@ -20,7 +20,7 @@ public interface WorkOrderService extends IService<WorkOrder> {
 
     WorkOrderUpdateStatusVO deleteOrder(WorkOrderDeleteParam  param);
 
-    WorkOrderUpdateStatusVO cancel(Object param);
+    WorkOrderUpdateStatusVO cancel(WorkOrderCancelParam param);
 
     Result create(WorkOrderCreateParam param);
 

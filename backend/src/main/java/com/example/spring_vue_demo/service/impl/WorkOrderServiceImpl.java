@@ -103,7 +103,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         WorkOrder workOrder = getOne(workOrderWrapper);
         workOrderHelper.checkWorkOrderExist(workOrder);
         //校验工单状态和操作是否匹配
-        workOrderHelper.checkWorkOrderStatus(workOrder,handleType);
+        workOrderHelper.checkHandleWorkOrderStatus(workOrder,handleType);
         //校验当前用户是否是工单当前状态的操作人
         workOrderHelper.checkWorkOrderUser(workOrder,handleType);
         //校验安排的用户是否已经被添加（接口幂等）
@@ -131,15 +131,29 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         LambdaQueryWrapper<WorkOrder> workOrderWrapper = WorkOrderQuery.getWorkOrderWrapper(param.getId(),param.getCode());
         WorkOrder workOrder = getOne(workOrderWrapper);
         workOrderHelper.checkWorkOrderExist(workOrder);
+        //删除工单
         boolean success=removeById(workOrder.getId());
         WorkOrderUpdateStatusVO vo=workOrderHelper.setUpdateReturnVO(success,workOrder.getCode(),workOrder.getId());
         return vo;
     }
 
     @Override
-    public WorkOrderUpdateStatusVO  cancel(Object param) {
-
-        return null;
+    public WorkOrderUpdateStatusVO cancel(WorkOrderCancelParam param) {
+        //校验工单id和code不能全为空
+        workOrderHelper.checkIdAndCodeNotNull(param.getId(),param.getCode());
+        //查询工单，如果不存在返回错误信息
+        LambdaQueryWrapper<WorkOrder> workOrderWrapper = WorkOrderQuery.getWorkOrderWrapper(param.getId(),param.getCode());
+        WorkOrder workOrder = getOne(workOrderWrapper);
+        workOrderHelper.checkWorkOrderExist(workOrder);
+        //校验工单状态，已完成、已确认完成的工单不能取消
+        workOrderHelper.checkCancelWorkOrderStatus(workOrder);
+        //校验取消操作用户，提出人才能进行取消操作
+        workOrderHelper.checkCancelUser(workOrder);
+        //更新工单状态为取消
+        workOrder.setStatus(WorkOrderStatusEnum.CANCELLED.getValue());
+        boolean success= updateById(workOrder);
+        WorkOrderUpdateStatusVO vo=workOrderHelper.setUpdateReturnVO(success,workOrder.getCode(),workOrder.getId());
+        return vo;
     }
 
     @Override

@@ -19,11 +19,11 @@ import com.example.spring_vue_demo.mapper.StaffMapper;
 import com.example.spring_vue_demo.param.HandleUserInfoParam;
 import com.example.spring_vue_demo.param.WorkOrderPageParam;
 import com.example.spring_vue_demo.service.query.HandleUserInfoQuery;
+import com.example.spring_vue_demo.service.query.WorkOrderQuery;
 import com.example.spring_vue_demo.utils.StaffHolder;
 import com.example.spring_vue_demo.vo.WorkOrderPageVO;
 import com.example.spring_vue_demo.vo.WorkOrderUpdateStatusVO;
 import lombok.RequiredArgsConstructor;
-import org.apache.catalina.User;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -116,7 +116,7 @@ public class WorkOrderHelper {
         }
     }
 
-    public void checkWorkOrderStatus(WorkOrder workOrder, HandleTypeEnum handleType) {
+    public void checkHandleWorkOrderStatus(WorkOrder workOrder, HandleTypeEnum handleType) {
         Integer workOrderStatus = workOrder.getStatus();
         List<WorkOrderStatusEnum> correctStatusEnums = new ArrayList<>();
         switch (handleType) {
@@ -332,4 +332,18 @@ public class WorkOrderHelper {
     }
 
 
+    public void checkCancelWorkOrderStatus(WorkOrder workOrder) {
+        if(workOrder.getStatus()>=WorkOrderStatusEnum.FINISHED.getValue()){
+            throw new UserSideException(ErrorCode.AFTER_FINISHED_NOT_ALLOW_CANCELLED);
+        }
+    }
+
+    public void checkCancelUser(WorkOrder workOrder) {
+        Long cancelUserId=StaffHolder.get().getId();
+        LambdaQueryWrapper<HandleUserInfo>wrapper=HandleUserInfoQuery.getHandleTypeWrapper(workOrder.getId(),HandleUserInfoHandleTypeEnum.SUBMIT.getValue());
+        HandleUserInfo submitInfo=handleUserInfoMapper.selectOne(wrapper);
+        if(submitInfo==null||!submitInfo.getUserId().equals(cancelUserId)){
+            throw new UserSideException(ErrorCode.ONLY_SUBMIT_USER_CAN_CANCEL_WORK_ORDER);
+        }
+    }
 }

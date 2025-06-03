@@ -61,7 +61,7 @@ public class WorkOrderController {
     @ApiOperationSupport(order = 5)
     @Operation(summary = "取消")
     @PostMapping("/cancel")
-    public Object cancel(@RequestBody Object param) {
+    public WorkOrderUpdateStatusVO cancel(@RequestBody WorkOrderCancelParam param) {
         return workOrderService.cancel(param);
     }
 
