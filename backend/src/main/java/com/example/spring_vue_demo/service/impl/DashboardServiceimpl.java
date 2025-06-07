@@ -2,25 +2,29 @@ package com.example.spring_vue_demo.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.spring_vue_demo.entity.HandleUserInfo;
+import com.example.spring_vue_demo.entity.Message;
 import com.example.spring_vue_demo.entity.WorkOrder;
 import com.example.spring_vue_demo.enums.HandleUserInfoHandleTypeEnum;
 import com.example.spring_vue_demo.enums.TimeTypeEnum;
 import com.example.spring_vue_demo.enums.WorkOrderStatusEnum;
 import com.example.spring_vue_demo.mapper.HandleUserInfoMapper;
+import com.example.spring_vue_demo.mapper.MessageMapper;
 import com.example.spring_vue_demo.mapper.WorkOrderMapper;
+import com.example.spring_vue_demo.param.MessageParam;
 import com.example.spring_vue_demo.param.StatusDataParam;
 import com.example.spring_vue_demo.param.WeekHandleQuantityParam;
 import com.example.spring_vue_demo.service.DashboardService;
+import com.example.spring_vue_demo.service.convert.MessageConverter;
 import com.example.spring_vue_demo.service.convert.WorkOrderConverter;
 import com.example.spring_vue_demo.service.query.HandleUserInfoQuery;
+import com.example.spring_vue_demo.service.query.MessageQuery;
 import com.example.spring_vue_demo.service.query.WorkOrderQuery;
 import com.example.spring_vue_demo.utils.StaffHolder;
-import com.example.spring_vue_demo.vo.StatusDataVO;
-import com.example.spring_vue_demo.vo.WeekHandleVO;
-import com.example.spring_vue_demo.vo.WorkOrderDataVO;
-import com.example.spring_vue_demo.vo.WorkOrderTodoVO;
+import com.example.spring_vue_demo.vo.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -40,6 +44,7 @@ import java.util.stream.Collectors;
 public class DashboardServiceimpl implements DashboardService {
     private final WorkOrderMapper workOrderMapper;
     private final HandleUserInfoMapper handleUserInfoMapper;
+    private final MessageMapper messageMapper;
 
     private final DateTimeFormatter formatter=DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
@@ -145,7 +150,15 @@ public class DashboardServiceimpl implements DashboardService {
     }
 
     @Override
-    public Object getMessages(Object param) {
-        return null;
+    public IPage<MessageVO> pageMessages(MessageParam param) {
+        Long receiverId=StaffHolder.get().getId();
+        LambdaQueryWrapper<Message>wrapper= MessageQuery.getByReceiverIdWrapper(receiverId);
+        IPage<Message>pageWrapper=new Page<>();
+        pageWrapper.setSize(param.getPageSize());
+        pageWrapper.setCurrent(param.getPageNum());
+        IPage<Message> messageIPage = messageMapper.selectPage(pageWrapper, wrapper);
+//        List<Message>messages=messageIPage.getRecords().stream().toList();
+        IPage<MessageVO> pageMessageVOS= MessageConverter.INSTANCE.toPageMessageVOS(messageIPage);
+        return pageMessageVOS;
     }
 }

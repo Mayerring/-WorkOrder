@@ -1,12 +1,11 @@
 package com.example.spring_vue_demo.controller;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.example.spring_vue_demo.param.MessageParam;
 import com.example.spring_vue_demo.param.StatusDataParam;
 import com.example.spring_vue_demo.param.WeekHandleQuantityParam;
 import com.example.spring_vue_demo.service.DashboardService;
-import com.example.spring_vue_demo.vo.StatusDataVO;
-import com.example.spring_vue_demo.vo.WeekHandleVO;
-import com.example.spring_vue_demo.vo.WorkOrderDataVO;
-import com.example.spring_vue_demo.vo.WorkOrderTodoVO;
+import com.example.spring_vue_demo.vo.*;
 import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -57,8 +56,8 @@ public class DashboardController {
 
     @ApiOperationSupport(order = 5)
     @Operation(summary = "消息中心")
-    @PostMapping("/getMessages")
-    public Object getMessages(@RequestBody Object param){
-        return dashboardService.getMessages(param);
+    @PostMapping("/pageMessages")
+    public IPage<MessageVO> pageMessages(@RequestBody MessageParam param){
+        return dashboardService.pageMessages(param);
     }
 }

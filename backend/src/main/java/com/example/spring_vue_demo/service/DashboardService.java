@@ -1,12 +1,11 @@
 package com.example.spring_vue_demo.service;
 
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.example.spring_vue_demo.param.MessageParam;
 import com.example.spring_vue_demo.param.StatusDataParam;
 import com.example.spring_vue_demo.param.WeekHandleQuantityParam;
-import com.example.spring_vue_demo.vo.StatusDataVO;
-import com.example.spring_vue_demo.vo.WeekHandleVO;
-import com.example.spring_vue_demo.vo.WorkOrderDataVO;
-import com.example.spring_vue_demo.vo.WorkOrderTodoVO;
+import com.example.spring_vue_demo.vo.*;
 
 import java.util.List;
 
@@ -20,5 +19,5 @@ public interface DashboardService {
 
     WeekHandleVO getWeekHandleQuantity(WeekHandleQuantityParam param);
 
-    Object getMessages(Object param);
+    IPage<MessageVO> pageMessages(MessageParam param);
 }
