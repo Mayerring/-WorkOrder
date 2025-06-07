@@ -3,6 +3,7 @@ package com.example.spring_vue_demo.controller.admin;
 import com.example.spring_vue_demo.entity.Result;
 import com.example.spring_vue_demo.param.AddStaffParam;
 import com.example.spring_vue_demo.service.AdminService;
+import com.example.spring_vue_demo.service.StaffService;
 import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -22,14 +23,14 @@ import org.springframework.web.bind.annotation.RestController;
 public class StaffController {
 
     @Autowired
-    private AdminService adminService;
+    private StaffService staffService;
 
     @ApiOperationSupport(order = 1)
     @Operation(summary = "新增员工")
     @PostMapping("/add")
     public Result addStaff(@RequestBody AddStaffParam param)
     {
-        return adminService.addStaff(param);
+        return staffService.addStaff(param);
         //return Result.error("暂未实现");
     }
 
@@ -61,6 +62,6 @@ public class StaffController {
     @Operation(summary = "所有员工")
     @PostMapping("/all")
     public Result all(){
-        return Result.error("暂未实现");
+        return staffService.allStaff();
     }
 }

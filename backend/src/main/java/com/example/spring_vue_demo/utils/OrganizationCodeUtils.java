@@ -85,14 +85,14 @@ public class OrganizationCodeUtils {
 
     /**
      * 生成员工编号
-     * 格式：E + 日期 + 公司编号（后4位） + 4位序列号
-     * @param companyCode 公司编号（如 "C0003"）
-     * @param staffId 员工的id
-     * @return 员工编号（如 E20250601GD00030001）
+     * 格式：E + 日期时间
+     * 示例：E20250606T153045789-C0003-D0005
+     *
+     * @return 员工编号
      */
-    public static  String generateStaffCode(String companyCode, int staffId) {
-        String dateStr = new SimpleDateFormat("yyyyMMdd").format(new Date());
-
-        return String.format("E%s%s%04d", dateStr,companyCode,staffId);
+    public static String generateStaffCode() {
+        SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd'T'HHmmssSSS");
+        String timestamp = sdf.format(new Date());
+        return String.format("E%s", timestamp);
     }
 }

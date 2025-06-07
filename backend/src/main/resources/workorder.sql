@@ -80,7 +80,7 @@ CREATE TABLE department (
 drop table if exists staff;
 CREATE TABLE staff (
                        id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '主键ID',
-                       staff_number VARCHAR(50) NOT NULL COMMENT '工号',
+                       staff_number VARCHAR(128) NOT NULL COMMENT '工号',
                        password VARCHAR(100) NOT NULL COMMENT '密码（加密）',
                        name VARCHAR(100) NOT NULL COMMENT '姓名',
                        company_code VARCHAR(50) NOT NULL COMMENT '所属公司编号',
