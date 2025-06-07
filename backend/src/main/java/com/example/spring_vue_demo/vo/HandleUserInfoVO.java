@@ -30,14 +30,14 @@ public class HandleUserInfoVO {
     @Schema(description = "姓名")
     private String userName;
 
-    @Schema(description = "公司id")
-    private Long companyId;
+    @Schema(description = "公司编码")
+    private Long companyCode;
 
     @Schema(description = "公司名")
     private String companyName;
 
-    @Schema(description = "部门id")
-    private Long departmentId;
+    @Schema(description = "部门编码")
+    private Long departmentCode;
 
     @Schema(description = "部门名")
     private String departmentName;

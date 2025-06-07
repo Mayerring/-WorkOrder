@@ -1,10 +1,10 @@
 package com.example.spring_vue_demo.service.query;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.spring_vue_demo.entity.WorkOrder;
-import com.example.spring_vue_demo.param.WorkOrderDetailParam;
 import com.example.spring_vue_demo.param.WorkOrderPageParam;
 import io.micrometer.common.util.StringUtils;
 
@@ -25,8 +25,8 @@ public class WorkOrderQuery {
                 .eq(Objects.nonNull(param.getType()),WorkOrder::getType,param.getType())
                 .eq(Objects.nonNull(param.getPriorityLevel()),WorkOrder::getPriorityLevel,param.getPriorityLevel())
                 .in(CollectionUtils.isNotEmpty(param.getStatus()),WorkOrder::getStatus,param.getStatus())
-                .ge(StringUtils.isNotBlank(param.getCreateTimeFrom()),WorkOrder::getCreateTime,param.getCreateTimeFrom())
-                .le(StringUtils.isNotBlank(param.getCreateTimeTo()),WorkOrder::getCancelTime,param.getCreateTimeTo())
+                .ge(Objects.nonNull(param.getCreateTimeFrom()),WorkOrder::getCreateTime,param.getCreateTimeFrom())
+                .le(Objects.nonNull(param.getCreateTimeTo()),WorkOrder::getCreateTime,param.getCreateTimeTo())
                 ;
         return pageWrapper;
     }
@@ -46,4 +46,30 @@ public class WorkOrderQuery {
     }
 
 
+    public static LambdaQueryWrapper<WorkOrder> getByDateStatus(List<Integer> statusList, Long createTimeTo, Long createTimeFrom) {
+        LambdaQueryWrapper<WorkOrder>wrapper=new LambdaQueryWrapper<WorkOrder>()
+                .in(CollectionUtils.isNotEmpty(statusList),WorkOrder::getStatus,statusList)
+                .le(Objects.nonNull(createTimeTo),WorkOrder::getCreateTime,createTimeTo)
+                .ge(Objects.nonNull(createTimeFrom),WorkOrder::getCreateTime,createTimeFrom);
+        return wrapper;
+    }
+
+    public static LambdaQueryWrapper<WorkOrder> getWorkOrderByIds(List<Long> orderIds) {
+        LambdaQueryWrapper<WorkOrder>wrapper=new LambdaQueryWrapper<>();
+        if(CollectionUtils.isEmpty(orderIds)){
+            wrapper.apply("1=2");
+            return wrapper;
+        }
+        wrapper.in(true,WorkOrder::getId,orderIds);
+        return wrapper;
+    }
+
+    public static QueryWrapper<WorkOrder> getCountGroupByStatusByDate(Long createTimeFrom, Long createTimeTo) {
+        QueryWrapper<WorkOrder>wrapper=new QueryWrapper<WorkOrder>()
+                .select("status","COUNT(*) as count")
+                .ge(true,"create_time", createTimeFrom)
+                .le(true,"create_time",createTimeTo)
+                .groupBy("status");
+        return wrapper;
+    }
 }

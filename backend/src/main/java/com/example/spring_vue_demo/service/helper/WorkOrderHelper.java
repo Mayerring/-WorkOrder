@@ -27,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,7 +44,7 @@ import java.util.stream.Collectors;
 public class WorkOrderHelper {
     private final HandleUserInfoMapper handleUserInfoMapper;
     private final StaffMapper staffMapper;
-    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private void gatherQueryWorkOrderId(List<HandleUserInfo> handleUserInfos, List<HandleUserInfoParam> userInfoParams, HandleUserInfoHandleTypeEnum userInfoType) {
         if (CollectionUtils.isEmpty(userInfoParams)) {
@@ -245,6 +246,7 @@ public class WorkOrderHelper {
             handleUserInfo.setDepartmentName(staff.getDepartment());
             handleUserInfo.setOrderId(orderId);
             handleUserInfo.setRemark(remark);
+            handleUserInfo.setFinished(Boolean.FALSE);
             switch (handleTypeEnum) {
                 case DISTRIBUTE -> handleUserInfo.setHandleType(HandleUserInfoHandleTypeEnum.HANDLE.getValue());
                 case APPLY_HELP -> handleUserInfo.setHandleType(HandleUserInfoHandleTypeEnum.HANDLE.getValue());
@@ -276,22 +278,23 @@ public class WorkOrderHelper {
     }
 
     public void updateFinishHandleInfo(Long orderId, HandleTypeEnum handleType) {
+        Long handleTime=LocalDateTime.now().atZone(ZoneId.systemDefault()).toEpochSecond();
         if (handleType.equals(HandleTypeEnum.DISTRIBUTE)) {
             //筛选本用户对应状态的操作信息
             Long staffId = StaffHolder.get().getId();
-            LambdaUpdateWrapper<HandleUserInfo> wrapper = HandleUserInfoQuery.getUpdateStatusWrapper(orderId, List.of(staffId), HandleUserInfoHandleTypeEnum.DISTRIBUTE.getValue(), Boolean.TRUE);
+            LambdaUpdateWrapper<HandleUserInfo> wrapper = HandleUserInfoQuery.getUpdateStatusWrapper(orderId, List.of(staffId), HandleUserInfoHandleTypeEnum.DISTRIBUTE.getValue(), Boolean.TRUE,handleTime);
             handleUserInfoMapper.update(wrapper);
         } else if (handleType.equals(HandleTypeEnum.FINISH) || handleType.equals(HandleTypeEnum.CHECK_SUCCESS)) {
             //筛选本用户对应状态的操作信息
             Long staffId = StaffHolder.get().getId();
-            LambdaUpdateWrapper<HandleUserInfo> wrapper = HandleUserInfoQuery.getUpdateStatusWrapper(orderId, List.of(staffId), HandleUserInfoHandleTypeEnum.HANDLE.getValue(), Boolean.TRUE);
+            LambdaUpdateWrapper<HandleUserInfo> wrapper = HandleUserInfoQuery.getUpdateStatusWrapper(orderId, List.of(staffId), HandleUserInfoHandleTypeEnum.HANDLE.getValue(), Boolean.TRUE,handleTime);
             handleUserInfoMapper.update(wrapper);
         } else if (handleType.equals(HandleTypeEnum.CHECK_FAILURE)) {
             //回退所有处理完成状态的操作信息
             LambdaQueryWrapper<HandleUserInfo> handleTypeWrapper = HandleUserInfoQuery.getHandleTypeWrapper(orderId, HandleUserInfoHandleTypeEnum.HANDLE.getValue());
             List<HandleUserInfo> handleUserInfos = handleUserInfoMapper.selectList(handleTypeWrapper);
             List<Long> handleUserIds = handleUserInfos.stream().map(HandleUserInfo::getUserId).collect(Collectors.toList());
-            LambdaUpdateWrapper<HandleUserInfo> wrapper = HandleUserInfoQuery.getUpdateStatusWrapper(orderId, handleUserIds, HandleUserInfoHandleTypeEnum.HANDLE.getValue(), Boolean.FALSE);
+            LambdaUpdateWrapper<HandleUserInfo> wrapper = HandleUserInfoQuery.getUpdateStatusWrapper(orderId, handleUserIds, HandleUserInfoHandleTypeEnum.HANDLE.getValue(), Boolean.FALSE,null);
             handleUserInfoMapper.update(wrapper);
         }
     }

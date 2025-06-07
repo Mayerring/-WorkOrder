@@ -43,7 +43,7 @@ public class HandleUserInfoQuery {
         return wrapper;
     }
 
-    public static LambdaUpdateWrapper<HandleUserInfo> getUpdateStatusWrapper(Long orderId, List<Long> staffIds,Integer handleType,Boolean finished) {
+    public static LambdaUpdateWrapper<HandleUserInfo> getUpdateStatusWrapper(Long orderId, List<Long> staffIds,Integer handleType,Boolean finished,Long handleTime) {
         LambdaUpdateWrapper<HandleUserInfo>wrapper=new LambdaUpdateWrapper<HandleUserInfo>();
         if(CollectionUtils.isEmpty(staffIds)) {
             // 添加一个不可能满足的条件
@@ -53,6 +53,7 @@ public class HandleUserInfoQuery {
         wrapper.eq(true,HandleUserInfo::getOrderId,orderId)
                 .in(true,HandleUserInfo::getUserId,staffIds)
                 .eq(true,HandleUserInfo::getHandleType,handleType)
+                .set(HandleUserInfo::getHandleTime,handleTime)
                 .set(HandleUserInfo::getFinished,finished);
         return wrapper;
     }
@@ -71,4 +72,23 @@ public class HandleUserInfoQuery {
                 .eq(true,HandleUserInfo::getUserId,staffId);
         return wrapper;
     }
+
+
+    public static LambdaQueryWrapper<HandleUserInfo> getOrderIdByUserIdHandleTypeWrapper(Long userId, List<Integer> handleType, Boolean finished) {
+        LambdaQueryWrapper<HandleUserInfo>wrapper=new LambdaQueryWrapper<HandleUserInfo>()
+                .eq(true,HandleUserInfo::getUserId,userId)
+                .in(true,HandleUserInfo::getHandleType,handleType)
+                .eq(true,HandleUserInfo::getFinished,finished);
+        return wrapper;
+    }
+
+    public static LambdaQueryWrapper<HandleUserInfo> getByHandleDateAndHandleType(Long startTimeFrom, Long startTimeEnd, List<Integer>handleTypes) {
+        LambdaQueryWrapper<HandleUserInfo>wrapper=new LambdaQueryWrapper<HandleUserInfo>()
+                .ge(true,HandleUserInfo::getHandleTime,startTimeFrom)
+                .le(true,HandleUserInfo::getHandleTime,startTimeEnd)
+                .in(true,HandleUserInfo::getHandleType,handleTypes)
+                ;
+        return wrapper;
+    }
 }
+

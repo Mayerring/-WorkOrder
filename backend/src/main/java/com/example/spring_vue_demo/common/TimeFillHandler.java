@@ -13,7 +13,7 @@ import java.time.format.DateTimeFormatter;
  */
 @Component
 public class TimeFillHandler implements MetaObjectHandler {
-    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss");
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Override
     public void insertFill(MetaObject metaObject) {

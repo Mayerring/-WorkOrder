@@ -48,8 +48,8 @@ public class WorkOrderPageParam extends BasePageParam{
     private List<Integer> status;
 
     @Schema(description = "创建时间起")
-    private String createTimeFrom;
+    private Long createTimeFrom;
 
     @Schema(description = "创建时间止")
-    private String createTimeTo;
+    private Long createTimeTo;
 }

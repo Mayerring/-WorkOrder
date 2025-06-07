@@ -19,7 +19,7 @@ import java.time.format.DateTimeParseException;
  */
 public class TimeTypeHandler extends BaseTypeHandler<String> {
 
-   private final  DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")
+   private final  DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
             .withZone(ZoneId.systemDefault());
 
     @Override

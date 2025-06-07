@@ -110,7 +110,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         workOrderHelper.checkAssignedUserInfoExist(workOrder,param.getAssignedUserId(),handleType);
         //添加操作信息
         workOrderHelper.addHandleInfo(workOrder.getId(), handleType, param.getAssignedUserId(),param.getRemark());
-        //更新操作信息完成状态
+        //更新操作信息完成状态和处理时间
         workOrderHelper.updateFinishHandleInfo(workOrder.getId(),handleType);
         //更新工单主表状态
         workOrderHelper.updateNextStatus(handleType,workOrder);
@@ -203,4 +203,5 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         }
 
     }
+    //todo:延时订单
 }
