@@ -29,10 +29,7 @@ import org.springframework.stereotype.Component;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -158,7 +155,7 @@ public class WorkOrderHelper {
         }
     }
 
-    public Message buildMessage(WorkOrderStatusEnum status, String code, Long assignedUserId) {
+    public List<Message> buildMessages(WorkOrderStatusEnum status, String code, List<Long> assignedUserIds) {
         //todo:消息队列
         Message message = new Message();
         String nextHandleType = "";
@@ -190,12 +187,16 @@ public class WorkOrderHelper {
         }
         //设置发送人和接收人id
         Long userId = StaffHolder.get().getId();
-        message.setType(status.getValue());
-        message.setTypeDesc(status.getDesc());
-        message.setSenderId(userId);
-        message.setReceiverId(assignedUserId);
-        message.setSendTime(formatter.format(LocalDateTime.now()));
-        return message;
+        List<Message>messages=new ArrayList<>();
+        assignedUserIds.forEach(assignedUserId->{
+            message.setType(status.getValue());
+            message.setTypeDesc(status.getDesc());
+            message.setSenderId(userId);
+            message.setReceiverId(assignedUserId);
+            message.setSendTime(formatter.format(LocalDateTime.now()));
+            messages.add(message);
+        });
+        return messages;
     }
 
     public void updateNextStatus(HandleTypeEnum handleType, WorkOrder workOrder) {
@@ -270,8 +271,8 @@ public class WorkOrderHelper {
                 throw new UserSideException(ErrorCode.ASSIGNED_USER_EQUALS_CURRENT_USER);
             }
         }
-        if (handleType.equals(HandleTypeEnum.URGE_ORDER) || handleType.equals(HandleTypeEnum.CHECK_SUCCESS)
-                || handleType.equals(HandleTypeEnum.CHECK_FAILURE)) {
+        if ((handleType.equals(HandleTypeEnum.URGE_ORDER) || handleType.equals(HandleTypeEnum.CHECK_SUCCESS)
+                || handleType.equals(HandleTypeEnum.CHECK_FAILURE))&&assignedUserId!=null) {
             throw new UserSideException(ErrorCode.NOT_NEED_ASSIGNED_USER_ID);
         }
 
@@ -358,12 +359,17 @@ public class WorkOrderHelper {
         return handleOrderIds;
     }
 
-    public List<Message> buildMessages(WorkOrderStatusEnum workOrderStatusEnum, String code, List<Long> handleUserIds) {
-        List<Message> messages = new ArrayList<>();
-        handleUserIds.forEach(handleUserId -> {
-                    messages.add(buildMessage(workOrderStatusEnum, code, handleUserId));
-                }
-        );
-        return messages;
+    public List<Long> getReceiverIds(HandleTypeEnum handleType, Long orderId, Long assignedId) {
+        if (handleType.equals(HandleTypeEnum.DISTRIBUTE) || handleType.equals(HandleTypeEnum.APPLY_HELP)) {
+            return List.of(assignedId);
+        }
+        if (handleType.equals(HandleTypeEnum.URGE_ORDER)||handleType.equals(HandleTypeEnum.CHECK_SUCCESS)
+                ||handleType.equals(HandleTypeEnum.CHECK_FAILURE)||handleType.equals(HandleTypeEnum.FINISH)) {
+            LambdaQueryWrapper<HandleUserInfo> wrapper = HandleUserInfoQuery.getHandleTypeWrapper(orderId, handleType.getValue());
+            List<HandleUserInfo> handleUserInfos = handleUserInfoMapper.selectList(wrapper);
+            List<Long>receiverIds = handleUserInfos.stream().map(HandleUserInfo::getUserId).toList();
+            return receiverIds;
+        }
+        return Collections.emptyList();
     }
 }
