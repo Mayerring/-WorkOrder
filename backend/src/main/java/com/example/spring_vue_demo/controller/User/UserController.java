@@ -14,10 +14,18 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserController {
     @Autowired
     private UserService userService;
-    @ApiOperationSupport(order = 3)
+    @ApiOperationSupport(order = 1)
     @Operation(summary = "根据查询员工的信息")
     @PostMapping("belong")
     public Result belong(Long staffId) {
         return userService.belong(staffId);
+    }
+
+    @ApiOperationSupport(order = 2)
+    @Operation(summary = "修改个人信息")
+    @PostMapping("/change")
+    public Result changeInfo()
+    {
+        return Result.error("暂未实现");
     }
 }
