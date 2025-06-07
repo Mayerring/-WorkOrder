@@ -2,9 +2,12 @@ package com.example.spring_vue_demo.service.query;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.spring_vue_demo.entity.WorkOrder;
+import com.example.spring_vue_demo.enums.ErrorCode;
+import com.example.spring_vue_demo.exception.UserSideException;
 import com.example.spring_vue_demo.param.WorkOrderPageParam;
 import io.micrometer.common.util.StringUtils;
 
@@ -39,6 +42,9 @@ public class WorkOrderQuery {
     }
 
     public static LambdaQueryWrapper<WorkOrder> getWorkOrderWrapper(Long id,String code) {
+        if(id==null&&code==null){
+            throw new UserSideException(ErrorCode.ID_AND_CODE_IS_NULL);
+        }
         LambdaQueryWrapper<WorkOrder>wrapper=new LambdaQueryWrapper<WorkOrder>()
                 .eq(Objects.nonNull(id),WorkOrder::getId,id)
                 .eq(StringUtils.isNotBlank(code),WorkOrder::getCode,code);
@@ -70,6 +76,13 @@ public class WorkOrderQuery {
                 .ge(true,"create_time", createTimeFrom)
                 .le(true,"create_time",createTimeTo)
                 .groupBy("status");
+        return wrapper;
+    }
+
+    public static LambdaUpdateWrapper<WorkOrder> getUpdateStatusByIdWrapper(Long orderId, Integer status) {
+        LambdaUpdateWrapper<WorkOrder>wrapper=new LambdaUpdateWrapper<WorkOrder>()
+                .set(true,WorkOrder::getStatus,status)
+                .eq(true,WorkOrder::getId,orderId);
         return wrapper;
     }
 }

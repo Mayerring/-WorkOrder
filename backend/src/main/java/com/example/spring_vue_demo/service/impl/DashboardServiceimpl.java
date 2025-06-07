@@ -157,7 +157,6 @@ public class DashboardServiceimpl implements DashboardService {
         pageWrapper.setSize(param.getPageSize());
         pageWrapper.setCurrent(param.getPageNum());
         IPage<Message> messageIPage = messageMapper.selectPage(pageWrapper, wrapper);
-//        List<Message>messages=messageIPage.getRecords().stream().toList();
         IPage<MessageVO> pageMessageVOS= MessageConverter.INSTANCE.toPageMessageVOS(messageIPage);
         return pageMessageVOS;
     }

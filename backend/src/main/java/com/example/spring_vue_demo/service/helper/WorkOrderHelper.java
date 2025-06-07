@@ -349,4 +349,20 @@ public class WorkOrderHelper {
             throw new UserSideException(ErrorCode.ONLY_SUBMIT_USER_CAN_CANCEL_WORK_ORDER);
         }
     }
+
+    public List<Long> getHandleUserIds(Long orderId) {
+        LambdaQueryWrapper<HandleUserInfo> handleUserInfoWrapper = HandleUserInfoQuery.getHandleTypeWrapper(orderId, WorkOrderStatusEnum.DELAYED.getValue());
+        List<HandleUserInfo>handleUserInfos=handleUserInfoMapper.selectList(handleUserInfoWrapper);
+        List<Long>handleOrderIds=handleUserInfos.stream().map(HandleUserInfo::getOrderId).toList();
+        return handleOrderIds;
+    }
+
+    public List<Message> buildMessages(WorkOrderStatusEnum workOrderStatusEnum, String code, List<Long> handleUserIds) {
+        List<Message>messages=new ArrayList<>();
+                handleUserIds.forEach(handleUserId-> {
+                    messages.add(buildMessage(workOrderStatusEnum,code,handleUserId));
+                }
+        );
+                return messages;
+    }
 }

@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.example.spring_vue_demo.entity.HandleUserInfo;
+import com.example.spring_vue_demo.entity.WorkOrder;
 import com.example.spring_vue_demo.enums.HandleUserInfoHandleTypeEnum;
 import com.example.spring_vue_demo.param.HandleUserInfoParam;
 
@@ -88,6 +89,13 @@ public class HandleUserInfoQuery {
                 .le(true,HandleUserInfo::getHandleTime,startTimeEnd)
                 .in(true,HandleUserInfo::getHandleType,handleTypes)
                 ;
+        return wrapper;
+    }
+
+    public static LambdaQueryWrapper<WorkOrder> getByStatusAndDeadlineTime(Long nowTime, Integer status) {
+        LambdaQueryWrapper<WorkOrder>wrapper=new LambdaQueryWrapper<WorkOrder>()
+                .ge(true,WorkOrder::getDeadlineTime,nowTime)
+                .eq(true,WorkOrder::getStatus,status);
         return wrapper;
     }
 }

@@ -25,7 +25,6 @@ public class LoginController {
     @Operation(summary = "登录")
     @PostMapping("/login")
     public Result login(@RequestBody LoginParam loginParam) {
-
         return loginService.login(loginParam);
     }
     @ApiOperationSupport(order = 1)
