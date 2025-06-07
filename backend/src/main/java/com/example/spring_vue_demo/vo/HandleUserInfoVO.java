@@ -31,13 +31,13 @@ public class HandleUserInfoVO {
     private String userName;
 
     @Schema(description = "公司编码")
-    private Long companyCode;
+    private String companyCode;
 
     @Schema(description = "公司名")
     private String companyName;
 
     @Schema(description = "部门编码")
-    private Long departmentCode;
+    private String departmentCode;
 
     @Schema(description = "部门名")
     private String departmentName;

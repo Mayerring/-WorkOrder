@@ -277,24 +277,25 @@ public class WorkOrderHelper {
 
     }
 
-    public void updateFinishHandleInfo(Long orderId, HandleTypeEnum handleType) {
-        Long handleTime=LocalDateTime.now().atZone(ZoneId.systemDefault()).toEpochSecond();
+    public void updateFinishHandleInfo(WorkOrder workOrder, HandleTypeEnum handleType) {
+        Long orderId = workOrder.getId();
+        Long handleTime = LocalDateTime.now().atZone(ZoneId.systemDefault()).toEpochSecond();
         if (handleType.equals(HandleTypeEnum.DISTRIBUTE)) {
             //筛选本用户对应状态的操作信息
             Long staffId = StaffHolder.get().getId();
-            LambdaUpdateWrapper<HandleUserInfo> wrapper = HandleUserInfoQuery.getUpdateStatusWrapper(orderId, List.of(staffId), HandleUserInfoHandleTypeEnum.DISTRIBUTE.getValue(), Boolean.TRUE,handleTime);
+            LambdaUpdateWrapper<HandleUserInfo> wrapper = HandleUserInfoQuery.getUpdateStatusWrapper(orderId, List.of(staffId), HandleUserInfoHandleTypeEnum.DISTRIBUTE.getValue(), Boolean.TRUE, handleTime);
             handleUserInfoMapper.update(wrapper);
         } else if (handleType.equals(HandleTypeEnum.FINISH) || handleType.equals(HandleTypeEnum.CHECK_SUCCESS)) {
             //筛选本用户对应状态的操作信息
             Long staffId = StaffHolder.get().getId();
-            LambdaUpdateWrapper<HandleUserInfo> wrapper = HandleUserInfoQuery.getUpdateStatusWrapper(orderId, List.of(staffId), HandleUserInfoHandleTypeEnum.HANDLE.getValue(), Boolean.TRUE,handleTime);
+            LambdaUpdateWrapper<HandleUserInfo> wrapper = HandleUserInfoQuery.getUpdateStatusWrapper(orderId, List.of(staffId), HandleUserInfoHandleTypeEnum.HANDLE.getValue(), Boolean.TRUE, handleTime);
             handleUserInfoMapper.update(wrapper);
         } else if (handleType.equals(HandleTypeEnum.CHECK_FAILURE)) {
             //回退所有处理完成状态的操作信息
             LambdaQueryWrapper<HandleUserInfo> handleTypeWrapper = HandleUserInfoQuery.getHandleTypeWrapper(orderId, HandleUserInfoHandleTypeEnum.HANDLE.getValue());
             List<HandleUserInfo> handleUserInfos = handleUserInfoMapper.selectList(handleTypeWrapper);
             List<Long> handleUserIds = handleUserInfos.stream().map(HandleUserInfo::getUserId).collect(Collectors.toList());
-            LambdaUpdateWrapper<HandleUserInfo> wrapper = HandleUserInfoQuery.getUpdateStatusWrapper(orderId, handleUserIds, HandleUserInfoHandleTypeEnum.HANDLE.getValue(), Boolean.FALSE,null);
+            LambdaUpdateWrapper<HandleUserInfo> wrapper = HandleUserInfoQuery.getUpdateStatusWrapper(orderId, handleUserIds, HandleUserInfoHandleTypeEnum.HANDLE.getValue(), Boolean.FALSE, null);
             handleUserInfoMapper.update(wrapper);
         }
     }
@@ -302,9 +303,9 @@ public class WorkOrderHelper {
     public void checkAssignedUserInfoExist(WorkOrder workOrder, Long assignedUserId, HandleTypeEnum handleType) {
         if (assignedUserId != null && (handleType.equals(HandleTypeEnum.DISTRIBUTE) || handleType.equals(HandleTypeEnum.APPLY_HELP))) {
             HandleUserInfoHandleTypeEnum handleUserInfoHandleType = HandleUserInfoHandleTypeEnum.HANDLE;
-            LambdaQueryWrapper<HandleUserInfo> wrapper = HandleUserInfoQuery.getHandleTypeUserIdWrapper(workOrder.getId(),handleUserInfoHandleType.getValue(),assignedUserId);
+            LambdaQueryWrapper<HandleUserInfo> wrapper = HandleUserInfoQuery.getHandleTypeUserIdWrapper(workOrder.getId(), handleUserInfoHandleType.getValue(), assignedUserId);
             List<HandleUserInfo> handleUserInfos = handleUserInfoMapper.selectList(wrapper);
-            if(CollectionUtils.isNotEmpty(handleUserInfos)){
+            if (CollectionUtils.isNotEmpty(handleUserInfos)) {
                 throw new UserSideException(ErrorCode.ASSIGNED_USER_ALREADY_EXIST);
             }
         }
@@ -336,33 +337,33 @@ public class WorkOrderHelper {
 
 
     public void checkCancelWorkOrderStatus(WorkOrder workOrder) {
-        if(workOrder.getStatus()>=WorkOrderStatusEnum.FINISHED.getValue()){
+        if (workOrder.getStatus() >= WorkOrderStatusEnum.FINISHED.getValue()) {
             throw new UserSideException(ErrorCode.AFTER_FINISHED_NOT_ALLOW_CANCELLED);
         }
     }
 
     public void checkCancelUser(WorkOrder workOrder) {
-        Long cancelUserId=StaffHolder.get().getId();
-        LambdaQueryWrapper<HandleUserInfo>wrapper=HandleUserInfoQuery.getHandleTypeWrapper(workOrder.getId(),HandleUserInfoHandleTypeEnum.SUBMIT.getValue());
-        HandleUserInfo submitInfo=handleUserInfoMapper.selectOne(wrapper);
-        if(submitInfo==null||!submitInfo.getUserId().equals(cancelUserId)){
+        Long cancelUserId = StaffHolder.get().getId();
+        LambdaQueryWrapper<HandleUserInfo> wrapper = HandleUserInfoQuery.getHandleTypeWrapper(workOrder.getId(), HandleUserInfoHandleTypeEnum.SUBMIT.getValue());
+        HandleUserInfo submitInfo = handleUserInfoMapper.selectOne(wrapper);
+        if (submitInfo == null || !submitInfo.getUserId().equals(cancelUserId)) {
             throw new UserSideException(ErrorCode.ONLY_SUBMIT_USER_CAN_CANCEL_WORK_ORDER);
         }
     }
 
     public List<Long> getHandleUserIds(Long orderId) {
         LambdaQueryWrapper<HandleUserInfo> handleUserInfoWrapper = HandleUserInfoQuery.getHandleTypeWrapper(orderId, WorkOrderStatusEnum.DELAYED.getValue());
-        List<HandleUserInfo>handleUserInfos=handleUserInfoMapper.selectList(handleUserInfoWrapper);
-        List<Long>handleOrderIds=handleUserInfos.stream().map(HandleUserInfo::getOrderId).toList();
+        List<HandleUserInfo> handleUserInfos = handleUserInfoMapper.selectList(handleUserInfoWrapper);
+        List<Long> handleOrderIds = handleUserInfos.stream().map(HandleUserInfo::getOrderId).toList();
         return handleOrderIds;
     }
 
     public List<Message> buildMessages(WorkOrderStatusEnum workOrderStatusEnum, String code, List<Long> handleUserIds) {
-        List<Message>messages=new ArrayList<>();
-                handleUserIds.forEach(handleUserId-> {
-                    messages.add(buildMessage(workOrderStatusEnum,code,handleUserId));
+        List<Message> messages = new ArrayList<>();
+        handleUserIds.forEach(handleUserId -> {
+                    messages.add(buildMessage(workOrderStatusEnum, code, handleUserId));
                 }
         );
-                return messages;
+        return messages;
     }
 }

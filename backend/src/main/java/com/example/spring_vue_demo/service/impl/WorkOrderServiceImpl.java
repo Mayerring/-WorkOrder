@@ -116,7 +116,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         //添加操作信息
         workOrderHelper.addHandleInfo(workOrder.getId(), handleType, param.getAssignedUserId(), param.getRemark());
         //更新操作信息完成状态和处理时间
-        workOrderHelper.updateFinishHandleInfo(workOrder.getId(), handleType);
+        workOrderHelper.updateFinishHandleInfo(workOrder, handleType);
         //更新工单主表状态
         workOrderHelper.updateNextStatus(handleType, workOrder);
         boolean updateSuccess = updateById(workOrder);
