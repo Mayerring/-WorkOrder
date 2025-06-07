@@ -9,8 +9,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class AddDepartmentParam {
     private String name;
-    private String code;
-    private String parentDepartmentCode;
-    private String companyCode;
-    private String leaderNumber;
+    private String parentDepartmentName;
+    private String companyName;
+    private String leaderName;
 }

@@ -9,5 +9,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class AddDepartmentVO {
     private int id;
-    private String companyCode;
+    private String departmentCode;
+    private String leaderNumber;
 }

@@ -56,4 +56,11 @@ public class StaffController {
     {
         return Result.error("暂未实现");
     }
+
+    @ApiOperationSupport(order = 5)
+    @Operation(summary = "所有员工")
+    @PostMapping("/all")
+    public Result all(){
+        return Result.error("暂未实现");
+    }
 }
