@@ -44,7 +44,7 @@ public class WorkOrderPageParam extends BasePageParam{
     @Schema(description = "优先级，0高，1中，2低")
     private Integer priorityLevel;
 
-    @Schema(description = "状态，100未审核，200审核中，300未派单，400处理中，410已超时，500已完成，600已确认完成，700已取消，810审核失败，820确认失败")
+    @Schema(description = "状态，100未审核，200审核中，270审核失败，300未派单，400处理中，410已超时，500已完成，600已确认完成，670确认失败，700已取消")
     private List<Integer> status;
 
     @Schema(description = "创建时间起")
