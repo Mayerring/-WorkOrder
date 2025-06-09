@@ -76,8 +76,11 @@ public class WorkOrderController {
     @ApiOperationSupport(order = 7)
     @Operation(summary = "指定审核人")
     @PostMapping("/dispatch")
-    public Result dispatchToAuditor()
+    public Result dispatchToAuditor(@RequestBody WorkOrderDispatchParam param)
     {
-        return null;
+        return workOrderService.dispatchToAuditor(param);
     }
+
+
+
 }

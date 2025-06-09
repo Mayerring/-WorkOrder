@@ -20,6 +20,7 @@ public enum HandleTypeEnum {
     CHECK_SUCCESS(5,"确认完成"),
     CHECK_FAILURE(6,"仍有问题"),
     CREATED(7,"创建成功"),
+    AUDIT(8,"审核")
     ;
 
     private final Integer value;

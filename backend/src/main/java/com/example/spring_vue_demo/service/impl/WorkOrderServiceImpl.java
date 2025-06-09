@@ -1,6 +1,7 @@
 package com.example.spring_vue_demo.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
@@ -11,6 +12,7 @@ import com.example.spring_vue_demo.enums.HandleTypeEnum;
 import com.example.spring_vue_demo.enums.HandleUserInfoHandleTypeEnum;
 import com.example.spring_vue_demo.enums.WorkOrderStatusEnum;
 import com.example.spring_vue_demo.mapper.MessageMapper;
+import com.example.spring_vue_demo.mapper.StaffMapper;
 import com.example.spring_vue_demo.mapper.WorkOrderMapper;
 import com.example.spring_vue_demo.param.*;
 import com.example.spring_vue_demo.param.WorkOrderDetailParam;
@@ -28,6 +30,7 @@ import com.example.spring_vue_demo.service.query.HandleUserInfoQuery;
 import com.example.spring_vue_demo.service.query.WorkOrderQuery;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
+import lombok.val;
 import org.apache.ibatis.executor.BatchResult;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -38,6 +41,8 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 import java.util.*;
+
+import static com.example.spring_vue_demo.enums.WorkOrderStatusEnum.AUDITING;
 
 /**
  * @author wtt
@@ -57,6 +62,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     private final WorkOrderHelper workOrderHelper;
     private final HandleUserInfoService iHandleUserInfoService;
     private final MessageMapper messageMapper;
+    private final StaffMapper staffMapper;
 
     @Override
     public IPage<WorkOrderPageVO> pageWorkOrder(WorkOrderPageParam param) {
@@ -208,13 +214,13 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
             Staff staff = StaffHolder.get();
             workOrderHelper.addHandleInfo(workOrder.getId(),HandleTypeEnum.CREATED,
                     0L,workOrder.getContent());
-            //更新handle_log表
             //发送信息
             Message message = workOrderHelper.buildMessage(WorkOrderStatusEnum.getByValue(workOrder.getStatus()), workOrder.getCode(),staff.getId());
             int msgSuccess = messageMapper.insert(message);
             if(msgSuccess != 1){
                 return Result.error("创建失败");
             }
+            workOrderCreateVO.setAuditId(findAuditId(staff.getId()));
             return Result.success(workOrderCreateVO);
         } else {
             return Result.error("创建失败");
@@ -222,7 +228,51 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
 
     }
 
+    private Long findAuditId(Long staffId) {
+        //第一个审核人是部门主管
+        Staff staff = staffMapper.selectOne(
+                new QueryWrapper<Staff>().eq("id", staffId)
+        );
+        if(staff == null){
+            return null;
+        }
+        if(staff.getManagerNumber() == null){
+            return staff.getId();
+        } else
+        {
+            Staff manager = staffMapper.selectOne(
+                    new QueryWrapper<Staff>().eq("staff_number", staff.getManagerNumber())
+            );
+            return manager.getId();
+        }
+    }
 
+    @Transactional
+    @Override
+    public Result dispatchToAuditor(WorkOrderDispatchParam param) {
+        HandleTypeEnum handleType = HandleTypeEnum.AUDIT;
+        //校验工单id和code不能全为空
+        workOrderHelper.checkIdAndCodeNotNull(param.getId(), param.getCode());
+        //查询工单，如果不存在返回错误信息
+        LambdaQueryWrapper<WorkOrder> workOrderWrapper = WorkOrderQuery.getWorkOrderWrapper(param.getId(), param.getCode());
+        WorkOrder workOrder = getOne(workOrderWrapper);
+        workOrderHelper.checkWorkOrderExist(workOrder);
+        //更新状态为待审核
+        workOrderHelper.updateNextStatus(HandleTypeEnum.CREATED,workOrder);
+        //todo 向指定的审核人发送信息
+        Message message=workOrderHelper.buildMessage(AUDITING, workOrder.getCode(), workOrder.getId());
+        int msgSuccess = messageMapper.insert(message);
+        if(msgSuccess != 1){
+            return Result.error("发送消息失败");
+        }
+        //添加操作信息
+        workOrderHelper.addHandleInfo(workOrder.getId(), handleType, param.getAuditId(), "");
+        WorkOrderDispatchVO workOrderDispatchVO = new WorkOrderDispatchVO();
+        workOrderDispatchVO.setId(workOrder.getId());
+        workOrderDispatchVO.setCode(workOrder.getCode());
+        workOrderDispatchVO.setIsSuccess(Boolean.TRUE);
+        return Result.success(workOrderDispatchVO);
+    }
     //5min检查一次数据库中延迟的工单
     @Scheduled(fixedRate = 5 * 60 * 1000)
     @Transactional

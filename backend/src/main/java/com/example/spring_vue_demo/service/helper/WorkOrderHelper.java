@@ -214,6 +214,9 @@ public class WorkOrderHelper {
         //催单和协助帮忙不需要更新状态
         WorkOrderStatusEnum statusEnum = WorkOrderStatusEnum.getByValue(workOrder.getStatus());
         switch (handleType) {
+            case CREATED->{
+                statusEnum = WorkOrderStatusEnum.AUDITING;
+            }
             case DISTRIBUTE -> {
                 statusEnum = WorkOrderStatusEnum.HANDLING;
             }
@@ -293,6 +296,23 @@ public class WorkOrderHelper {
             handleUserInfo.setHandleTime(formatter.format(LocalDateTime.now()));
             handleUserInfo.setUpdateTime(formatter.format(LocalDateTime.now()));
 
+            handleUserInfoMapper.insert(handleUserInfo);
+        }else if(handleTypeEnum.equals(HandleTypeEnum.AUDIT)){
+            HandleUserInfo handleUserInfo = new HandleUserInfo();
+            handleUserInfo.setUserId(assignedUserId);
+            //查询被分配人的信息并填充
+            Staff staff = staffMapper.selectById(assignedUserId);
+            handleUserInfo.setUserName(staff.getName());
+            handleUserInfo.setCompanyCode(staff.getCompanyCode());
+            handleUserInfo.setCompanyName(staff.getCompany());
+            handleUserInfo.setDepartmentCode(staff.getDepartmentCode());
+            handleUserInfo.setDepartmentName(staff.getDepartment());
+            handleUserInfo.setOrderId(orderId);
+            handleUserInfo.setFinished(Boolean.FALSE);
+            handleUserInfo.setHandleType(HandleUserInfoHandleTypeEnum.AUDIT.getValue());
+            handleUserInfo.setFinished(Boolean.FALSE);
+            handleUserInfo.setHandleTime(formatter.format(LocalDateTime.now()));
+            handleUserInfo.setUpdateTime(formatter.format(LocalDateTime.now()));
             handleUserInfoMapper.insert(handleUserInfo);
         }
     }
