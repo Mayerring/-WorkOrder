@@ -73,4 +73,11 @@ public class WorkOrderController {
         return workOrderService.create(param);
     }
 
+    @ApiOperationSupport(order = 7)
+    @Operation(summary = "指定审核人")
+    @PostMapping("/dispatch")
+    public Result dispatchToAuditor()
+    {
+        return null;
+    }
 }

@@ -6,10 +6,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.example.spring_vue_demo.entity.Message;
-import com.example.spring_vue_demo.entity.Result;
-import com.example.spring_vue_demo.entity.HandleUserInfo;
-import com.example.spring_vue_demo.entity.WorkOrder;
+import com.example.spring_vue_demo.entity.*;
 import com.example.spring_vue_demo.enums.HandleTypeEnum;
 import com.example.spring_vue_demo.enums.HandleUserInfoHandleTypeEnum;
 import com.example.spring_vue_demo.enums.WorkOrderStatusEnum;
@@ -23,6 +20,7 @@ import com.example.spring_vue_demo.service.HandleUserInfoService;
 import com.example.spring_vue_demo.service.MessageService;
 import com.example.spring_vue_demo.service.WorkOrderService;
 import com.example.spring_vue_demo.utils.OrderCodeUtils;
+import com.example.spring_vue_demo.utils.StaffHolder;
 import com.example.spring_vue_demo.vo.*;
 import com.example.spring_vue_demo.service.convert.WorkOrderConverter;
 import com.example.spring_vue_demo.service.helper.WorkOrderHelper;
@@ -45,6 +43,13 @@ import java.util.*;
  * @author wtt
  * @date 2025/05/24
  */
+
+/**
+ *
+ * @author WangDayu
+ * @date 2025/6/9
+ */
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -160,7 +165,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         WorkOrderUpdateStatusVO vo = workOrderHelper.setUpdateReturnVO(success, workOrder.getCode(), workOrder.getId());
         return vo;
     }
-
+    @Transactional
     @Override
     public Result create(WorkOrderCreateParam param) {
         //参数校验
@@ -173,11 +178,11 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         workOrder.setTitle(param.getTitle());
         workOrder.setContent(param.getContent());
         workOrder.setPriorityLevel(param.getPriorityLevel());
-        workOrder.setStatus(100);
+        workOrder.setStatus(100); //待审核
         workOrder.setContent(param.getContent());
         //时间
         LocalDateTime now = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
                 .withZone(ZoneId.systemDefault());
         String formatNow = formatter.format(now.atZone(ZoneId.systemDefault()).toInstant());
         log.debug(formatNow);
@@ -191,18 +196,32 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
             workOrder.setAccessoryUrl(param.getAccessoryUrl());
             workOrder.setAccessoryName(param.getAccessoryName());
         }
-
+        //更新工单表
         boolean isSaved = this.save(workOrder);
+
+        //更新handle_log表
         if (isSaved) {
             WorkOrderCreateVO workOrderCreateVO = new WorkOrderCreateVO();
             workOrderCreateVO.setId(workOrder.getId());
             workOrderCreateVO.setCode(workOrder.getCode());
+            //更新handle_user_info表
+            Staff staff = StaffHolder.get();
+            workOrderHelper.addHandleInfo(workOrder.getId(),HandleTypeEnum.CREATED,
+                    0L,workOrder.getContent());
+            //更新handle_log表
+            //发送信息
+            Message message = workOrderHelper.buildMessage(WorkOrderStatusEnum.getByValue(workOrder.getStatus()), workOrder.getCode(),staff.getId());
+            int msgSuccess = messageMapper.insert(message);
+            if(msgSuccess != 1){
+                return Result.error("创建失败");
+            }
             return Result.success(workOrderCreateVO);
         } else {
             return Result.error("创建失败");
         }
 
     }
+
 
     //5min检查一次数据库中延迟的工单
     @Scheduled(fixedRate = 5 * 60 * 1000)

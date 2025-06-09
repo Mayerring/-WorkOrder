@@ -31,8 +31,6 @@ public class WorkOrderCreateParam {
     private String title;
     @Schema(description = "详情")
     private String content;
-    @Schema(description = "提交信息")
-    private HandleUserInfo submitterInfo;
 
     @Schema(description = "优先级，0高，1中，2低")
     private Integer priorityLevel;

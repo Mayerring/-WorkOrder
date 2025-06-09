@@ -1,19 +1,19 @@
 package com.example.spring_vue_demo.service.helper;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.example.spring_vue_demo.entity.HandleUserInfo;
-import com.example.spring_vue_demo.entity.Message;
-import com.example.spring_vue_demo.entity.Staff;
-import com.example.spring_vue_demo.entity.WorkOrder;
+import com.example.spring_vue_demo.entity.*;
 import com.example.spring_vue_demo.enums.ErrorCode;
 import com.example.spring_vue_demo.enums.HandleTypeEnum;
 import com.example.spring_vue_demo.enums.HandleUserInfoHandleTypeEnum;
 import com.example.spring_vue_demo.enums.WorkOrderStatusEnum;
 import com.example.spring_vue_demo.exception.UserSideException;
+import com.example.spring_vue_demo.mapper.CompanyMapper;
+import com.example.spring_vue_demo.mapper.DepartmentMapper;
 import com.example.spring_vue_demo.mapper.HandleUserInfoMapper;
 import com.example.spring_vue_demo.mapper.StaffMapper;
 import com.example.spring_vue_demo.param.HandleUserInfoParam;
@@ -24,6 +24,7 @@ import com.example.spring_vue_demo.utils.StaffHolder;
 import com.example.spring_vue_demo.vo.WorkOrderPageVO;
 import com.example.spring_vue_demo.vo.WorkOrderUpdateStatusVO;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -39,11 +40,14 @@ import java.util.stream.Collectors;
  * @author wtt
  * @date 2025/05/31
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class WorkOrderHelper {
     private final HandleUserInfoMapper handleUserInfoMapper;
     private final StaffMapper staffMapper;
+    private final CompanyMapper companyMapper;
+    private final DepartmentMapper departmentMapper;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private void gatherQueryWorkOrderId(List<HandleUserInfo> handleUserInfos, List<HandleUserInfoParam> userInfoParams, HandleUserInfoHandleTypeEnum userInfoType) {
@@ -163,6 +167,14 @@ public class WorkOrderHelper {
         Message message = new Message();
         String nextHandleType = "";
         switch (status) {
+            case UNAUDITED->{
+                message.setContent(("编号为"+code+"的工单已成功创建，等待审核"));
+                break;
+            }
+            case AUDITING->{
+                message.setContent(("编号为"+code+"的工单需要您审核"));
+                break;
+            }
             case UNDISTRIBUTED -> {
                 message.setContent("编号为" + code + "的工单已经审核完毕，需要您派单。");
                 break;
@@ -253,6 +265,34 @@ public class WorkOrderHelper {
             }
             handleUserInfo.setFinished(Boolean.FALSE);
             handleUserInfo.setHandleTime(formatter.format(LocalDateTime.now()));
+            handleUserInfoMapper.insert(handleUserInfo);
+        }
+        else if(handleTypeEnum.equals(HandleTypeEnum.CREATED))
+        {
+            HandleUserInfo handleUserInfo = new HandleUserInfo();
+            Staff staff = StaffHolder.get();//获取当前用户
+            log.debug(staff.toString());
+            handleUserInfo.setUserName(staff.getName());
+            handleUserInfo.setCompanyName(staff.getCompany());
+            Company company = companyMapper.selectOne(
+                    new QueryWrapper<Company>().eq("name", staff.getCompany()));
+            handleUserInfo.setCompanyCode(company.getCode());
+            handleUserInfo.setDepartmentName(staff.getDepartment());
+            Department department = departmentMapper.selectOne(
+                    new QueryWrapper<Department>().eq("name", staff.getDepartment())
+                            .eq("company_code", company.getCode())
+            );
+            handleUserInfo.setDepartmentCode(department.getCode());
+            handleUserInfo.setOrderId(orderId);
+            handleUserInfo.setUserId(staff.getId());
+            handleUserInfo.setRemark(remark);
+            handleUserInfo.setFinished(Boolean.FALSE);
+            handleUserInfo.setHandleType(HandleUserInfoHandleTypeEnum.SUBMIT.getValue());
+            handleUserInfo.setFinished(Boolean.TRUE);
+            handleUserInfo.setCreateTime(formatter.format(LocalDateTime.now()));
+            handleUserInfo.setHandleTime(formatter.format(LocalDateTime.now()));
+            handleUserInfo.setUpdateTime(formatter.format(LocalDateTime.now()));
+
             handleUserInfoMapper.insert(handleUserInfo);
         }
     }
