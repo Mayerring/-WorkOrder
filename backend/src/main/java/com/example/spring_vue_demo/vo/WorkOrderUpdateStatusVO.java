@@ -1,7 +1,9 @@
 package com.example.spring_vue_demo.vo;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 import java.util.List;
 
@@ -11,8 +13,12 @@ import java.util.List;
  */
 @Data
 @AllArgsConstructor
+@NoArgsConstructor
 public class WorkOrderUpdateStatusVO {
-    private List<String> successCodes;
-    private List<String> failureCodes;
-    private String failureMessage;
+    @Schema(description = "成功flag")
+    private boolean success;
+    @Schema(description = "处理工单id")
+    private Long id;
+    @Schema(description = "处理工单code")
+    private String code;
 }

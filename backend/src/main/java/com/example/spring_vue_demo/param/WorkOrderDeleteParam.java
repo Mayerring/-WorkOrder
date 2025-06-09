@@ -5,10 +5,10 @@ import lombok.Data;
 
 /**
  * @author wtt
- * @date 2025/05/24
+ * @date 2025/06/02
  */
 @Data
-public class WorkOrderDetailParam {
+public class WorkOrderDeleteParam {
     @Schema(description = "工单id")
     private Long id;
 

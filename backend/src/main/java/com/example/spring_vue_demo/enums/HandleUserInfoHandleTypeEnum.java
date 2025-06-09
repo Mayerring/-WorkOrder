@@ -1,17 +1,20 @@
 package com.example.spring_vue_demo.enums;
 
+import lombok.Getter;
+
 import java.util.Objects;
 
 /**
  * @author wtt
  * @date 2025/05/31
  */
+@Getter
 public enum HandleUserInfoHandleTypeEnum {
-    SUBMITTER(1,"提交人"),
-    AUDITOR(2,"审核人"),
-    DISTRIBUTOR(3,"派单人"),
-    HANDLER(4,"处理人"),
-    CHECKER(5,"确认人")
+    SUBMIT(1,"提交"),
+    AUDIT(2,"审核"),
+    DISTRIBUTE(3,"派单"),
+    HANDLE(4,"处理"),
+    CHECK(5,"确认")
     ;
     private final Integer value;
     private final String desc;
@@ -28,8 +31,4 @@ public enum HandleUserInfoHandleTypeEnum {
         return null;
     }
 
-    public Integer getValue(){
-        return value;
-    }
-    public String getDesc(){return desc;}
 }

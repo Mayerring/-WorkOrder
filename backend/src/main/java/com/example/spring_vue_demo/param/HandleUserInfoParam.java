@@ -16,9 +16,9 @@ public class HandleUserInfoParam {
     @Schema(description = "操作类型")
     private Integer handleType;
 
-    @Schema(description = "公司id")
-    private Long companyId;
+    @Schema(description = "公司编码")
+    private String companyCode;
 
-    @Schema(description = "部门id")
-    private Long departmentId;
+    @Schema(description = "部门编码")
+    private String departmentCode;
 }
