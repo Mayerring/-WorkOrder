@@ -177,7 +177,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         //参数校验
         if (param == null || StringUtils.isBlank(param.getTitle())
                 || param.getType() == null || param.getPriorityLevel() == null
-                || param.getDistributeId() == null || param.getExecuteId() == null) {
+                || param.getDistributeId() == null || param.getCheckId() == null) {
             return Result.error("信息不完整");
         }
         WorkOrder workOrder = workOrderHelper.createWorkOrder(param);
@@ -190,7 +190,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         Staff staff = StaffHolder.get();
         workOrderHelper.addHandleInfo(workOrder.getId(),HandleTypeEnum.CREATED,
                 0L,workOrder.getContent());
-        workOrderHelper.addDistributeAndCheckInfo(workOrder.getId(),param.getDistributeId(),param.getExecuteId());
+        workOrderHelper.addDistributeAndCheckInfo(workOrder.getId(),param.getDistributeId(),param.getCheckId());
 
         //发送信息
         Message message = workOrderHelper.buildMessage(WorkOrderStatusEnum.getByValue(workOrder.getStatus()), workOrder.getCode(),staff.getId());

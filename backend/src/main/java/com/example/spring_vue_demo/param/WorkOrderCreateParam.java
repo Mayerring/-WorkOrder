@@ -38,8 +38,8 @@ public class WorkOrderCreateParam {
     @Schema(description = "分配人id")
     private Long distributeId;
 
-    @Schema(description = "执行人id")
-    private Long executeId;
+    @Schema(description = "验收人id")
+    private Long checkId;
 
     @Schema(description = "附件url")
     private String accessoryUrl;
