@@ -13,6 +13,7 @@ import com.example.spring_vue_demo.entity.WorkOrder;
 import com.example.spring_vue_demo.enums.HandleTypeEnum;
 import com.example.spring_vue_demo.enums.HandleUserInfoHandleTypeEnum;
 import com.example.spring_vue_demo.enums.WorkOrderStatusEnum;
+import com.example.spring_vue_demo.mapper.HandleUserInfoMapper;
 import com.example.spring_vue_demo.mapper.MessageMapper;
 import com.example.spring_vue_demo.mapper.WorkOrderMapper;
 import com.example.spring_vue_demo.param.*;
@@ -52,6 +53,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     private final WorkOrderHelper workOrderHelper;
     private final HandleUserInfoService iHandleUserInfoService;
     private final MessageMapper messageMapper;
+    private final HandleUserInfoMapper handleUserInfoMapper;
 
     @Override
     public IPage<WorkOrderPageVO> pageWorkOrder(WorkOrderPageParam param) {
@@ -97,6 +99,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     @Override
     @Transactional
     public WorkOrderUpdateStatusVO handleWorkOrder(WorkOrderHandleParam param) {
+        //todo:用户改成批量请求协助
         HandleTypeEnum handleType = HandleTypeEnum.getByValue(param.getHandleType());
         assert handleType != null;
         //校验工单id和code不能全为空
@@ -115,18 +118,27 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         workOrderHelper.checkAssignedUserInfoExist(workOrder, param.getAssignedUserId(), handleType);
         //添加操作信息
         workOrderHelper.addHandleInfo(workOrder.getId(), handleType, param.getAssignedUserId(), param.getRemark());
-        //更新操作信息完成状态和处理时间
-        workOrderHelper.updateFinishHandleInfo(workOrder, handleType);
+        //更新操作信息完成状态、处理时间、备注
+        workOrderHelper.updateFinishHandleInfo(workOrder, handleType, param.getRemark());
+        //已完成状态需要所有处理人都完成才更新工单状态、发送已完成信息
+        boolean finished = true;
+        if (handleType.equals(HandleTypeEnum.FINISH)) {
+            LambdaQueryWrapper<HandleUserInfo> wrapper = HandleUserInfoQuery.getHandleTypeWrapper(workOrder.getId(), HandleUserInfoHandleTypeEnum.HANDLE.getValue());
+            List<HandleUserInfo> handleUserInfos = handleUserInfoMapper.selectList(wrapper);
+            finished = workOrderHelper.checkAllFinishedBeforeUpdateStatus(handleUserInfos);
+        }
         //更新工单主表状态
-        workOrderHelper.updateNextStatus(handleType, workOrder);
+        workOrderHelper.updateNextStatus(handleType, workOrder, finished);
         boolean updateSuccess = updateById(workOrder);
         //发送信息
-        Message message = workOrderHelper.buildMessage(WorkOrderStatusEnum.getByValue(workOrder.getStatus()), workOrder.getCode(), param.getAssignedUserId());
-        int msgSuccess = messageMapper.insert(message);
+        List<Long> receiverIds = workOrderHelper.getReceiverIds(handleType, workOrder.getId(), param.getAssignedUserId());
+        List<Message> messages = workOrderHelper.buildMessages(WorkOrderStatusEnum.getByValue(workOrder.getStatus()), workOrder.getCode(), receiverIds, finished);
+        List<BatchResult> msgSuccess = messageMapper.insert(messages);
         //构建返回VO
-        WorkOrderUpdateStatusVO vo = workOrderHelper.setUpdateReturnVO(updateSuccess && msgSuccess==1, workOrder.getCode(), workOrder.getId());
+        WorkOrderUpdateStatusVO vo = workOrderHelper.setUpdateReturnVO(updateSuccess, workOrder.getCode(), workOrder.getId());
         return vo;
     }
+
 
     @Override
     public WorkOrderUpdateStatusVO deleteOrder(WorkOrderDeleteParam param) {
@@ -218,10 +230,10 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
             LambdaUpdateWrapper<WorkOrder> updateWrapper = WorkOrderQuery.getUpdateStatusByIdWrapper(order.getId(), WorkOrderStatusEnum.DELAYED.getValue());
             update(updateWrapper);
             // 查工单的处理人
-            List<Long>handleUserIds=workOrderHelper.getHandleUserIds(order.getId());
+            List<Long> handleUserIds = workOrderHelper.getHandleUserIds(order.getId());
             // 发送通知给用户
-            List<Message> messages = workOrderHelper.buildMessages(WorkOrderStatusEnum.DELAYED, order.getCode(),handleUserIds );
-            List<BatchResult> success=messageMapper.insert(messages);
+            List<Message> messages = workOrderHelper.buildMessages(WorkOrderStatusEnum.DELAYED, order.getCode(), handleUserIds, true);
+            List<BatchResult> success = messageMapper.insert(messages);
         }
         log.info("已完成一次延期工单扫描");
     }

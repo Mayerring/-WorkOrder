@@ -16,86 +16,87 @@ import java.util.List;
  */
 public class HandleUserInfoQuery {
     public static LambdaQueryWrapper<HandleUserInfo> getWorkOrderPageWrapper(List<HandleUserInfoParam> handleUserInfos, Integer type) {
-        List<Long>userIds = handleUserInfos.stream().map(HandleUserInfoParam::getUserId).toList();
-        List<String>departmentCodes=handleUserInfos.stream().map(HandleUserInfoParam::getDepartmentCode).toList();
-        List<String>companyCodes=handleUserInfos.stream().map(HandleUserInfoParam::getCompanyCode).toList();
-        LambdaQueryWrapper<HandleUserInfo>wrapper=new LambdaQueryWrapper<HandleUserInfo>()
-                .eq(true,HandleUserInfo::getHandleType,type)
-                .in(CollectionUtils.isNotEmpty(userIds),HandleUserInfo::getUserId,userIds)
-                .in(CollectionUtils.isNotEmpty(departmentCodes),HandleUserInfo::getDepartmentCode,departmentCodes)
-                .in(CollectionUtils.isNotEmpty(companyCodes),HandleUserInfo::getCompanyCode,departmentCodes);
+        List<Long> userIds = handleUserInfos.stream().map(HandleUserInfoParam::getUserId).toList();
+        List<String> departmentCodes = handleUserInfos.stream().map(HandleUserInfoParam::getDepartmentCode).toList();
+        List<String> companyCodes = handleUserInfos.stream().map(HandleUserInfoParam::getCompanyCode).toList();
+        LambdaQueryWrapper<HandleUserInfo> wrapper = new LambdaQueryWrapper<HandleUserInfo>()
+                .eq(true, HandleUserInfo::getHandleType, type)
+                .in(CollectionUtils.isNotEmpty(userIds), HandleUserInfo::getUserId, userIds)
+                .in(CollectionUtils.isNotEmpty(departmentCodes), HandleUserInfo::getDepartmentCode, departmentCodes)
+                .in(CollectionUtils.isNotEmpty(companyCodes), HandleUserInfo::getCompanyCode, departmentCodes);
         return wrapper;
     }
 
-    public static LambdaQueryWrapper<HandleUserInfo> getPageHandleUserInfoWrapper(List<Long>orderIds) {
-        LambdaQueryWrapper<HandleUserInfo>wrapper=new LambdaQueryWrapper<HandleUserInfo>();
-        if(CollectionUtils.isEmpty(orderIds)) {
+    public static LambdaQueryWrapper<HandleUserInfo> getPageHandleUserInfoWrapper(List<Long> orderIds) {
+        LambdaQueryWrapper<HandleUserInfo> wrapper = new LambdaQueryWrapper<HandleUserInfo>();
+        if (CollectionUtils.isEmpty(orderIds)) {
             // 添加一个不可能满足的条件
             wrapper.apply("1=0");
             return wrapper;
         }
-        wrapper.in(HandleUserInfo::getOrderId,orderIds);
+        wrapper.in(HandleUserInfo::getOrderId, orderIds);
         return wrapper;
     }
 
     public static LambdaQueryWrapper<HandleUserInfo> getOrderIdWrapper(Long orderId) {
-        LambdaQueryWrapper<HandleUserInfo>wrapper=new LambdaQueryWrapper<HandleUserInfo>()
-                .eq(true,HandleUserInfo::getOrderId,orderId);
+        LambdaQueryWrapper<HandleUserInfo> wrapper = new LambdaQueryWrapper<HandleUserInfo>()
+                .eq(true, HandleUserInfo::getOrderId, orderId);
         return wrapper;
     }
 
-    public static LambdaUpdateWrapper<HandleUserInfo> getUpdateStatusWrapper(Long orderId, List<Long> staffIds,Integer handleType,Boolean finished,Long handleTime) {
-        LambdaUpdateWrapper<HandleUserInfo>wrapper=new LambdaUpdateWrapper<HandleUserInfo>();
-        if(CollectionUtils.isEmpty(staffIds)) {
+    public static LambdaUpdateWrapper<HandleUserInfo> getUpdateStatusWrapper(Long orderId, List<Long> staffIds, Integer handleType
+            , Boolean finished, Long handleTime, String remark) {
+        LambdaUpdateWrapper<HandleUserInfo> wrapper = new LambdaUpdateWrapper<HandleUserInfo>();
+        if (CollectionUtils.isEmpty(staffIds)) {
             // 添加一个不可能满足的条件
             wrapper.apply("1=0");
             return wrapper;
         }
-        wrapper.eq(true,HandleUserInfo::getOrderId,orderId)
-                .in(true,HandleUserInfo::getUserId,staffIds)
-                .eq(true,HandleUserInfo::getHandleType,handleType)
-                .set(HandleUserInfo::getHandleTime,handleTime)
-                .set(HandleUserInfo::getFinished,finished);
+        wrapper.eq(true, HandleUserInfo::getOrderId, orderId)
+                .in(true, HandleUserInfo::getUserId, staffIds)
+                .eq(true, HandleUserInfo::getHandleType, handleType)
+                .set(HandleUserInfo::getHandleTime, handleTime)
+                .set(HandleUserInfo::getFinished, finished)
+                .set(HandleUserInfo::getRemark, remark);
         return wrapper;
     }
 
     public static LambdaQueryWrapper<HandleUserInfo> getHandleTypeWrapper(Long orderId, Integer handleType) {
-        LambdaQueryWrapper<HandleUserInfo>wrapper=new LambdaQueryWrapper<HandleUserInfo>()
-                .eq(true,HandleUserInfo::getOrderId,orderId)
-                .eq(true,HandleUserInfo::getHandleType,handleType);
+        LambdaQueryWrapper<HandleUserInfo> wrapper = new LambdaQueryWrapper<HandleUserInfo>()
+                .eq(true, HandleUserInfo::getOrderId, orderId)
+                .eq(true, HandleUserInfo::getHandleType, handleType);
         return wrapper;
     }
 
     public static LambdaQueryWrapper<HandleUserInfo> getHandleTypeUserIdWrapper(Long orderId, Integer handleType, Long staffId) {
-        LambdaQueryWrapper<HandleUserInfo>wrapper=new LambdaQueryWrapper<HandleUserInfo>()
-                .eq(true,HandleUserInfo::getOrderId,orderId)
-                .eq(true,HandleUserInfo::getHandleType,handleType)
-                .eq(true,HandleUserInfo::getUserId,staffId);
+        LambdaQueryWrapper<HandleUserInfo> wrapper = new LambdaQueryWrapper<HandleUserInfo>()
+                .eq(true, HandleUserInfo::getOrderId, orderId)
+                .eq(true, HandleUserInfo::getHandleType, handleType)
+                .eq(true, HandleUserInfo::getUserId, staffId);
         return wrapper;
     }
 
 
     public static LambdaQueryWrapper<HandleUserInfo> getOrderIdByUserIdHandleTypeWrapper(Long userId, List<Integer> handleType, Boolean finished) {
-        LambdaQueryWrapper<HandleUserInfo>wrapper=new LambdaQueryWrapper<HandleUserInfo>()
-                .eq(true,HandleUserInfo::getUserId,userId)
-                .in(true,HandleUserInfo::getHandleType,handleType)
-                .eq(true,HandleUserInfo::getFinished,finished);
+        LambdaQueryWrapper<HandleUserInfo> wrapper = new LambdaQueryWrapper<HandleUserInfo>()
+                .eq(true, HandleUserInfo::getUserId, userId)
+                .in(true, HandleUserInfo::getHandleType, handleType)
+                .eq(true, HandleUserInfo::getFinished, finished);
         return wrapper;
     }
 
-    public static LambdaQueryWrapper<HandleUserInfo> getByHandleDateAndHandleType(Long startTimeFrom, Long startTimeEnd, List<Integer>handleTypes) {
-        LambdaQueryWrapper<HandleUserInfo>wrapper=new LambdaQueryWrapper<HandleUserInfo>()
-                .ge(true,HandleUserInfo::getHandleTime,startTimeFrom)
-                .le(true,HandleUserInfo::getHandleTime,startTimeEnd)
-                .in(true,HandleUserInfo::getHandleType,handleTypes)
-                ;
+    public static LambdaQueryWrapper<HandleUserInfo> getByHandleDateAndHandleType(Long startTimeFrom, Long startTimeEnd, List<Integer> handleTypes) {
+        LambdaQueryWrapper<HandleUserInfo> wrapper = new LambdaQueryWrapper<HandleUserInfo>()
+                .ge(true, HandleUserInfo::getHandleTime, startTimeFrom)
+                .le(true, HandleUserInfo::getHandleTime, startTimeEnd)
+                .in(true, HandleUserInfo::getHandleType, handleTypes);
         return wrapper;
     }
 
     public static LambdaQueryWrapper<WorkOrder> getByStatusAndDeadlineTime(Long nowTime, Integer status) {
-        LambdaQueryWrapper<WorkOrder>wrapper=new LambdaQueryWrapper<WorkOrder>()
-                .ge(true,WorkOrder::getDeadlineTime,nowTime)
-                .eq(true,WorkOrder::getStatus,status);
+        LambdaQueryWrapper<WorkOrder> wrapper = new LambdaQueryWrapper<WorkOrder>()
+                .ge(true, WorkOrder::getDeadlineTime, nowTime)
+                .eq(true, WorkOrder::getStatus, status);
         return wrapper;
     }
 }
