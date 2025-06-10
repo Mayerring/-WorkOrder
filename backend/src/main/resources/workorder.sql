@@ -89,8 +89,8 @@ CREATE TABLE staff (
                        status TINYINT DEFAULT 0 COMMENT '状态：0 正常，1 休假，2 停职，3 离职',
                        manager_number VARCHAR(50) COMMENT '直属领导工号',
                        manager_name VARCHAR(100) COMMENT '直属领导姓名',
-                       phone VARCHAR(20) COMMENT '手机号码',
-                       email VARCHAR(100) COMMENT '邮箱',
+                       phone VARCHAR(20) UNIQUE  COMMENT '手机号码',
+                       email VARCHAR(100)  UNIQUE COMMENT '邮箱',
                        create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
                        update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间'
 ) COMMENT='职工表';

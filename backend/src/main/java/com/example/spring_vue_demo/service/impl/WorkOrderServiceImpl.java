@@ -176,75 +176,28 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     public Result create(WorkOrderCreateParam param) {
         //参数校验
         if (param == null || StringUtils.isBlank(param.getTitle())
-                || param.getType() == null || param.getPriorityLevel() == null) {
+                || param.getType() == null || param.getPriorityLevel() == null
+                || param.getDistributeId() == null || param.getExecuteId() == null) {
             return Result.error("信息不完整");
         }
-        WorkOrder workOrder = new WorkOrder();
-        workOrder.setType(param.getType());
-        workOrder.setTitle(param.getTitle());
-        workOrder.setContent(param.getContent());
-        workOrder.setPriorityLevel(param.getPriorityLevel());
-        workOrder.setStatus(100); //待审核
-        workOrder.setContent(param.getContent());
-        //时间
-        LocalDateTime now = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-                .withZone(ZoneId.systemDefault());
-        String formatNow = formatter.format(now.atZone(ZoneId.systemDefault()).toInstant());
-        log.debug(formatNow);
-        workOrder.setCreateTime(formatNow);
-
-        String orderCode = OrderCodeUtils.generateWorkOrderCode();
-        log.info(orderCode);
-        workOrder.setCode(orderCode);
-        workOrder.setDeleted(0);
-        if (param.getAccessoryUrl() != null) {
-            workOrder.setAccessoryUrl(param.getAccessoryUrl());
-            workOrder.setAccessoryName(param.getAccessoryName());
-        }
+        WorkOrder workOrder = workOrderHelper.createWorkOrder(param);
         //更新工单表
         boolean isSaved = this.save(workOrder);
+        WorkOrderCreateVO workOrderCreateVO = new WorkOrderCreateVO();
+        workOrderCreateVO.setId(workOrder.getId());
+        workOrderCreateVO.setCode(workOrder.getCode());
+        //更新handle_user_info表
+        Staff staff = StaffHolder.get();
+        workOrderHelper.addHandleInfo(workOrder.getId(),HandleTypeEnum.CREATED,
+                0L,workOrder.getContent());
+        workOrderHelper.addDistributeAndCheckInfo(workOrder.getId(),param.getDistributeId(),param.getExecuteId());
 
-        //更新handle_log表
-        if (isSaved) {
-            WorkOrderCreateVO workOrderCreateVO = new WorkOrderCreateVO();
-            workOrderCreateVO.setId(workOrder.getId());
-            workOrderCreateVO.setCode(workOrder.getCode());
-            //更新handle_user_info表
-            Staff staff = StaffHolder.get();
-            workOrderHelper.addHandleInfo(workOrder.getId(),HandleTypeEnum.CREATED,
-                    0L,workOrder.getContent());
-            //发送信息
-            Message message = workOrderHelper.buildMessage(WorkOrderStatusEnum.getByValue(workOrder.getStatus()), workOrder.getCode(),staff.getId());
-            int msgSuccess = messageMapper.insert(message);
-            if(msgSuccess != 1){
-                return Result.error("创建失败");
-            }
-            workOrderCreateVO.setAuditId(findAuditId(staff.getId()));
-            return Result.success(workOrderCreateVO);
-        } else {
-            return Result.error("创建失败");
-        }
+        //发送信息
+        Message message = workOrderHelper.buildMessage(WorkOrderStatusEnum.getByValue(workOrder.getStatus()), workOrder.getCode(),staff.getId());
+        int msgSuccess = messageMapper.insert(message);
+        workOrderCreateVO.setAuditId(workOrderHelper.findAuditId(staff.getId()));
+        return Result.success(workOrderCreateVO);
 
-    }
-
-    private Long findAuditId(Long staffId) {
-        //第一个审核人是部门主管
-        Staff staff = staffMapper.selectOne(
-                new QueryWrapper<Staff>().eq("id", staffId)
-        );
-        if(staff == null){
-            return null;
-        }
-        if(staff.getManagerNumber() == null){
-            return staff.getId();
-        } else
-        {
-            Staff manager = staffMapper.selectOne(
-                    new QueryWrapper<Staff>().eq("staff_number", staff.getManagerNumber())
-            );
-            return manager.getId();
-        }
     }
 
     @Transactional
@@ -258,10 +211,10 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         WorkOrder workOrder = getOne(workOrderWrapper);
         workOrderHelper.checkWorkOrderExist(workOrder);
         //更新状态为待审核
-        workOrderHelper.updateNextStatus(HandleTypeEnum.CREATED,workOrder);
+        workOrderHelper.updateNextStatus(HandleTypeEnum.AUDIT,workOrder);
         updateById(workOrder);
         //todo 向指定的审核人发送信息
-        Message message=workOrderHelper.buildMessage(AUDITING, workOrder.getCode(), workOrder.getId());
+        Message message=workOrderHelper.buildMessage(AUDITING, workOrder.getCode(), param.getAuditId());
         int msgSuccess = messageMapper.insert(message);
         if(msgSuccess != 1){
             return Result.error("发送消息失败");
