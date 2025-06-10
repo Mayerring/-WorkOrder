@@ -73,4 +73,19 @@ public class WorkOrderController {
         return workOrderService.create(param);
     }
 
+    @ApiOperationSupport(order = 7)
+    @Operation(summary = "指定审核人")
+    @PostMapping("/dispatch")
+    public Result dispatchToAuditor(@RequestBody WorkOrderDispatchParam param)
+    {
+        return workOrderService.dispatchToAuditor(param);
+    }
+
+    @ApiOperationSupport(order = 8)
+    @Operation(summary = "审批")
+    @PostMapping("/approval")
+    public Result approval(@RequestBody WorkOrderApprovalParam param) {
+        return workOrderService.approval(param);
+    }
+
 }

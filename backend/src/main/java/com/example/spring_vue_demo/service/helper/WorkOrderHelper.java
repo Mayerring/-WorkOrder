@@ -1,29 +1,36 @@
 package com.example.spring_vue_demo.service.helper;
 
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.example.spring_vue_demo.entity.HandleUserInfo;
-import com.example.spring_vue_demo.entity.Message;
-import com.example.spring_vue_demo.entity.Staff;
-import com.example.spring_vue_demo.entity.WorkOrder;
+import com.example.spring_vue_demo.entity.*;
 import com.example.spring_vue_demo.enums.ErrorCode;
 import com.example.spring_vue_demo.enums.HandleTypeEnum;
 import com.example.spring_vue_demo.enums.HandleUserInfoHandleTypeEnum;
 import com.example.spring_vue_demo.enums.WorkOrderStatusEnum;
 import com.example.spring_vue_demo.exception.UserSideException;
+import com.example.spring_vue_demo.mapper.CompanyMapper;
+import com.example.spring_vue_demo.mapper.DepartmentMapper;
 import com.example.spring_vue_demo.mapper.HandleUserInfoMapper;
 import com.example.spring_vue_demo.mapper.StaffMapper;
 import com.example.spring_vue_demo.param.HandleUserInfoParam;
+import com.example.spring_vue_demo.param.WorkOrderApprovalParam;
+import com.example.spring_vue_demo.param.WorkOrderCreateParam;
 import com.example.spring_vue_demo.param.WorkOrderPageParam;
 import com.example.spring_vue_demo.service.query.HandleUserInfoQuery;
 import com.example.spring_vue_demo.service.query.WorkOrderQuery;
+import com.example.spring_vue_demo.utils.OrderCodeUtils;
 import com.example.spring_vue_demo.utils.StaffHolder;
 import com.example.spring_vue_demo.vo.WorkOrderPageVO;
 import com.example.spring_vue_demo.vo.WorkOrderUpdateStatusVO;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDateTime;
@@ -36,11 +43,14 @@ import java.util.stream.Collectors;
  * @author wtt
  * @date 2025/05/31
  */
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class WorkOrderHelper {
     private final HandleUserInfoMapper handleUserInfoMapper;
     private final StaffMapper staffMapper;
+    private final CompanyMapper companyMapper;
+    private final DepartmentMapper departmentMapper;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private void gatherQueryWorkOrderId(List<HandleUserInfo> handleUserInfos, List<HandleUserInfoParam> userInfoParams, HandleUserInfoHandleTypeEnum userInfoType) {
@@ -159,6 +169,14 @@ public class WorkOrderHelper {
         //todo:消息队列
         String content = "";
         switch (status) {
+            case UNAUDITED->{
+                message.setContent(("编号为"+code+"的工单已成功创建，等待审核"));
+                break;
+            }
+            case AUDITING->{
+                message.setContent(("编号为"+code+"的工单需要您审核"));
+                break;
+            }
             case UNDISTRIBUTED -> {
                 content = "编号为" + code + "的工单已经审核完毕，需要您派单。";
                 break;
@@ -207,6 +225,12 @@ public class WorkOrderHelper {
         //催单和协助帮忙不需要更新状态
         WorkOrderStatusEnum statusEnum = WorkOrderStatusEnum.getByValue(workOrder.getStatus());
         switch (handleType) {
+            case CREATED->{
+                statusEnum = WorkOrderStatusEnum.UNAUDITED;
+            }
+            case AUDIT -> {
+                statusEnum = WorkOrderStatusEnum.AUDITING;
+            }
             case DISTRIBUTE -> {
                 statusEnum = WorkOrderStatusEnum.HANDLING;
             }
@@ -260,8 +284,81 @@ public class WorkOrderHelper {
             handleUserInfo.setHandleTime(formatter.format(LocalDateTime.now()));
             handleUserInfoMapper.insert(handleUserInfo);
         }
+        else if(handleTypeEnum.equals(HandleTypeEnum.CREATED))
+        {
+            HandleUserInfo handleUserInfo = new HandleUserInfo();
+            Staff staff = StaffHolder.get();//获取当前用户
+            log.debug(staff.toString());
+            handleUserInfo.setUserName(staff.getName());
+            handleUserInfo.setCompanyName(staff.getCompany());
+            Company company = companyMapper.selectOne(
+                    new QueryWrapper<Company>().eq("name", staff.getCompany()));
+            handleUserInfo.setCompanyCode(company.getCode());
+            handleUserInfo.setDepartmentName(staff.getDepartment());
+            Department department = departmentMapper.selectOne(
+                    new QueryWrapper<Department>().eq("name", staff.getDepartment())
+                            .eq("company_code", company.getCode())
+            );
+            handleUserInfo.setDepartmentCode(department.getCode());
+            handleUserInfo.setOrderId(orderId);
+            handleUserInfo.setUserId(staff.getId());
+            handleUserInfo.setRemark(remark);
+            handleUserInfo.setFinished(Boolean.FALSE);
+            handleUserInfo.setHandleType(HandleUserInfoHandleTypeEnum.SUBMIT.getValue());
+            handleUserInfo.setFinished(Boolean.TRUE);
+            handleUserInfo.setCreateTime(formatter.format(LocalDateTime.now()));
+            handleUserInfo.setHandleTime(formatter.format(LocalDateTime.now()));
+            handleUserInfo.setUpdateTime(formatter.format(LocalDateTime.now()));
+            handleUserInfoMapper.insert(handleUserInfo);
+
+        }else if(handleTypeEnum.equals(HandleTypeEnum.AUDIT)){
+            HandleUserInfo handleUserInfo = new HandleUserInfo();
+            handleUserInfo.setUserId(assignedUserId);
+            //查询被分配人的信息并填充
+            Staff staff = staffMapper.selectById(assignedUserId);
+            handleUserInfo.setUserName(staff.getName());
+            handleUserInfo.setCompanyCode(staff.getCompanyCode());
+            handleUserInfo.setCompanyName(staff.getCompany());
+            handleUserInfo.setDepartmentCode(staff.getDepartmentCode());
+            handleUserInfo.setDepartmentName(staff.getDepartment());
+            handleUserInfo.setOrderId(orderId);
+            handleUserInfo.setFinished(Boolean.FALSE);
+            handleUserInfo.setHandleType(HandleUserInfoHandleTypeEnum.AUDIT.getValue());
+            handleUserInfo.setFinished(Boolean.FALSE);
+            handleUserInfo.setHandleTime(formatter.format(LocalDateTime.now()));
+            handleUserInfo.setUpdateTime(formatter.format(LocalDateTime.now()));
+            handleUserInfoMapper.insert(handleUserInfo);
+        }
     }
 
+
+    public void addDistributeAndCheckInfo(Long orderId,Long distributeId,Long checkId)
+    {
+        Staff distributor = staffMapper.selectById(distributeId);
+        HandleUserInfo distributeInfo = new HandleUserInfo();
+        distributeInfo.setOrderId(orderId);
+        distributeInfo.setUserId(distributeId);
+        distributeInfo.setUserName(distributor.getName());
+        distributeInfo.setCompanyCode(distributor.getCompanyCode());
+        distributeInfo.setCompanyName(distributor.getCompany());
+        distributeInfo.setDepartmentCode(distributor.getDepartmentCode());
+        distributeInfo.setDepartmentName(distributor.getDepartment());
+        distributeInfo.setHandleType(HandleUserInfoHandleTypeEnum.DISTRIBUTE.getValue());
+        distributeInfo.setFinished(Boolean.FALSE);
+        Staff checker = staffMapper.selectById(checkId);
+        HandleUserInfo checkInfo = new HandleUserInfo();
+        checkInfo.setOrderId(orderId);
+        checkInfo.setUserId(checkId);
+        checkInfo.setUserName(checker.getName());
+        checkInfo.setCompanyCode(checker.getCompanyCode());
+        checkInfo.setCompanyName(checker.getCompany());
+        checkInfo.setDepartmentCode(checker.getDepartmentCode());
+        checkInfo.setDepartmentName(checker.getDepartment());
+        checkInfo.setHandleType(HandleUserInfoHandleTypeEnum.CHECK.getValue());
+        checkInfo.setFinished(Boolean.FALSE);
+        handleUserInfoMapper.insert(distributeInfo);
+        handleUserInfoMapper.insert(checkInfo);
+    }
     public void checkAssignedUserInfo(HandleTypeEnum handleType, Long assignedUserId) {
         if (handleType.equals(HandleTypeEnum.DISTRIBUTE) && assignedUserId == null) {
             throw new UserSideException(ErrorCode.DISTRIBUTE_REQUIRE_ASSIGNED_USER_ID);
@@ -342,9 +439,7 @@ public class WorkOrderHelper {
         if (currentHandleInfo == null) {
             throw new UserSideException(ErrorCode.CURRENT_USER_IS_NOT_HANDLE_USER);
         }
-
     }
-
 
     public void checkCancelWorkOrderStatus(WorkOrder workOrder) {
         if (workOrder.getStatus() >= WorkOrderStatusEnum.FINISHED.getValue()) {
@@ -385,5 +480,78 @@ public class WorkOrderHelper {
         List<HandleUserInfo> handleUserInfos = handleUserInfoMapper.selectList(wrapper);
         List<Long> receiverIds = handleUserInfos.stream().map(HandleUserInfo::getUserId).toList();
         return receiverIds;
+    }
+
+    public WorkOrder createWorkOrder(WorkOrderCreateParam param)
+    {
+        WorkOrder workOrder = new WorkOrder();
+        workOrder.setType(param.getType());
+        workOrder.setTitle(param.getTitle());
+        workOrder.setContent(param.getContent());
+        workOrder.setPriorityLevel(param.getPriorityLevel());
+        workOrder.setStatus(100); //待审核
+        workOrder.setContent(param.getContent());
+        //时间
+        LocalDateTime now = LocalDateTime.now();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
+                .withZone(ZoneId.systemDefault());
+        String formatNow = formatter.format(now.atZone(ZoneId.systemDefault()).toInstant());
+        workOrder.setCreateTime(formatNow);
+
+        String orderCode = OrderCodeUtils.generateWorkOrderCode();
+
+        workOrder.setCode(orderCode);
+        workOrder.setDeleted(0);
+        if (param.getAccessoryUrl() != null) {
+            workOrder.setAccessoryUrl(param.getAccessoryUrl());
+            workOrder.setAccessoryName(param.getAccessoryName());
+        }
+        return workOrder;
+    }
+
+    public boolean updateHandleUserInfo(WorkOrderApprovalParam param) {
+        Staff staff = StaffHolder.get();
+        int updateCount = handleUserInfoMapper.update(null,
+                new UpdateWrapper<HandleUserInfo>()
+                        .eq("order_id", param.getId())
+                        .eq("user_id", staff.getId())
+                        .eq("handle_type",2)
+                        .eq("finished",0)
+                        .set("finished", 1)
+                        .set("remark", param.getRemark())
+        );
+        return updateCount == 1;
+    }
+    //找打第一个审核人
+    public Long findAuditId(Long staffId) {
+        //第一个审核人是部门主管
+        Staff staff = staffMapper.selectOne(
+                new QueryWrapper<Staff>().eq("id", staffId)
+        );
+        if(staff == null){
+            return null;
+        }
+        if(staff.getManagerNumber() == null){
+            return staff.getId();
+        } else
+        {
+            Staff manager = staffMapper.selectOne(
+                    new QueryWrapper<Staff>().eq("staff_number", staff.getManagerNumber())
+            );
+            return manager.getId();
+        }
+    }
+    //找到下一个审核的人，找到上级部门的主管
+    public Long findNextStaff() {
+        Staff nowStaff = StaffHolder.get();
+        String departmentCode= departmentMapper.findDepartmentCodeByName(nowStaff.getCompany(),nowStaff.getDepartment());
+        if(departmentCode==null){
+            return null;
+        }
+        Long leaderId = departmentMapper.findParentDepartmentLeaderId(departmentCode);
+        if (leaderId == null) {
+            return null;
+        }
+        return leaderId;
     }
 }

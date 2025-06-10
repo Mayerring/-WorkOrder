@@ -1,20 +1,19 @@
 package com.example.spring_vue_demo.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
-import com.example.spring_vue_demo.entity.Message;
-import com.example.spring_vue_demo.entity.Result;
-import com.example.spring_vue_demo.entity.HandleUserInfo;
-import com.example.spring_vue_demo.entity.WorkOrder;
+import com.example.spring_vue_demo.entity.*;
 import com.example.spring_vue_demo.enums.HandleTypeEnum;
 import com.example.spring_vue_demo.enums.HandleUserInfoHandleTypeEnum;
 import com.example.spring_vue_demo.enums.WorkOrderStatusEnum;
 import com.example.spring_vue_demo.mapper.HandleUserInfoMapper;
 import com.example.spring_vue_demo.mapper.MessageMapper;
+import com.example.spring_vue_demo.mapper.StaffMapper;
 import com.example.spring_vue_demo.mapper.WorkOrderMapper;
 import com.example.spring_vue_demo.param.*;
 import com.example.spring_vue_demo.param.WorkOrderDetailParam;
@@ -24,6 +23,7 @@ import com.example.spring_vue_demo.service.HandleUserInfoService;
 import com.example.spring_vue_demo.service.MessageService;
 import com.example.spring_vue_demo.service.WorkOrderService;
 import com.example.spring_vue_demo.utils.OrderCodeUtils;
+import com.example.spring_vue_demo.utils.StaffHolder;
 import com.example.spring_vue_demo.vo.*;
 import com.example.spring_vue_demo.service.convert.WorkOrderConverter;
 import com.example.spring_vue_demo.service.helper.WorkOrderHelper;
@@ -31,6 +31,7 @@ import com.example.spring_vue_demo.service.query.HandleUserInfoQuery;
 import com.example.spring_vue_demo.service.query.WorkOrderQuery;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
+import lombok.val;
 import org.apache.ibatis.executor.BatchResult;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -42,10 +43,19 @@ import java.time.format.DateTimeFormatter;
 
 import java.util.*;
 
+import static com.example.spring_vue_demo.enums.WorkOrderStatusEnum.AUDITING;
+
 /**
  * @author wtt
  * @date 2025/05/24
  */
+
+/**
+ *
+ * @author WangDayu
+ * @date 2025/6/9
+ */
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -53,6 +63,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     private final WorkOrderHelper workOrderHelper;
     private final HandleUserInfoService iHandleUserInfoService;
     private final MessageMapper messageMapper;
+    private final StaffMapper staffMapper;
     private final HandleUserInfoMapper handleUserInfoMapper;
 
     @Override
@@ -139,7 +150,6 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         return vo;
     }
 
-
     @Override
     public WorkOrderUpdateStatusVO deleteOrder(WorkOrderDeleteParam param) {
         //校验工单id和code不能全为空
@@ -172,48 +182,95 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         WorkOrderUpdateStatusVO vo = workOrderHelper.setUpdateReturnVO(success, workOrder.getCode(), workOrder.getId());
         return vo;
     }
-
+    @Transactional
     @Override
     public Result create(WorkOrderCreateParam param) {
         //参数校验
         if (param == null || StringUtils.isBlank(param.getTitle())
-                || param.getType() == null || param.getPriorityLevel() == null) {
+                || param.getType() == null || param.getPriorityLevel() == null
+                || param.getDistributeId() == null || param.getCheckId() == null) {
             return Result.error("信息不完整");
         }
-        WorkOrder workOrder = new WorkOrder();
-        workOrder.setType(param.getType());
-        workOrder.setTitle(param.getTitle());
-        workOrder.setContent(param.getContent());
-        workOrder.setPriorityLevel(param.getPriorityLevel());
-        workOrder.setStatus(100);
-        workOrder.setContent(param.getContent());
-        //时间
-        LocalDateTime now = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy/MM/dd HH:mm:ss")
-                .withZone(ZoneId.systemDefault());
-        String formatNow = formatter.format(now.atZone(ZoneId.systemDefault()).toInstant());
-        log.debug(formatNow);
-        workOrder.setCreateTime(formatNow);
-
-        String orderCode = OrderCodeUtils.generateWorkOrderCode();
-        log.info(orderCode);
-        workOrder.setCode(orderCode);
-        workOrder.setDeleted(0);
-        if (param.getAccessoryUrl() != null) {
-            workOrder.setAccessoryUrl(param.getAccessoryUrl());
-            workOrder.setAccessoryName(param.getAccessoryName());
-        }
-
+        WorkOrder workOrder = workOrderHelper.createWorkOrder(param);
+        //更新工单表
         boolean isSaved = this.save(workOrder);
-        if (isSaved) {
-            WorkOrderCreateVO workOrderCreateVO = new WorkOrderCreateVO();
-            workOrderCreateVO.setId(workOrder.getId());
-            workOrderCreateVO.setCode(workOrder.getCode());
-            return Result.success(workOrderCreateVO);
-        } else {
-            return Result.error("创建失败");
-        }
+        WorkOrderCreateVO workOrderCreateVO = new WorkOrderCreateVO();
+        workOrderCreateVO.setId(workOrder.getId());
+        workOrderCreateVO.setCode(workOrder.getCode());
+        //更新handle_user_info表
+        Staff staff = StaffHolder.get();
+        workOrderHelper.addHandleInfo(workOrder.getId(),HandleTypeEnum.CREATED,
+                0L,workOrder.getContent());
+        workOrderHelper.addDistributeAndCheckInfo(workOrder.getId(),param.getDistributeId(),param.getCheckId());
 
+        //发送信息
+        Message message = workOrderHelper.buildMessage(WorkOrderStatusEnum.getByValue(workOrder.getStatus()), workOrder.getCode(),staff.getId());
+        int msgSuccess = messageMapper.insert(message);
+        workOrderCreateVO.setAuditId(workOrderHelper.findAuditId(staff.getId()));
+        return Result.success(workOrderCreateVO);
+
+    }
+
+    @Transactional
+    @Override
+    public Result dispatchToAuditor(WorkOrderDispatchParam param) {
+        HandleTypeEnum handleType = HandleTypeEnum.AUDIT;
+        //校验工单id和code不能全为空
+        workOrderHelper.checkIdAndCodeNotNull(param.getId(), param.getCode());
+        //查询工单，如果不存在返回错误信息
+        LambdaQueryWrapper<WorkOrder> workOrderWrapper = WorkOrderQuery.getWorkOrderWrapper(param.getId(), param.getCode());
+        WorkOrder workOrder = getOne(workOrderWrapper);
+        workOrderHelper.checkWorkOrderExist(workOrder);
+        //更新状态为待审核
+        workOrderHelper.updateNextStatus(HandleTypeEnum.AUDIT,workOrder);
+        updateById(workOrder);
+        //todo 向指定的审核人发送信息
+        Message message=workOrderHelper.buildMessage(AUDITING, workOrder.getCode(), param.getAuditId());
+        int msgSuccess = messageMapper.insert(message);
+        if(msgSuccess != 1){
+            return Result.error("发送消息失败");
+        }
+        //添加操作信息
+        workOrderHelper.addHandleInfo(workOrder.getId(), handleType, param.getAuditId(), "");
+        WorkOrderDispatchVO workOrderDispatchVO = new WorkOrderDispatchVO();
+        workOrderDispatchVO.setId(workOrder.getId());
+        workOrderDispatchVO.setCode(workOrder.getCode());
+        workOrderDispatchVO.setIsSuccess(Boolean.TRUE);
+        return Result.success(workOrderDispatchVO);
+    }
+    @Transactional
+    @Override
+    public Result approval(WorkOrderApprovalParam param) {
+        //查询工单，如果不存在返回错误信息
+        LambdaQueryWrapper<WorkOrder> workOrderWrapper = WorkOrderQuery.getWorkOrderWrapper(param.getId(), param.getCode());
+        WorkOrder workOrder = getOne(workOrderWrapper);
+        workOrderHelper.checkWorkOrderExist(workOrder);
+        //找到对应的handle—user-info数据，添加审批意见,更新finished位
+        workOrderHelper.updateHandleUserInfo(param);
+        WorkOrderApprovalVO workOrderApprovalVO = new WorkOrderApprovalVO();
+        workOrderApprovalVO.setId(param.getId());
+        workOrderApprovalVO.setCode(param.getCode());
+        if(!param.getIsApproved())
+        {
+            //审核不通过，流程结束
+            workOrder.setStatus(WorkOrderStatusEnum.AUDIT_FAILURE.getValue());
+            updateById(workOrder);
+            workOrderApprovalVO.setResult(Boolean.TRUE);
+
+            return Result.success(workOrderApprovalVO);
+        }
+        Long nextAuditId = workOrderHelper.findNextStaff();
+        if(nextAuditId == null)
+        {
+            //没有下一个，已经结束了,更新状态
+            workOrder.setStatus(WorkOrderStatusEnum.UNDISTRIBUTED.getValue());
+            updateById(workOrder);
+            workOrderApprovalVO.setResult(Boolean.TRUE);
+            return Result.success(workOrderApprovalVO);
+        }
+        workOrderApprovalVO.setResult(Boolean.FALSE);
+        workOrderApprovalVO.setAuditId(nextAuditId);
+        return Result.success(workOrderApprovalVO);
     }
 
     //5min检查一次数据库中延迟的工单
