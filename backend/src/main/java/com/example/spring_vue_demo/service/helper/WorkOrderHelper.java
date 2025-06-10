@@ -221,7 +221,13 @@ public class WorkOrderHelper {
             }
         }
         //设置发送人和接收人id
-        Long userId = StaffHolder.get().getId();
+        //系统delay信息默认发送人为0
+        Long userId;
+        if(StaffHolder.get()!=null) {
+            userId = StaffHolder.get().getId();
+        } else {
+            userId = 0L;
+        }
         List<Message> messages = new ArrayList<>();
         String finalContent = content;
         assignedUserIds.forEach(assignedUserId -> {

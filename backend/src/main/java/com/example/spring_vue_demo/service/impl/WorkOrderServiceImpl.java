@@ -33,6 +33,8 @@ import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import lombok.val;
 import org.apache.ibatis.executor.BatchResult;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -59,6 +61,7 @@ import static com.example.spring_vue_demo.enums.WorkOrderStatusEnum.AUDITING;
 @Slf4j
 @Service
 @RequiredArgsConstructor
+@EnableAsync
 public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder> implements WorkOrderService {
     private final WorkOrderHelper workOrderHelper;
     private final HandleUserInfoService iHandleUserInfoService;
@@ -274,13 +277,14 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     }
 
     //5min检查一次数据库中延迟的工单
-    @Scheduled(fixedRate = 5 * 60 * 1000)
+    @Async
+    @Scheduled(fixedRate = 5 * 60 * 3600)
     @Transactional
     public void checkAndUpdateOverdueOrders() {
-        // 查询所有状态不是delay且deadlineTime已过的工单
+        // 查询所有状态是handle且deadlineTime已过的工单
         LocalDateTime now = LocalDateTime.now();
         Long nowTime = now.atZone(ZoneId.systemDefault()).toEpochSecond();
-        LambdaQueryWrapper<WorkOrder> getDelayWrapper = HandleUserInfoQuery.getByStatusAndDeadlineTime(nowTime, WorkOrderStatusEnum.DELAYED.getValue());
+        LambdaQueryWrapper<WorkOrder> getDelayWrapper = HandleUserInfoQuery.getByStatusAndDeadlineTime(nowTime, WorkOrderStatusEnum.HANDLING.getValue());
         List<WorkOrder> overdueOrders = this.list(getDelayWrapper);
         for (WorkOrder order : overdueOrders) {
             //更新工单状态

@@ -21,7 +21,7 @@ import lombok.NoArgsConstructor;
 @TableName("department")
 public class Department {
     @TableId(type = IdType.AUTO)
-    private int id;
+    private Integer id;
     private String name;
     private String code;
     private String parentDepartmentCode;

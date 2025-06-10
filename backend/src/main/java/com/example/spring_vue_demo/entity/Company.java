@@ -22,7 +22,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class Company {
     @TableId(type = IdType.AUTO)
-    private int id;
+    private Integer id;
     private String code;
     private String name;
     private String parentCompanyCode;

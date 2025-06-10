@@ -95,7 +95,7 @@ public class HandleUserInfoQuery {
 
     public static LambdaQueryWrapper<WorkOrder> getByStatusAndDeadlineTime(Long nowTime, Integer status) {
         LambdaQueryWrapper<WorkOrder> wrapper = new LambdaQueryWrapper<WorkOrder>()
-                .ge(true, WorkOrder::getDeadlineTime, nowTime)
+                .le(true, WorkOrder::getDeadlineTime, nowTime)
                 .eq(true, WorkOrder::getStatus, status);
         return wrapper;
     }
