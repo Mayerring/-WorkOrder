@@ -222,7 +222,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         WorkOrder workOrder = getOne(workOrderWrapper);
         workOrderHelper.checkWorkOrderExist(workOrder);
         //更新状态为待审核
-        workOrderHelper.updateNextStatus(HandleTypeEnum.AUDIT,workOrder);
+        workOrderHelper.updateNextStatus(HandleTypeEnum.AUDIT,workOrder,false);
         updateById(workOrder);
         //todo 向指定的审核人发送信息
         Message message=workOrderHelper.buildMessage(AUDITING, workOrder.getCode(), param.getAuditId());

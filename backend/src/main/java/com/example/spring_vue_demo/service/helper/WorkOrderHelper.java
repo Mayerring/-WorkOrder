@@ -165,9 +165,10 @@ public class WorkOrderHelper {
         }
     }
 
-    public List<Message> buildMessages(WorkOrderStatusEnum status, String code, List<Long> assignedUserIds, boolean finished) {
+    public Message buildMessage(WorkOrderStatusEnum status, String code, Long assignedUserId) {
         //todo:消息队列
-        String content = "";
+        Message message = new Message();
+        String nextHandleType = "";
         switch (status) {
             case UNAUDITED->{
                 message.setContent(("编号为"+code+"的工单已成功创建，等待审核"));
@@ -177,6 +178,21 @@ public class WorkOrderHelper {
                 message.setContent(("编号为"+code+"的工单需要您审核"));
                 break;
             }
+        }
+        //设置发送人和接收人id
+        Long userId = StaffHolder.get().getId();
+        message.setType(status.getValue());
+        message.setTypeDesc(status.getDesc());
+        message.setSenderId(userId);
+        message.setReceiverId(assignedUserId);
+        message.setSendTime(formatter.format(LocalDateTime.now()));
+        return message;
+    }
+
+    public List<Message> buildMessages(WorkOrderStatusEnum status, String code, List<Long> assignedUserIds, boolean finished) {
+        //todo:消息队列
+        String content = "";
+        switch (status) {
             case UNDISTRIBUTED -> {
                 content = "编号为" + code + "的工单已经审核完毕，需要您派单。";
                 break;
@@ -220,7 +236,6 @@ public class WorkOrderHelper {
         });
         return messages;
     }
-
     public void updateNextStatus(HandleTypeEnum handleType, WorkOrder workOrder, boolean finished) {
         //催单和协助帮忙不需要更新状态
         WorkOrderStatusEnum statusEnum = WorkOrderStatusEnum.getByValue(workOrder.getStatus());
