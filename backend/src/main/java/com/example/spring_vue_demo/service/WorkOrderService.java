@@ -26,4 +26,6 @@ public interface WorkOrderService extends IService<WorkOrder> {
 
 
     Result dispatchToAuditor(WorkOrderDispatchParam param);
+
+    Result approval(WorkOrderApprovalParam param);
 }

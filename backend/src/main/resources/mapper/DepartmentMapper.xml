@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.spring_vue_demo.mapper.DepartmentMapper">
+
+    <select id="findParentDepartmentLeaderId" resultType="java.lang.Long">
+        SELECT s.id
+        FROM staff s
+        WHERE s.staff_number = (
+            SELECT d.leader_number
+            FROM department d
+            WHERE d.code = (
+                SELECT parent_department_code
+                FROM department
+                WHERE code = #{departmentCode}
+
+        ))
+    </select>
+    <select id="findDepartmentCodeByName" resultType="java.lang.String">
+        SELECT d.code
+        FROM department d
+                 JOIN company c ON d.company_code = c.code
+        WHERE c.name = #{companyName}
+          AND d.name = #{departmentName}
+            LIMIT 1
+    </select>
+
+</mapper>

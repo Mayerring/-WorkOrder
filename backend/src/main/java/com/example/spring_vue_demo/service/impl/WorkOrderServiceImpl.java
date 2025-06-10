@@ -259,6 +259,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         workOrderHelper.checkWorkOrderExist(workOrder);
         //更新状态为待审核
         workOrderHelper.updateNextStatus(HandleTypeEnum.CREATED,workOrder);
+        updateById(workOrder);
         //todo 向指定的审核人发送信息
         Message message=workOrderHelper.buildMessage(AUDITING, workOrder.getCode(), workOrder.getId());
         int msgSuccess = messageMapper.insert(message);
@@ -273,6 +274,41 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         workOrderDispatchVO.setIsSuccess(Boolean.TRUE);
         return Result.success(workOrderDispatchVO);
     }
+    @Transactional
+    @Override
+    public Result approval(WorkOrderApprovalParam param) {
+        //查询工单，如果不存在返回错误信息
+        LambdaQueryWrapper<WorkOrder> workOrderWrapper = WorkOrderQuery.getWorkOrderWrapper(param.getId(), param.getCode());
+        WorkOrder workOrder = getOne(workOrderWrapper);
+        workOrderHelper.checkWorkOrderExist(workOrder);
+        //找到对应的handle—user-info数据，添加审批意见,更新finished位
+        workOrderHelper.updateHandleUserInfo(param);
+        WorkOrderApprovalVO workOrderApprovalVO = new WorkOrderApprovalVO();
+        workOrderApprovalVO.setId(param.getId());
+        workOrderApprovalVO.setCode(param.getCode());
+        if(!param.getIsApproved())
+        {
+            //审核不通过，流程结束
+            workOrder.setStatus(WorkOrderStatusEnum.AUDIT_FAILURE.getValue());
+            updateById(workOrder);
+            workOrderApprovalVO.setResult(Boolean.TRUE);
+
+            return Result.success(workOrderApprovalVO);
+        }
+        Long nextAuditId = workOrderHelper.findNextStaff();
+        if(nextAuditId == null)
+        {
+            //没有下一个，已经结束了,更新状态
+            workOrder.setStatus(WorkOrderStatusEnum.UNDISTRIBUTED.getValue());
+            updateById(workOrder);
+            workOrderApprovalVO.setResult(Boolean.TRUE);
+            return Result.success(workOrderApprovalVO);
+        }
+        workOrderApprovalVO.setResult(Boolean.FALSE);
+        workOrderApprovalVO.setAuditId(nextAuditId);
+        return Result.success(workOrderApprovalVO);
+    }
+
     //5min检查一次数据库中延迟的工单
     @Scheduled(fixedRate = 5 * 60 * 1000)
     @Transactional

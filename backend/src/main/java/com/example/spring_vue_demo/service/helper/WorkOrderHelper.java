@@ -1,8 +1,10 @@
 package com.example.spring_vue_demo.service.helper;
 
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -17,6 +19,7 @@ import com.example.spring_vue_demo.mapper.DepartmentMapper;
 import com.example.spring_vue_demo.mapper.HandleUserInfoMapper;
 import com.example.spring_vue_demo.mapper.StaffMapper;
 import com.example.spring_vue_demo.param.HandleUserInfoParam;
+import com.example.spring_vue_demo.param.WorkOrderApprovalParam;
 import com.example.spring_vue_demo.param.WorkOrderPageParam;
 import com.example.spring_vue_demo.service.query.HandleUserInfoQuery;
 import com.example.spring_vue_demo.service.query.WorkOrderQuery;
@@ -215,6 +218,9 @@ public class WorkOrderHelper {
         WorkOrderStatusEnum statusEnum = WorkOrderStatusEnum.getByValue(workOrder.getStatus());
         switch (handleType) {
             case CREATED->{
+                statusEnum = WorkOrderStatusEnum.UNAUDITED;
+            }
+            case AUDIT -> {
                 statusEnum = WorkOrderStatusEnum.AUDITING;
             }
             case DISTRIBUTE -> {
@@ -425,5 +431,32 @@ public class WorkOrderHelper {
                 }
         );
         return messages;
+    }
+
+    public boolean updateHandleUserInfo(WorkOrderApprovalParam param) {
+        Staff staff = StaffHolder.get();
+        int updateCount = handleUserInfoMapper.update(null,
+                new UpdateWrapper<HandleUserInfo>()
+                        .eq("order_id", param.getId())
+                        .eq("user_id", staff.getId())
+                        .eq("handle_type",2)
+                        .set("finished", 1)
+                        .set("remark", param.getRemark())
+        );
+        return updateCount == 1;
+    }
+
+    //找到下一个审核的人，找到上级部门的主管
+    public Long findNextStaff() {
+        Staff nowStaff = StaffHolder.get();
+        String departmentCode= departmentMapper.findDepartmentCodeByName(nowStaff.getCompany(),nowStaff.getDepartment());
+        if(departmentCode==null){
+            return null;
+        }
+        Long leaderId = departmentMapper.findParentDepartmentLeaderId(departmentCode);
+        if (leaderId == null) {
+            return null;
+        }
+        return leaderId;
     }
 }
