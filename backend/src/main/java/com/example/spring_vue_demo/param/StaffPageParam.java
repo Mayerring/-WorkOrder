@@ -1,9 +1,8 @@
-package com.example.spring_vue_demo.entity;
+package com.example.spring_vue_demo.param;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableField;
 import com.baomidou.mybatisplus.annotation.TableId;
-import com.baomidou.mybatisplus.annotation.TableName;
 import com.example.spring_vue_demo.common.TimeTypeHandler;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -13,9 +12,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@TableName("staff")
-public class Staff {
-    @TableId(type = IdType.AUTO)
+public class StaffPageParam extends BasePageParam {
     @Schema(description = "主键id")
     private Long Id;
 
@@ -58,12 +55,10 @@ public class Staff {
     @Schema(description = "邮箱")
     private String email;
 
-    @TableField(typeHandler = TimeTypeHandler.class)
-    @Schema(description = "创建时间")
-    private String createTime;
+    @Schema(description = "创建时间起")
+    private Long createTimeFrom;
 
-    @TableField(typeHandler = TimeTypeHandler.class)
-    @Schema(description = "更新时间")
-    private String updateTime;
+    @Schema(description = "创建时间止")
+    private Long createTimeTo;
 
 }
