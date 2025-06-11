@@ -24,6 +24,7 @@ public enum ErrorCode {
     ASSIGNED_USER_ALREADY_EXIST("安排的用户已经被执行过相同操作",10012),
     AFTER_FINISHED_NOT_ALLOW_CANCELLED("已完成、已确认完成的工单不能取消",10013),
     ONLY_SUBMIT_USER_CAN_CANCEL_WORK_ORDER("只有提交的用户可以取消工单",10014),
+    AUDIT_ING_STATUS_WRONG("只有待审核和审核中的工单才能进行审核操作",10015),
     ;
     private final String msg;
     private final Integer code;
