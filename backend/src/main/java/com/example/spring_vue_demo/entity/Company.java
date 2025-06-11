@@ -22,10 +22,15 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class Company {
     @TableId(type = IdType.AUTO)
+    @Schema(description = "公司id")
     private Integer id;
+    @Schema(description="公司代码")
     private String code;
+    @Schema(description="公司名")
     private String name;
+    @Schema(description="父公司代码")
     private String parentCompanyCode;
+    @Schema(description="公司等级")
     private int level;
     @TableField(typeHandler = TimeTypeHandler.class)
     @Schema(description = "创建时间")

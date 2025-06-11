@@ -451,6 +451,7 @@ public class WorkOrderHelper {
         Long staffId = StaffHolder.get().getId();
         HandleUserInfoHandleTypeEnum handleTypeInfo = null;
         switch (handleType) {
+            case AUDIT -> handleTypeInfo = HandleUserInfoHandleTypeEnum.AUDIT;
             case DISTRIBUTE -> handleTypeInfo = HandleUserInfoHandleTypeEnum.DISTRIBUTE;
             case APPLY_HELP, URGE_ORDER, FINISH -> handleTypeInfo = HandleUserInfoHandleTypeEnum.HANDLE;
             case CHECK_SUCCESS, CHECK_FAILURE -> handleTypeInfo = HandleUserInfoHandleTypeEnum.CHECK;
