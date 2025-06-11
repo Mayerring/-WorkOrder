@@ -21,6 +21,4 @@ public class WorkOrderApprovalVO {
     @Schema(description = "审核结果，0表示结束，1表示未结束")
     private Boolean result;
 
-    @Schema(description = "下一个审核人")
-    private Long auditId;
 }

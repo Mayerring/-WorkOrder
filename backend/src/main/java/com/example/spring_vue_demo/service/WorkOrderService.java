@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.spring_vue_demo.entity.Result;
 import com.example.spring_vue_demo.entity.WorkOrder;
 import com.example.spring_vue_demo.param.*;
+import com.example.spring_vue_demo.vo.WorkOrderCreateVO;
 import com.example.spring_vue_demo.vo.WorkOrderDetailVO;
 import com.example.spring_vue_demo.vo.WorkOrderPageVO;
 import com.example.spring_vue_demo.vo.WorkOrderUpdateStatusVO;
@@ -25,7 +26,7 @@ public interface WorkOrderService extends IService<WorkOrder> {
     Result create(WorkOrderCreateParam param);
 
 
-    Result dispatchToAuditor(WorkOrderDispatchParam param);
+    boolean dispatchToAuditor(Long workOrderId,String workOrderCode,Long auditId,boolean isFirstAudit);
 
     Result approval(WorkOrderApprovalParam param);
 }

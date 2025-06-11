@@ -14,6 +14,6 @@ public class WorkOrderCreateVO {
     @Schema(description = "工单编号")
     private String code;
 
-    @Schema(description = "审核人")
-    private Long auditId;
+    @Schema(description = "是否成功创建")
+    private Boolean isSuccess;
 }

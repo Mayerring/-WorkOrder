@@ -188,16 +188,16 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     @Transactional
     @Override
     public Result create(WorkOrderCreateParam param) {
+        WorkOrderCreateVO workOrderCreateVO = new WorkOrderCreateVO();
         //参数校验
         if (param == null || StringUtils.isBlank(param.getTitle())
                 || param.getType() == null || param.getPriorityLevel() == null
                 || param.getDistributeId() == null || param.getCheckId() == null) {
-            return Result.error("信息不完整");
+            return Result.error("参数不完整");
         }
         WorkOrder workOrder = workOrderHelper.createWorkOrder(param);
-        //更新工单表
+        //插入新建工单
         boolean isSaved = this.save(workOrder);
-        WorkOrderCreateVO workOrderCreateVO = new WorkOrderCreateVO();
         workOrderCreateVO.setId(workOrder.getId());
         workOrderCreateVO.setCode(workOrder.getCode());
         //更新handle_user_info表
@@ -209,39 +209,37 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         //发送信息
         Message message = workOrderHelper.buildMessage(WorkOrderStatusEnum.getByValue(workOrder.getStatus()), workOrder.getCode(),staff.getId());
         int msgSuccess = messageMapper.insert(message);
-        workOrderCreateVO.setAuditId(workOrderHelper.findAuditId(staff.getId()));
+        long auditId = workOrderHelper.findAuditId(staff.getId());
+        boolean isSuccess=dispatchToAuditor(workOrder.getId(),workOrder.getCode(),auditId,true);
+        workOrderCreateVO.setIsSuccess(isSuccess && (msgSuccess==1) && isSaved );
         return Result.success(workOrderCreateVO);
-
     }
 
     @Transactional
     @Override
-    public Result dispatchToAuditor(WorkOrderDispatchParam param) {
+    public boolean dispatchToAuditor(Long workOrderId,String workOrderCode,Long auditId,boolean isFirstAudit) {
         HandleTypeEnum handleType = HandleTypeEnum.AUDIT;
         //校验工单id和code不能全为空
-        workOrderHelper.checkIdAndCodeNotNull(param.getId(), param.getCode());
+        workOrderHelper.checkIdAndCodeNotNull(workOrderId, workOrderCode);
         //查询工单，如果不存在返回错误信息
-        LambdaQueryWrapper<WorkOrder> workOrderWrapper = WorkOrderQuery.getWorkOrderWrapper(param.getId(), param.getCode());
+        LambdaQueryWrapper<WorkOrder> workOrderWrapper = WorkOrderQuery.getWorkOrderWrapper(workOrderId, workOrderCode);
         WorkOrder workOrder = getOne(workOrderWrapper);
         workOrderHelper.checkWorkOrderExist(workOrder);
         //校验工单状态和操作是否匹配
         workOrderHelper.checkHandleWorkOrderStatus(workOrder, handleType);
         //更新状态为待审核
-        workOrderHelper.updateNextStatus(HandleTypeEnum.AUDIT,workOrder,false);
-        updateById(workOrder);
-        //todo 向指定的审核人发送信息
-        Message message=workOrderHelper.buildMessage(AUDITING, workOrder.getCode(), param.getAuditId());
+        if(!isFirstAudit) {
+            workOrderHelper.updateNextStatus(handleType,workOrder);
+            updateById(workOrder);
+        }
+        Message message=workOrderHelper.buildMessage(AUDITING, workOrder.getCode(), auditId);
         int msgSuccess = messageMapper.insert(message);
         if(msgSuccess != 1){
-            return Result.error("发送消息失败");
+            return false;
         }
         //添加操作信息
-        workOrderHelper.addHandleInfo(workOrder.getId(), handleType, param.getAuditId(), "");
-        WorkOrderDispatchVO workOrderDispatchVO = new WorkOrderDispatchVO();
-        workOrderDispatchVO.setId(workOrder.getId());
-        workOrderDispatchVO.setCode(workOrder.getCode());
-        workOrderDispatchVO.setIsSuccess(Boolean.TRUE);
-        return Result.success(workOrderDispatchVO);
+        workOrderHelper.addHandleInfo(workOrder.getId(), handleType, auditId, "");
+        return true;
     }
     @Transactional
     @Override
@@ -274,7 +272,8 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
             return Result.success(workOrderApprovalVO);
         }
         workOrderApprovalVO.setResult(Boolean.FALSE);
-        workOrderApprovalVO.setAuditId(nextAuditId);
+        //转发
+        dispatchToAuditor(workOrder.getId(),workOrder.getCode(),nextAuditId,false);
         return Result.success(workOrderApprovalVO);
     }
 

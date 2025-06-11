@@ -15,10 +15,7 @@ import com.example.spring_vue_demo.enums.HandleTypeEnum;
 import com.example.spring_vue_demo.enums.HandleUserInfoHandleTypeEnum;
 import com.example.spring_vue_demo.enums.WorkOrderStatusEnum;
 import com.example.spring_vue_demo.exception.UserSideException;
-import com.example.spring_vue_demo.mapper.CompanyMapper;
-import com.example.spring_vue_demo.mapper.DepartmentMapper;
-import com.example.spring_vue_demo.mapper.HandleUserInfoMapper;
-import com.example.spring_vue_demo.mapper.StaffMapper;
+import com.example.spring_vue_demo.mapper.*;
 import com.example.spring_vue_demo.param.HandleUserInfoParam;
 import com.example.spring_vue_demo.param.WorkOrderApprovalParam;
 import com.example.spring_vue_demo.param.WorkOrderCreateParam;
@@ -128,6 +125,10 @@ public class WorkOrderHelper {
         Integer workOrderStatus = workOrder.getStatus();
         List<WorkOrderStatusEnum> correctStatusEnums = new ArrayList<>();
         switch (handleType) {
+            case AUDIT -> {
+                correctStatusEnums.addAll(List.of(WorkOrderStatusEnum.UNAUDITED,WorkOrderStatusEnum.AUDITING));
+                break;
+            }
             case DISTRIBUTE -> {
                 correctStatusEnums.add(WorkOrderStatusEnum.UNDISTRIBUTED);
                 break;
@@ -147,6 +148,9 @@ public class WorkOrderHelper {
             }
         }
         switch (handleType) {
+            case AUDIT -> {
+                throw new UserSideException(ErrorCode.AUDIT_ING_STATUS_WRONG);
+            }
             case DISTRIBUTE -> {
                 throw new UserSideException(ErrorCode.DISTRIBUTE_UNDISTRIBUTED_STATUS_WRONG);
             }
@@ -514,14 +518,9 @@ public class WorkOrderHelper {
         workOrder.setStatus(100); //待审核
         workOrder.setContent(param.getContent());
         //时间
-        LocalDateTime now = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-                .withZone(ZoneId.systemDefault());
-        String formatNow = formatter.format(now.atZone(ZoneId.systemDefault()).toInstant());
+        String formatNow = formatter.format(LocalDateTime.now());
         workOrder.setCreateTime(formatNow);
-
         String orderCode = OrderCodeUtils.generateWorkOrderCode();
-
         workOrder.setCode(orderCode);
         workOrder.setDeleted(0);
         if (param.getAccessoryUrl() != null) {
