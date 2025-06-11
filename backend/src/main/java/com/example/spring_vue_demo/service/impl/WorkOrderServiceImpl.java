@@ -229,7 +229,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         workOrderHelper.checkHandleWorkOrderStatus(workOrder, handleType);
         //更新状态为待审核
         if(!isFirstAudit) {
-            workOrderHelper.updateNextStatus(handleType,workOrder);
+            workOrderHelper.updateNextStatus(handleType,workOrder,false);
             updateById(workOrder);
         }
         Message message=workOrderHelper.buildMessage(AUDITING, workOrder.getCode(), auditId);
