@@ -10,10 +10,7 @@ import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.spring_vue_demo.entity.*;
-import com.example.spring_vue_demo.enums.ErrorCode;
-import com.example.spring_vue_demo.enums.HandleTypeEnum;
-import com.example.spring_vue_demo.enums.HandleUserInfoHandleTypeEnum;
-import com.example.spring_vue_demo.enums.WorkOrderStatusEnum;
+import com.example.spring_vue_demo.enums.*;
 import com.example.spring_vue_demo.exception.UserSideException;
 import com.example.spring_vue_demo.mapper.*;
 import com.example.spring_vue_demo.param.HandleUserInfoParam;
@@ -30,6 +27,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -479,6 +477,14 @@ public class WorkOrderHelper {
         //时间
         String formatNow = formatter.format(LocalDateTime.now());
         workOrder.setCreateTime(formatNow);
+        workOrder.setUpdateTime(formatNow);
+        //转换时间戳
+        String formattedTime = LocalDateTime.ofInstant(
+                Instant.ofEpochSecond(param.getDeadlineTime()),
+                ZoneId.systemDefault()
+        ).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        log.info(formattedTime);
+        workOrder.setDeadlineTime(formattedTime);
         String orderCode = OrderCodeUtils.generateWorkOrderCode();
         workOrder.setCode(orderCode);
         workOrder.setDeleted(0);
@@ -533,5 +539,42 @@ public class WorkOrderHelper {
             return null;
         }
         return leaderId;
+    }
+    //找到分配人
+    public Long findDistributeId(Integer type){
+        WorkOrderTypeEnum workOrderTypeEnum = WorkOrderTypeEnum.getByValue(type);
+        if (workOrderTypeEnum == null) {
+            return  null;
+        }
+        Staff leader = null;
+        Department department = null;
+        switch (workOrderTypeEnum) {
+            case REQUIREMENTS:
+                //查询总公司的财务部主管
+                department = departmentMapper.selectOne(new LambdaQueryWrapper<Department>()
+                        .eq(Department::getName, "财务部")
+                        .eq(Department::getCompanyCode, "91440000HBZRRFFRF2"));
+
+                if (department != null && department.getLeaderNumber() != null) {
+                    leader = staffMapper.selectOne(new LambdaQueryWrapper<Staff>()
+                            .eq(Staff::getStaffNumber, department.getLeaderNumber()));
+                }
+                break;
+
+            case FAULT:
+                //查询总公司的财务部主管
+                department = departmentMapper.selectOne(new LambdaQueryWrapper<Department>()
+                        .eq(Department::getName, "运维部")
+                        .eq(Department::getCompanyCode, "91440000HBZRRFFRF2"));
+
+                if (department != null && department.getLeaderNumber() != null) {
+                    leader = staffMapper.selectOne(new LambdaQueryWrapper<Staff>()
+                            .eq(Staff::getStaffNumber, department.getLeaderNumber()));
+                }
+                break;
+            default:
+                return null;
+        }
+        return leader.getId();
     }
 }
