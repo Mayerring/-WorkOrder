@@ -1,13 +1,12 @@
 package com.example.spring_vue_demo.service.helper;
 
-import com.baomidou.mybatisplus.core.conditions.Wrapper;
+
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
-import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.spring_vue_demo.entity.*;
 import com.example.spring_vue_demo.enums.*;
@@ -18,7 +17,6 @@ import com.example.spring_vue_demo.param.WorkOrderApprovalParam;
 import com.example.spring_vue_demo.param.WorkOrderCreateParam;
 import com.example.spring_vue_demo.param.WorkOrderPageParam;
 import com.example.spring_vue_demo.service.query.HandleUserInfoQuery;
-import com.example.spring_vue_demo.service.query.WorkOrderQuery;
 import com.example.spring_vue_demo.utils.OrderCodeUtils;
 import com.example.spring_vue_demo.utils.StaffHolder;
 import com.example.spring_vue_demo.vo.WorkOrderPageVO;
@@ -425,7 +423,7 @@ public class WorkOrderHelper {
             LambdaQueryWrapper<HandleUserInfo> handleTypeWrapper = HandleUserInfoQuery.getHandleTypeWrapper(orderId, HandleUserInfoHandleTypeEnum.HANDLE.getValue());
             List<HandleUserInfo> handleUserInfos = handleUserInfoMapper.selectList(handleTypeWrapper);
             List<Long> handleUserIds = handleUserInfos.stream().map(HandleUserInfo::getUserId).collect(Collectors.toList());
-            LambdaUpdateWrapper<HandleUserInfo> wrapper = HandleUserInfoQuery.getUpdateStatusWrapper(orderId, handleUserIds, HandleUserInfoHandleTypeEnum.HANDLE.getValue(), Boolean.FALSE, null, remark);
+            LambdaUpdateWrapper<HandleUserInfo> wrapper = HandleUserInfoQuery.getUpdateStatusWrapper(orderId, handleUserIds, HandleUserInfoHandleTypeEnum.HANDLE.getValue(), Boolean.FALSE, null,remark);
             handleUserInfoMapper.update(wrapper);
         }
     }

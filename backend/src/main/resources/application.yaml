@@ -9,14 +9,14 @@ mybatis-plus:
     type-aliases-package: com.example.spring_vue_demo.entity
 
 server:
-    port: 8081
+    port: 8080
 
 spring:
     datasource:
         driver-class-name: com.mysql.cj.jdbc.Driver
         url: jdbc:mysql://localhost/wos?useUnicode=true&characterEncoding=UTF-8
         username: root
-        password: root
+        password: 123456
 
 knife4j:
     enable: true
