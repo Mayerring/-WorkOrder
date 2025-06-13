@@ -52,4 +52,10 @@ public class WorkOrderPageParam extends BasePageParam{
 
     @Schema(description = "创建时间止")
     private Long createTimeTo;
+
+    @Schema(description = "截止时间起")
+    private Long deadLineFrom;
+
+    @Schema(description = "截止时间止")
+    private Long deadLineTo;
 }

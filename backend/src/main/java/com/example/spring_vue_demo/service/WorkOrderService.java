@@ -5,10 +5,11 @@ import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.spring_vue_demo.entity.Result;
 import com.example.spring_vue_demo.entity.WorkOrder;
 import com.example.spring_vue_demo.param.*;
-import com.example.spring_vue_demo.vo.WorkOrderCreateVO;
 import com.example.spring_vue_demo.vo.WorkOrderDetailVO;
 import com.example.spring_vue_demo.vo.WorkOrderPageVO;
 import com.example.spring_vue_demo.vo.WorkOrderUpdateStatusVO;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 
 
 public interface WorkOrderService extends IService<WorkOrder> {
@@ -29,4 +30,6 @@ public interface WorkOrderService extends IService<WorkOrder> {
     boolean dispatchToAuditor(Long workOrderId,String workOrderCode,Long auditId,boolean isFirstAudit);
 
     Result approval(WorkOrderApprovalParam param);
+
+    void export(WorkOrderPageParam param,HttpServletResponse response,  HttpServletRequest request);
 }

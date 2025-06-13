@@ -30,6 +30,8 @@ public class WorkOrderQuery {
                 .in(CollectionUtils.isNotEmpty(param.getStatus()),WorkOrder::getStatus,param.getStatus())
                 .ge(Objects.nonNull(param.getCreateTimeFrom()),WorkOrder::getCreateTime,param.getCreateTimeFrom())
                 .le(Objects.nonNull(param.getCreateTimeTo()),WorkOrder::getCreateTime,param.getCreateTimeTo())
+                .ge(Objects.nonNull(param.getDeadLineFrom()),WorkOrder::getDeadlineTime,param.getDeadLineFrom())
+                .le(Objects.nonNull(param.getDeadLineTo()),WorkOrder::getDeadlineTime,param.getDeadLineTo())
                 ;
         return pageWrapper;
     }

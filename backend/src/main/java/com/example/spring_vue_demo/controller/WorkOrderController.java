@@ -13,6 +13,8 @@ import com.example.spring_vue_demo.vo.WorkOrderUpdateStatusVO;
 import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
@@ -79,5 +81,10 @@ public class WorkOrderController {
     public Result approval(@RequestBody WorkOrderApprovalParam param) {
         return workOrderService.approval(param);
     }
+
+    @ApiOperationSupport(order = 8)
+    @Operation(summary = "批量导出")
+    @PostMapping("/export")
+    public void export(@RequestBody WorkOrderPageParam param, HttpServletResponse response, HttpServletRequest request){workOrderService.export(param,response,request);}
 
 }

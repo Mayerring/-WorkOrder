@@ -27,6 +27,12 @@ public class HandleUserInfoVO {
     @Schema(description = "处理类型desc")
     private String handleTypeDesc;
 
+    @Schema(description = "已完成操作")
+    private Boolean finished;
+
+    @Schema(description = "已完成操作desc")
+    private String finishedDesc;
+
     @Schema(description = "姓名")
     private String userName;
 

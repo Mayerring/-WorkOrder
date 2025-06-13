@@ -1,9 +1,14 @@
 package com.example.spring_vue_demo.service.impl;
 
+import com.alibaba.excel.EasyExcel;
+import com.alibaba.excel.ExcelWriter;
+import com.alibaba.excel.support.ExcelTypeEnum;
+import com.alibaba.excel.write.metadata.WriteSheet;
+import com.alibaba.excel.write.metadata.style.WriteCellStyle;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
+import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -20,30 +25,34 @@ import com.example.spring_vue_demo.param.WorkOrderDetailParam;
 import com.example.spring_vue_demo.param.WorkOrderPageParam;
 import com.example.spring_vue_demo.param.WorkOrderHandleParam;
 import com.example.spring_vue_demo.service.HandleUserInfoService;
-import com.example.spring_vue_demo.service.MessageService;
 import com.example.spring_vue_demo.service.WorkOrderService;
-import com.example.spring_vue_demo.utils.OrderCodeUtils;
 import com.example.spring_vue_demo.utils.StaffHolder;
 import com.example.spring_vue_demo.vo.*;
 import com.example.spring_vue_demo.service.convert.WorkOrderConverter;
 import com.example.spring_vue_demo.service.helper.WorkOrderHelper;
 import com.example.spring_vue_demo.service.query.HandleUserInfoQuery;
 import com.example.spring_vue_demo.service.query.WorkOrderQuery;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
-import lombok.val;
 import org.apache.ibatis.executor.BatchResult;
+import org.apache.poi.ss.usermodel.HorizontalAlignment;
+import org.apache.poi.ss.usermodel.VerticalAlignment;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.net.URLEncoder;
+import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 
+import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.stream.Collectors;
 
 import static com.example.spring_vue_demo.enums.WorkOrderStatusEnum.AUDITING;
 
@@ -53,7 +62,6 @@ import static com.example.spring_vue_demo.enums.WorkOrderStatusEnum.AUDITING;
  */
 
 /**
- *
  * @author WangDayu
  * @date 2025/6/9
  */
@@ -68,6 +76,9 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     private final MessageMapper messageMapper;
     private final StaffMapper staffMapper;
     private final HandleUserInfoMapper handleUserInfoMapper;
+
+    private final DateTimeFormatter formatterDate = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Override
     public IPage<WorkOrderPageVO> pageWorkOrder(WorkOrderPageParam param) {
@@ -185,6 +196,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         WorkOrderUpdateStatusVO vo = workOrderHelper.setUpdateReturnVO(success, workOrder.getCode(), workOrder.getId());
         return vo;
     }
+
     @Transactional
     @Override
     public Result create(WorkOrderCreateParam param) {
@@ -202,22 +214,22 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         workOrderCreateVO.setCode(workOrder.getCode());
         //更新handle_user_info表
         Staff staff = StaffHolder.get();
-        workOrderHelper.addHandleInfo(workOrder.getId(),HandleTypeEnum.CREATED,
-                0L,workOrder.getContent());
-        workOrderHelper.addDistributeAndCheckInfo(workOrder.getId(),param.getDistributeId(),param.getCheckId());
+        workOrderHelper.addHandleInfo(workOrder.getId(), HandleTypeEnum.CREATED,
+                0L, workOrder.getContent());
+        workOrderHelper.addDistributeAndCheckInfo(workOrder.getId(), param.getDistributeId(), param.getCheckId());
 
         //发送信息
-        Message message = workOrderHelper.buildMessage(WorkOrderStatusEnum.getByValue(workOrder.getStatus()), workOrder.getCode(),staff.getId());
+        Message message = workOrderHelper.buildMessage(WorkOrderStatusEnum.getByValue(workOrder.getStatus()), workOrder.getCode(), staff.getId());
         int msgSuccess = messageMapper.insert(message);
         long auditId = workOrderHelper.findAuditId(staff.getId());
-        boolean isSuccess=dispatchToAuditor(workOrder.getId(),workOrder.getCode(),auditId,true);
-        workOrderCreateVO.setIsSuccess(isSuccess && (msgSuccess==1) && isSaved );
+        boolean isSuccess = dispatchToAuditor(workOrder.getId(), workOrder.getCode(), auditId, true);
+        workOrderCreateVO.setIsSuccess(isSuccess && (msgSuccess == 1) && isSaved);
         return Result.success(workOrderCreateVO);
     }
 
     @Transactional
     @Override
-    public boolean dispatchToAuditor(Long workOrderId,String workOrderCode,Long auditId,boolean isFirstAudit) {
+    public boolean dispatchToAuditor(Long workOrderId, String workOrderCode, Long auditId, boolean isFirstAudit) {
         HandleTypeEnum handleType = HandleTypeEnum.AUDIT;
         //校验工单id和code不能全为空
         workOrderHelper.checkIdAndCodeNotNull(workOrderId, workOrderCode);
@@ -228,19 +240,20 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         //校验工单状态和操作是否匹配
         workOrderHelper.checkHandleWorkOrderStatus(workOrder, handleType);
         //更新状态为待审核
-        if(!isFirstAudit) {
-            workOrderHelper.updateNextStatus(handleType,workOrder,false);
+        if (!isFirstAudit) {
+            workOrderHelper.updateNextStatus(handleType, workOrder, false);
             updateById(workOrder);
         }
-        Message message=workOrderHelper.buildMessage(AUDITING, workOrder.getCode(), auditId);
+        Message message = workOrderHelper.buildMessage(AUDITING, workOrder.getCode(), auditId);
         int msgSuccess = messageMapper.insert(message);
-        if(msgSuccess != 1){
+        if (msgSuccess != 1) {
             return false;
         }
         //添加操作信息
         workOrderHelper.addHandleInfo(workOrder.getId(), handleType, auditId, "");
         return true;
     }
+
     @Transactional
     @Override
     public Result approval(WorkOrderApprovalParam param) {
@@ -253,8 +266,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         WorkOrderApprovalVO workOrderApprovalVO = new WorkOrderApprovalVO();
         workOrderApprovalVO.setId(param.getId());
         workOrderApprovalVO.setCode(param.getCode());
-        if(!param.getIsApproved())
-        {
+        if (!param.getIsApproved()) {
             //审核不通过，流程结束
             workOrder.setStatus(WorkOrderStatusEnum.AUDIT_FAILURE.getValue());
             updateById(workOrder);
@@ -263,8 +275,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
             return Result.success(workOrderApprovalVO);
         }
         Long nextAuditId = workOrderHelper.findNextStaff();
-        if(nextAuditId == null)
-        {
+        if (nextAuditId == null) {
             //没有下一个，已经结束了,更新状态
             workOrder.setStatus(WorkOrderStatusEnum.UNDISTRIBUTED.getValue());
             updateById(workOrder);
@@ -273,7 +284,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         }
         workOrderApprovalVO.setResult(Boolean.FALSE);
         //转发
-        dispatchToAuditor(workOrder.getId(),workOrder.getCode(),nextAuditId,false);
+        dispatchToAuditor(workOrder.getId(), workOrder.getCode(), nextAuditId, false);
         return Result.success(workOrderApprovalVO);
     }
 
@@ -300,4 +311,59 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         log.info("已完成一次延期工单扫描");
     }
 
+    @Override
+    public void export(WorkOrderPageParam param, HttpServletResponse response, HttpServletRequest request) {
+        ExcelWriter excelWriter = null;
+        String fileName_zh = formatterDate.format(LocalDateTime.now()) + "工单";
+
+        List<WorkOrderPageVO> pageVOS = this.pageWorkOrder(param).getRecords();
+        List<WorkOrderExportVO> excelVOS = WorkOrderConverter.INSTANCE.toExcelVOS(pageVOS);
+        Map<String, List<HandleUserInfoVO>> collectHandle = pageVOS.stream().filter(vo -> vo.getHandlerInfo() != null).collect(Collectors.toMap(WorkOrderPageVO::getCode, WorkOrderPageVO::getHandlerInfo));
+        Map<String, List<HandleUserInfoVO>> collectAudit = pageVOS.stream().filter(vo -> vo.getHandlerInfo() != null).collect(Collectors.toMap(WorkOrderPageVO::getCode, WorkOrderPageVO::getAuditorInfo));
+        for (WorkOrderExportVO exportVO : excelVOS) {
+            String code = exportVO.getCode();
+            List<HandleUserInfoVO> handleInfos = collectHandle.getOrDefault(code, null);
+            List<HandleUserInfoVO> auditInfos = collectAudit.getOrDefault(code, null);
+            if (CollectionUtils.isNotEmpty(handleInfos)) {
+                List<String> handleTimes = handleInfos.stream().filter(HandleUserInfoVO::getFinished).map(HandleUserInfoVO::getHandleTime).toList();
+                List<Long> handleTimeStamps = handleTimes.stream().map(handleTime -> LocalDateTime.parse(handleTime, formatter).atZone(ZoneId.systemDefault()).toInstant().getEpochSecond()).toList();
+                Long maxHandleTimeStamps = handleTimeStamps.stream().max(Comparator.comparingLong(Long::longValue)).orElse(null);
+                exportVO.setFinishTime(maxHandleTimeStamps != null ? formatter.format(Instant.ofEpochSecond(maxHandleTimeStamps).atZone(ZoneId.systemDefault()).toLocalDateTime()) : null);
+            }
+            if (CollectionUtils.isNotEmpty(auditInfos)) {
+                List<String> auditTimes = auditInfos.stream().filter(HandleUserInfoVO::getFinished).map(HandleUserInfoVO::getHandleTime).toList();
+                List<Long> auditTimeStamps = auditTimes.stream().map(handleTime -> LocalDateTime.parse(handleTime, formatter).atZone(ZoneId.systemDefault()).toInstant().getEpochSecond()).toList();
+                Long maxAuditTimeStamps = auditTimeStamps.stream().max(Comparator.comparingLong(Long::longValue)).orElse(null);
+                exportVO.setFinishedAuditTime(maxAuditTimeStamps != null ? formatter.format(Instant.ofEpochSecond(maxAuditTimeStamps).atZone(ZoneId.systemDefault()).toLocalDateTime()) : null);
+            }
+        }
+
+        try {
+            //设置文件类型和编码格式
+            response.setContentType("application/vnd.ms-excel");
+            response.setCharacterEncoding("utf-8");
+            // 设置表头样式
+            WriteCellStyle headStyle = new WriteCellStyle();
+            headStyle.setHorizontalAlignment(HorizontalAlignment.CENTER);
+            // 设置表格内容样式
+            WriteCellStyle bodyStyle = new WriteCellStyle();
+            bodyStyle.setHorizontalAlignment(HorizontalAlignment.CENTER);
+            bodyStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+            // 设置文件名
+            String fileName = URLEncoder.encode(fileName_zh, "UTF-8");
+            response.setHeader("Content-disposition", "attachment;filename=" + fileName+".xlsx");
+            // 读文件
+            excelWriter = EasyExcel.write(response.getOutputStream())
+                    .needHead(true)
+                    .excelType(ExcelTypeEnum.XLSX)
+                    .build();
+            WriteSheet sheet = EasyExcel.writerSheet("工单信息").head(WorkOrderExportVO.class).sheetNo(1).build();
+            excelWriter.write(excelVOS, sheet);
+        } catch (Exception e) {
+            log.error("export excel {} error", fileName_zh, e);
+        } finally {
+            assert excelWriter != null;
+            excelWriter.finish();
+        }
+    }
 }
