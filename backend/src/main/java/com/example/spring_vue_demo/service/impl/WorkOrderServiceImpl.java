@@ -26,13 +26,13 @@ import com.example.spring_vue_demo.param.WorkOrderPageParam;
 import com.example.spring_vue_demo.param.WorkOrderHandleParam;
 import com.example.spring_vue_demo.service.HandleUserInfoService;
 import com.example.spring_vue_demo.service.WorkOrderService;
+import com.example.spring_vue_demo.service.helper.WorkOrderPdfGenerator;
 import com.example.spring_vue_demo.utils.StaffHolder;
 import com.example.spring_vue_demo.vo.*;
 import com.example.spring_vue_demo.service.convert.WorkOrderConverter;
 import com.example.spring_vue_demo.service.helper.WorkOrderHelper;
 import com.example.spring_vue_demo.service.query.HandleUserInfoQuery;
 import com.example.spring_vue_demo.service.query.WorkOrderQuery;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
@@ -45,6 +45,9 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URLEncoder;
 import java.time.Instant;
 import java.time.LocalDateTime;
@@ -315,7 +318,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     }
 
     @Override
-    public void export(WorkOrderPageParam param, HttpServletResponse response, HttpServletRequest request) {
+    public void export(WorkOrderPageParam param, HttpServletResponse response) {
         ExcelWriter excelWriter = null;
         String fileName_zh = formatterDate.format(LocalDateTime.now()) + "工单";
 
@@ -367,6 +370,24 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         } finally {
             assert excelWriter != null;
             excelWriter.finish();
+        }
+    }
+
+    @Override
+    public void print(WorkOrderDetailParam param, HttpServletResponse response) {
+        WorkOrderDetailVO workOrder = detail(param);
+        String fileName=URLEncoder.encode("工单_" + workOrder.getCode());
+        // 设置响应头
+        response.setContentType("application/pdf");
+        response.setHeader("Content-Disposition", "attachment; filename="+fileName+".pdf");
+        try (OutputStream out = response.getOutputStream()) {
+            // 2. 生成PDF
+            ByteArrayOutputStream pdfStream = WorkOrderPdfGenerator.generateWorkOrderPdf(workOrder);
+            // 3. 将PDF写入响应流
+            pdfStream.writeTo(out);
+            out.flush();
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 }
