@@ -35,11 +35,8 @@ public class WorkOrderCreateParam {
     @Schema(description = "优先级，0高，1中，2低")
     private Integer priorityLevel;
 
-    @Schema(description = "分配人id")
-    private Long distributeId;
-
-    @Schema(description = "验收人id")
-    private Long checkId;
+    @Schema(description = "截止时间")
+    private Long deadlineTime;
 
     @Schema(description = "附件url")
     private String accessoryUrl;
