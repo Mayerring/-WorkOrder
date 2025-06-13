@@ -8,7 +8,6 @@ import com.example.spring_vue_demo.param.*;
 import com.example.spring_vue_demo.vo.WorkOrderDetailVO;
 import com.example.spring_vue_demo.vo.WorkOrderPageVO;
 import com.example.spring_vue_demo.vo.WorkOrderUpdateStatusVO;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 
@@ -31,5 +30,7 @@ public interface WorkOrderService extends IService<WorkOrder> {
 
     Result approval(WorkOrderApprovalParam param);
 
-    void export(WorkOrderPageParam param,HttpServletResponse response,  HttpServletRequest request);
+    void export(WorkOrderPageParam param,HttpServletResponse response);
+
+    void print(WorkOrderDetailParam param,HttpServletResponse response);
 }
