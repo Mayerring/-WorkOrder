@@ -2,8 +2,10 @@ package com.example.spring_vue_demo.controller.admin;
 
 import com.example.spring_vue_demo.entity.Result;
 import com.example.spring_vue_demo.param.AddStaffParam;
+import com.example.spring_vue_demo.param.StaffPageParam;
 import com.example.spring_vue_demo.service.AdminService;
 import com.example.spring_vue_demo.service.StaffService;
+import com.example.spring_vue_demo.service.UserService;
 import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -24,6 +26,8 @@ public class StaffController {
 
     @Autowired
     private StaffService staffService;
+    @Autowired
+    private UserService userService;
 
     @ApiOperationSupport(order = 1)
     @Operation(summary = "新增员工")
@@ -53,9 +57,9 @@ public class StaffController {
     @ApiOperationSupport(order = 4)
     @Operation(summary = "分页查看员工信息")
     @PostMapping("/page")
-    public Result staffChange()
+    public Result staffChange(@RequestBody StaffPageParam param)
     {
-        return Result.error("暂未实现");
+        return userService.staffPage(param);
     }
 
     @ApiOperationSupport(order = 5)

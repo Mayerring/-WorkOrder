@@ -16,8 +16,11 @@ import com.example.spring_vue_demo.vo.AddDepartmentVO;
 import lombok.val;
 import org.apache.ibatis.type.LongTypeHandler;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cglib.core.Local;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.List;
 
@@ -29,6 +32,7 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
     private CompanyMapper companyMapper;
     @Autowired
     private StaffMapper staffMapper;
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     @Override
     public Result addDepartment(AddDepartmentParam param) {
         Department department = new Department();
@@ -58,23 +62,19 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
         Staff leader = staffMapper.selectOne(
                 new QueryWrapper<Staff>().eq("name", param.getLeaderName())
         );
-//        if (leader == null) {
-//            return Result.error("负责人不存在: " + param.getLeaderName());
-//        }
         if(leader != null){
             department.setLeaderNumber(leader.getStaffNumber());
         }
         // 4. 生成部门编码（可根据公司+已有部门数）
-        Integer maxId = departmentMapper.selectObjs(
-                        new QueryWrapper<Department>()
-                                .select("MAX(id)")
-                ).stream()
-                .map(obj -> obj != null ? Integer.parseInt(obj.toString()) : 0)
-                .findFirst()
-                .orElse(0);
-        String departmentCode = OrganizationCodeUtils.generateDepartmentCode(company.getCode(),maxId);
+        Long departmentCount = departmentMapper.selectCount(
+                new QueryWrapper<Department>()
+                        .eq("company_code", company.getCode()) // 或者根据实际字段：companyCode、companyName等
+        );
+        String departmentCode = OrganizationCodeUtils.generateDepartmentCode(company.getCode(),departmentCount);
         department.setCode(departmentCode);
         department.setName(param.getName());;
+        department.setCreateTime(formatter.format(LocalDateTime.now()));
+        department.setUpdateTime(formatter.format(LocalDateTime.now()));
         departmentMapper.insert(department);
 
         // 6. 返回结果

@@ -58,20 +58,20 @@ CREATE TABLE company (
                          code VARCHAR(50) UNIQUE COMMENT '公司编码',
                          parent_company_code VARCHAR(50) DEFAULT NULL COMMENT '上级公司编码',
                          level TINYINT DEFAULT 1 COMMENT '公司层级（1：总部，2：省公司，3：市公司）',
-                         create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                         update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间'
+                         create_time bigint COMMENT '创建时间',
+                         update_time bigint COMMENT '修改时间'
 ) COMMENT='公司信息表';
 
 drop table if exists department;
 CREATE TABLE department (
                             id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '部门ID',
-                            name VARCHAR(100) NOT NULL COMMENT '部门名称',
+                            name VARCHAR(100) NOT NULL UNIQUE  COMMENT '部门名称',
                             code VARCHAR(50) UNIQUE COMMENT '部门编码',
                             parent_department_code VARCHAR(50) DEFAULT NULL COMMENT '上级部门ID(null表示顶级）',
                             company_code VARCHAR(50) NOT NULL COMMENT '所属公司编码',
                             leader_number VARCHAR(50) DEFAULT NULL COMMENT '部门主管员工工号',
-                            create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                            update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间'
+                            create_time bigint COMMENT '创建时间',
+                            update_time bigint COMMENT '修改时间'
 ) COMMENT='部门信息表';
 
 
@@ -91,8 +91,8 @@ CREATE TABLE staff (
                        manager_name VARCHAR(100) COMMENT '直属领导姓名',
                        phone VARCHAR(20) UNIQUE  COMMENT '手机号码',
                        email VARCHAR(100)  UNIQUE COMMENT '邮箱',
-                       create_time DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-                       update_time DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '修改时间'
+                       create_time bigint COMMENT '创建时间',
+                       update_time bigint COMMENT '修改时间'
 ) COMMENT='职工表';
 
 

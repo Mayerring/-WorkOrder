@@ -39,7 +39,6 @@ public class Department {
     private String createTime;
     @TableField(typeHandler = TimeTypeHandler.class)
     @Schema(description = "更新时间")
-    //todo 改成时间戳
     private String updateTime;
 
 }

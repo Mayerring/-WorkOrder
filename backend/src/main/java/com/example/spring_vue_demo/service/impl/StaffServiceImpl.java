@@ -17,6 +17,8 @@ import com.example.spring_vue_demo.vo.AddStaffVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Service
@@ -28,7 +30,7 @@ public class StaffServiceImpl extends ServiceImpl<StaffMapper, Staff> implements
     private DepartmentMapper departmentMapper;
     @Autowired
     private CompanyMapper companyMapper;
-
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     @Override
     public Result addStaff(AddStaffParam param) {
         Staff staff = new Staff();
@@ -75,6 +77,8 @@ public class StaffServiceImpl extends ServiceImpl<StaffMapper, Staff> implements
         //生成员工编号
         String staffNumber = OrganizationCodeUtils.generateStaffCode();
         staff.setStaffNumber(staffNumber);
+        staff.setCreateTime(formatter.format(LocalDateTime.now()));
+        staff.setUpdateTime(formatter.format(LocalDateTime.now()));
         staffMapper.insert(staff);
 
         // 6. 构建返回 VO
