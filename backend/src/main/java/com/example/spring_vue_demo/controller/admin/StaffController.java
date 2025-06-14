@@ -2,6 +2,7 @@ package com.example.spring_vue_demo.controller.admin;
 
 import com.example.spring_vue_demo.entity.Result;
 import com.example.spring_vue_demo.param.AddStaffParam;
+import com.example.spring_vue_demo.param.ChangeStaffInfoParam;
 import com.example.spring_vue_demo.param.StaffPageParam;
 import com.example.spring_vue_demo.service.AdminService;
 import com.example.spring_vue_demo.service.StaffService;
@@ -12,10 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 
 @RestController
@@ -26,8 +24,6 @@ public class StaffController {
 
     @Autowired
     private StaffService staffService;
-    @Autowired
-    private UserService userService;
 
     @ApiOperationSupport(order = 1)
     @Operation(summary = "新增员工")
@@ -35,23 +31,22 @@ public class StaffController {
     public Result addStaff(@RequestBody AddStaffParam param)
     {
         return staffService.addStaff(param);
-        //return Result.error("暂未实现");
     }
 
     @ApiOperationSupport(order = 2)
     @Operation(summary = "删除员工")
     @PostMapping("/delete")
-    public Result deleteStaff()
+    public Result deleteStaff(@RequestParam Long id)
     {
-        return Result.error("暂未实现");
+        return staffService.delete(id);
     }
 
     @ApiOperationSupport(order = 3)
     @Operation(summary = "修改员工信息")
     @PostMapping("/change")
-    public Result changeStaff()
+    public Result changeStaff(@RequestBody ChangeStaffInfoParam param)
     {
-        return Result.error("暂未实现");
+        return staffService.changeStaff(param);
     }
 
     @ApiOperationSupport(order = 4)
@@ -59,7 +54,7 @@ public class StaffController {
     @PostMapping("/page")
     public Result staffChange(@RequestBody StaffPageParam param)
     {
-        return userService.staffPage(param);
+        return staffService.staffPage(param);
     }
 
     @ApiOperationSupport(order = 5)
