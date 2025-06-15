@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 
 public interface UserService extends IService<Staff> {
 
-    Result belong(Long staffId);
+    Result belong();
 
     Result organizationStructure();
 

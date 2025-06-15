@@ -18,10 +18,10 @@ public class UserController {
     @Autowired
     private UserService userService;
     @ApiOperationSupport(order = 1)
-    @Operation(summary = "根据查询员工的信息")
-    @PostMapping("belong")
-    public Result belong(Long staffId) {
-        return userService.belong(staffId);
+    @Operation(summary = "查询个人信息")
+    @PostMapping("me")
+    public Result belong() {
+        return userService.belong();
     }
 
     @ApiOperationSupport(order = 2)

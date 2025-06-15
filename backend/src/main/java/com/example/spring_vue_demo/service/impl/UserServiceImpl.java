@@ -39,8 +39,9 @@ public class UserServiceImpl extends ServiceImpl<StaffMapper, Staff> implements 
     }
 
     @Override
-    public Result belong(Long staffId) {
+    public Result belong() {
         // 1. 根据ID查Staff
+        Long staffId = StaffHolder.get().getId();
         Staff staff = this.getById(staffId);
         if (staff == null) {
             return Result.error("员工不存在");
@@ -54,6 +55,11 @@ public class UserServiceImpl extends ServiceImpl<StaffMapper, Staff> implements 
         vo.setDepartmentCode(staff.getDepartmentCode());
         vo.setDepartmentName(staff.getDepartment());
         vo.setPosition(staff.getPosition());
+        vo.setRole(staff.getRole());
+        vo.setCreateTime(staff.getCreateTime());
+        vo.setUpdateTime(staff.getUpdateTime());
+        vo.setManagerNumber(staff.getManagerNumber());
+        vo.setManagerName(staff.getManagerName());
 
         // 3. 返回
         return Result.success(vo);
