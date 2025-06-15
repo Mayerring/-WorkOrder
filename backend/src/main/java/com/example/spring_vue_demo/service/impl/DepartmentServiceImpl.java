@@ -51,12 +51,20 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
             return Result.error("公司不存在: " + param.getCompanyName());
         }
         department.setCompanyCode(company.getCode());
+        //确保部门名不重复
+        Department nowDepartment = departmentMapper.selectOne(
+                new QueryWrapper<Department>().eq("company_code", company.getCode())
+                        .eq("name",param.getName())
+        );
+        if (nowDepartment != null) {
+            return Result.error("公司"+company.getName()+"已经存在部门"+param.getName());
+        }
         //查上级部门
         if (param.getParentDepartmentName() != null && !param.getParentDepartmentName().isEmpty()) {
             Department parent = departmentMapper.selectOne(
                     new QueryWrapper<Department>()
                             .eq("name", param.getParentDepartmentName())
-                            .eq("company_id", company.getId())
+                            .eq("company_code", company.getParentCompanyCode())
             );
             if (parent == null) {
                 return Result.error("父部门不存在: " + param.getParentDepartmentName());

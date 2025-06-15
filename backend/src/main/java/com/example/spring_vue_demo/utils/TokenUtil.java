@@ -34,6 +34,7 @@ public class TokenUtil {
                 .claim("status", staff.getStatus())
                 .claim("phone", staff.getPhone())
                 .claim("email", staff.getEmail())
+                .claim("role", staff.getRole())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + 86400000)) // 1天有效期
                 .signWith(KEY, SignatureAlgorithm.HS256)
@@ -74,7 +75,7 @@ public class TokenUtil {
         staff.setStatus((Integer) claims.get("status"));
         staff.setEmail(claims.get("email").toString());
         staff.setPhone(claims.get("phone").toString());
-
+        staff.setRole(claims.get("role").toString());
         return staff;
     }
 }

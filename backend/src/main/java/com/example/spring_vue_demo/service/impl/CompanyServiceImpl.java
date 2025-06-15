@@ -13,6 +13,7 @@ import com.example.spring_vue_demo.vo.AddCompanyVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.lang.annotation.Retention;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -35,6 +36,13 @@ public class CompanyServiceImpl extends ServiceImpl<CompanyMapper, Company> impl
         company.setName(param.getName());
         company.setLevel(param.getLevel());
         log.debug(param.toString());
+        //保证公司名不重复
+        Company newCompany = companyMapper.selectOne(
+                new QueryWrapper<Company>().eq("name",param.getName())
+        );
+        if(newCompany!=null){
+            return Result.error(param.getName()+"已经存在");
+        }
         if (param.getParentCompanyName() != null && !param.getParentCompanyName().isEmpty()) {
             Company parent = companyMapper.selectOne(
                     new QueryWrapper<Company>().eq("name", param.getParentCompanyName())
@@ -46,6 +54,7 @@ public class CompanyServiceImpl extends ServiceImpl<CompanyMapper, Company> impl
         } else {
             company.setParentCompanyCode(null); // 或者不设置，默认数据库为 NULL
         }
+
         company.setCode(code);
         company.setCreateTime(formatter.format(LocalDateTime.now()));
         company.setUpdateTime(formatter.format(LocalDateTime.now()));

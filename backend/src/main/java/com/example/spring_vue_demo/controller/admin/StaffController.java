@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.AllArgsConstructor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 
@@ -26,6 +27,7 @@ public class StaffController {
     private StaffService staffService;
 
     @ApiOperationSupport(order = 1)
+    @PreAuthorize("hasRole('ADMIN')")
     @Operation(summary = "新增员工")
     @PostMapping("/add")
     public Result addStaff(@RequestBody AddStaffParam param)
@@ -35,6 +37,7 @@ public class StaffController {
 
     @ApiOperationSupport(order = 2)
     @Operation(summary = "删除员工")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/delete")
     public Result deleteStaff(@RequestParam Long id)
     {
@@ -43,6 +46,7 @@ public class StaffController {
 
     @ApiOperationSupport(order = 3)
     @Operation(summary = "修改员工信息")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/change")
     public Result changeStaff(@RequestBody ChangeStaffInfoParam param)
     {
@@ -51,6 +55,7 @@ public class StaffController {
 
     @ApiOperationSupport(order = 4)
     @Operation(summary = "分页查看员工信息")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/page")
     public Result staffChange(@RequestBody StaffPageParam param)
     {
@@ -59,6 +64,7 @@ public class StaffController {
 
     @ApiOperationSupport(order = 5)
     @Operation(summary = "所有员工")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/all")
     public Result all(){
         return staffService.allStaff();

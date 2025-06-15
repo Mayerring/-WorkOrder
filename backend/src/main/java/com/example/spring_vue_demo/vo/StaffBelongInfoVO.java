@@ -1,8 +1,5 @@
 package com.example.spring_vue_demo.vo;
 
-import com.baomidou.mybatisplus.annotation.TableField;
-import com.example.spring_vue_demo.common.TimeTypeHandler;
-import io.swagger.v3.oas.annotations.callbacks.Callback;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 

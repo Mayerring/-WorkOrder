@@ -204,9 +204,11 @@ public class StaffServiceImpl extends ServiceImpl<StaffMapper, Staff> implements
             updateWrapper.set("company", param.getCompanyName());
             updateWrapper.set("company_code",company.getCode());
         }
+        String companyCode =  (company==null ? staff.getCompanyCode() : company.getCode());
         if (param.getDepartmentName() != null) {
             department = departmentMapper.selectOne(
                     new QueryWrapper<Department>().eq("name", param.getDepartmentName())
+                            .eq("company_code", companyCode)
             );
             if (department == null) {
                 return Result.error("不存在名字为"+param.getDepartmentName()+"的部门");
@@ -217,7 +219,6 @@ public class StaffServiceImpl extends ServiceImpl<StaffMapper, Staff> implements
         //更新manager-name
         if (company !=null || department != null)
         {
-            String companyCode =  (company==null ? staff.getCompanyCode() : company.getCode());
             String departmentCode =  (department==null ? staff.getDepartmentCode() : department.getCode());
             Department dept = departmentMapper.selectOne(
                     new QueryWrapper<Department>().eq("company_code", companyCode)

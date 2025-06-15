@@ -58,6 +58,9 @@ public class Staff {
     @Schema(description = "邮箱")
     private String email;
 
+    @Schema(description = "角色：admin/user")
+    private String role;
+
     @TableField(typeHandler = TimeTypeHandler.class)
     @Schema(description = "创建时间")
     private String createTime;

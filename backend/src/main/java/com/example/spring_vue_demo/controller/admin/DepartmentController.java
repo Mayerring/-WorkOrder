@@ -10,6 +10,7 @@ import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -28,18 +29,21 @@ public class DepartmentController {
 
     @ApiOperationSupport(order = 1)
     @Operation(summary = "新增部门")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/add")
     public Result addDepartment(@RequestBody AddDepartmentParam param) {
         return departmentService.addDepartment(param);
     }
 
     @Operation(summary = "查看某个公司的所有部门")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/all")
     public Result allDepartment(@RequestParam String companyName) {
         return departmentService.allDepartmentInCompany(companyName);
     }
 
     @Operation(summary = "修改部门信息（主管等信息）")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/change")
     public Result changeDepartment(@RequestBody ChangeDepartmentParam param) {
         return departmentService.changeDepartment(param);
