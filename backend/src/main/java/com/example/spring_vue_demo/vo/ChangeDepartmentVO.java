@@ -8,11 +8,15 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class AddDepartmentVO {
+public class ChangeDepartmentVO {
     @Schema(description = "部门id")
-    private int id;
+    private Long id;
     @Schema(description = "部门编码")
-    private String departmentCode;
-    @Schema(description = "若有部门主管的主管编码")
+    private String code;
+    @Schema(description = "上级部门编码")
+    private String parentDepartmentCode;
+    @Schema(description = "主管编码")
     private String leaderNumber;
+    @Schema(description = "修改结果")
+    private Boolean isSuccess;
 }

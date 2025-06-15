@@ -78,8 +78,8 @@ public class OrganizationCodeUtils {
      * @param departmentCount 当前公司已有的部门数量，用于生成流水号
      * @return 部门编号
      */
-    public static String generateDepartmentCode(String companyCode, int departmentCount) {
-        int nextNumber = departmentCount + 1;
+    public static String generateDepartmentCode(String companyCode, long departmentCount) {
+        long nextNumber = departmentCount + 1;
         return String.format("D%s-%04d", companyCode, nextNumber);
     }
 

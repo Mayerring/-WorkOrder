@@ -1,4 +1,4 @@
-package com.example.spring_vue_demo.vo;
+package com.example.spring_vue_demo.param;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
@@ -6,13 +6,16 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
-@AllArgsConstructor
 @NoArgsConstructor
-public class AddDepartmentVO {
+@AllArgsConstructor
+public class ChangeDepartmentParam {
     @Schema(description = "部门id")
-    private int id;
+    private Long id;
     @Schema(description = "部门编码")
-    private String departmentCode;
-    @Schema(description = "若有部门主管的主管编码")
+    private String code;
+    @Schema(description = "上级部门编码")
+    private String parentDepartmentCode;
+    @Schema(description = "主管编码")
     private String leaderNumber;
+
 }

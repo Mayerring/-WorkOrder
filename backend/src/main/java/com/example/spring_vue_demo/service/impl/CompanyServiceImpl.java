@@ -13,6 +13,9 @@ import com.example.spring_vue_demo.vo.AddCompanyVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.lang.annotation.Retention;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 /**
@@ -25,7 +28,7 @@ import java.util.List;
 public class CompanyServiceImpl extends ServiceImpl<CompanyMapper, Company> implements CompanyService {
     @Autowired
     private CompanyMapper companyMapper;
-
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
     @Override
     public Result addCompany(AddCompanyParam param) {
         String code = OrganizationCodeUtils.generateCompanyCode();
@@ -33,6 +36,13 @@ public class CompanyServiceImpl extends ServiceImpl<CompanyMapper, Company> impl
         company.setName(param.getName());
         company.setLevel(param.getLevel());
         log.debug(param.toString());
+        //保证公司名不重复
+        Company newCompany = companyMapper.selectOne(
+                new QueryWrapper<Company>().eq("name",param.getName())
+        );
+        if(newCompany!=null){
+            return Result.error(param.getName()+"已经存在");
+        }
         if (param.getParentCompanyName() != null && !param.getParentCompanyName().isEmpty()) {
             Company parent = companyMapper.selectOne(
                     new QueryWrapper<Company>().eq("name", param.getParentCompanyName())
@@ -44,7 +54,10 @@ public class CompanyServiceImpl extends ServiceImpl<CompanyMapper, Company> impl
         } else {
             company.setParentCompanyCode(null); // 或者不设置，默认数据库为 NULL
         }
+
         company.setCode(code);
+        company.setCreateTime(formatter.format(LocalDateTime.now()));
+        company.setUpdateTime(formatter.format(LocalDateTime.now()));
         boolean isSaved = this.save(company);
         if(isSaved){
             AddCompanyVO addCompanyVO = new AddCompanyVO();
@@ -57,8 +70,7 @@ public class CompanyServiceImpl extends ServiceImpl<CompanyMapper, Company> impl
 
     @Override
     public Result allCompany() {
-        //<Company> companies = companyMapper.selectList(null);
-        List<String> companyNames = companyMapper.selectAllCompanyNames();
-        return Result.success(companyNames);
+        List<Company> companies = companyMapper.selectList(null);
+        return Result.success(companies);
     }
 }

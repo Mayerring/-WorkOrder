@@ -8,6 +8,7 @@ import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -26,6 +27,7 @@ public class CompanyController {
     private CompanyService companyService;
     @ApiOperationSupport(order = 1)
     @Operation(summary = "新增公司")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/add")
     public Result addCompany(@RequestBody AddCompanyParam param) {
         return companyService.addCompany(param);
@@ -33,8 +35,9 @@ public class CompanyController {
 
     @ApiOperationSupport(order = 2)
     @Operation(summary = "所有公司")
+    @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("all")
-    private Result allCompany() {
+    public Result allCompany() {
         return companyService.allCompany();
     }
 }
