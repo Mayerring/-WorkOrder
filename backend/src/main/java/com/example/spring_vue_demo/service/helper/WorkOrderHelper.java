@@ -13,14 +13,15 @@ import com.example.spring_vue_demo.enums.*;
 import com.example.spring_vue_demo.exception.UserSideException;
 import com.example.spring_vue_demo.mapper.*;
 import com.example.spring_vue_demo.param.HandleUserInfoParam;
-import com.example.spring_vue_demo.param.WorkOrderApprovalParam;
-import com.example.spring_vue_demo.param.WorkOrderCreateParam;
-import com.example.spring_vue_demo.param.WorkOrderPageParam;
+import com.example.spring_vue_demo.param.WorkOrder.WorkOrderApprovalParam;
+import com.example.spring_vue_demo.param.WorkOrder.WorkOrderCreateParam;
+import com.example.spring_vue_demo.param.WorkOrder.WorkOrderPageParam;
+import com.example.spring_vue_demo.service.FlowService;
 import com.example.spring_vue_demo.service.query.HandleUserInfoQuery;
 import com.example.spring_vue_demo.utils.OrderCodeUtils;
 import com.example.spring_vue_demo.utils.StaffHolder;
-import com.example.spring_vue_demo.vo.WorkOrderPageVO;
-import com.example.spring_vue_demo.vo.WorkOrderUpdateStatusVO;
+import com.example.spring_vue_demo.vo.WorkOrder.WorkOrderPageVO;
+import com.example.spring_vue_demo.vo.WorkOrder.WorkOrderUpdateStatusVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -44,6 +45,7 @@ public class WorkOrderHelper {
     private final StaffMapper staffMapper;
     private final CompanyMapper companyMapper;
     private final DepartmentMapper departmentMapper;
+    private final FlowService flowService;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     private void gatherQueryWorkOrderId(List<HandleUserInfo> handleUserInfos, List<HandleUserInfoParam> userInfoParams, HandleUserInfoHandleTypeEnum userInfoType) {
@@ -512,18 +514,21 @@ public class WorkOrderHelper {
         workOrder.setContent(param.getContent());
         workOrder.setPriorityLevel(param.getPriorityLevel());
         workOrder.setStatus(100); //待审核
+        workOrder.setFlowId(param.getFlowId());
         workOrder.setContent(param.getContent());
         //时间
         String formatNow = formatter.format(LocalDateTime.now());
         workOrder.setCreateTime(formatNow);
         workOrder.setUpdateTime(formatNow);
         //转换时间戳
-        String formattedTime = LocalDateTime.ofInstant(
-                Instant.ofEpochSecond(param.getDeadlineTime()),
-                ZoneId.systemDefault()
-        ).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-        log.info(formattedTime);
-        workOrder.setDeadlineTime(formattedTime);
+        if(param.getDeadlineTime()!=null) {
+            String formattedTime = LocalDateTime.ofInstant(
+                    Instant.ofEpochSecond(param.getDeadlineTime()),
+                    ZoneId.systemDefault()
+            ).format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+            log.info(formattedTime);
+            workOrder.setDeadlineTime(formattedTime);
+        }
         String orderCode = OrderCodeUtils.generateWorkOrderCode();
         workOrder.setCode(orderCode);
         workOrder.setDeleted(0);

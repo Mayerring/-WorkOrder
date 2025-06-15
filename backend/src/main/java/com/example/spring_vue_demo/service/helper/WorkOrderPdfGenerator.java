@@ -6,7 +6,7 @@ package com.example.spring_vue_demo.service.helper;
  */
 
 import com.example.spring_vue_demo.vo.HandleUserInfoVO;
-import com.example.spring_vue_demo.vo.WorkOrderDetailVO;
+import com.example.spring_vue_demo.vo.WorkOrder.WorkOrderDetailVO;
 import com.itextpdf.text.*;
 import com.itextpdf.text.pdf.BaseFont;
 import com.itextpdf.text.pdf.PdfPCell;

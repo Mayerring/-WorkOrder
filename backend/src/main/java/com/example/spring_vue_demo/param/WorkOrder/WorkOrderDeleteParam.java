@@ -1,14 +1,14 @@
-package com.example.spring_vue_demo.param;
+package com.example.spring_vue_demo.param.WorkOrder;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 
 /**
  * @author wtt
- * @date 2025/06/03
+ * @date 2025/06/02
  */
 @Data
-public class WorkOrderCancelParam {
+public class WorkOrderDeleteParam {
     @Schema(description = "工单id")
     private Long id;
 

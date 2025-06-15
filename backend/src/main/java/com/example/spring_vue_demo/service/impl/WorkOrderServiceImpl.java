@@ -20,10 +20,10 @@ import com.example.spring_vue_demo.mapper.HandleUserInfoMapper;
 import com.example.spring_vue_demo.mapper.MessageMapper;
 import com.example.spring_vue_demo.mapper.StaffMapper;
 import com.example.spring_vue_demo.mapper.WorkOrderMapper;
-import com.example.spring_vue_demo.param.*;
-import com.example.spring_vue_demo.param.WorkOrderDetailParam;
-import com.example.spring_vue_demo.param.WorkOrderPageParam;
-import com.example.spring_vue_demo.param.WorkOrderHandleParam;
+import com.example.spring_vue_demo.param.Flow.FlowIdParam;
+import com.example.spring_vue_demo.param.WorkOrder.*;
+import com.example.spring_vue_demo.param.WorkOrder.WorkOrderPageParam;
+import com.example.spring_vue_demo.service.FlowService;
 import com.example.spring_vue_demo.service.HandleUserInfoService;
 import com.example.spring_vue_demo.service.WorkOrderService;
 import com.example.spring_vue_demo.service.helper.WorkOrderPdfGenerator;
@@ -33,6 +33,9 @@ import com.example.spring_vue_demo.service.convert.WorkOrderConverter;
 import com.example.spring_vue_demo.service.helper.WorkOrderHelper;
 import com.example.spring_vue_demo.service.query.HandleUserInfoQuery;
 import com.example.spring_vue_demo.service.query.WorkOrderQuery;
+import com.example.spring_vue_demo.vo.Flow.FlowNodeVO;
+import com.example.spring_vue_demo.vo.Flow.FlowVO;
+import com.example.spring_vue_demo.vo.WorkOrder.*;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
@@ -79,6 +82,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     private final MessageMapper messageMapper;
     private final StaffMapper staffMapper;
     private final HandleUserInfoMapper handleUserInfoMapper;
+    private final FlowService flowService;
 
     private final DateTimeFormatter formatterDate = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -206,34 +210,44 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         WorkOrderCreateVO workOrderCreateVO = new WorkOrderCreateVO();
         //参数校验
         if (param == null || StringUtils.isBlank(param.getTitle())
-                || param.getType() == null || param.getPriorityLevel() == null) {
+                || param.getType() == null || param.getPriorityLevel() == null
+                || param.getFlowId() == null) {
             return Result.error("参数不完整");
         }
+        //todo: 校验流程是否存在
         WorkOrder workOrder = workOrderHelper.createWorkOrder(param);
+        //查询流程
+        FlowVO flowList = flowService.getByFlowId(new FlowIdParam(param.getFlowId()));
+        List<FlowNodeVO> nodes = flowList.getNodes();
         //插入新建工单
         boolean isSaved = this.save(workOrder);
         workOrderCreateVO.setId(workOrder.getId());
         workOrderCreateVO.setCode(workOrder.getCode());
         //更新handle_user_info表
         Staff staff = StaffHolder.get();
-        workOrderHelper.addHandleInfo(workOrder.getId(),HandleTypeEnum.CREATED,
-                0L,workOrder.getContent());
-        //获取分配人id，验收人为创建者
-        Long distributeId = workOrderHelper.findDistributeId(param.getType());
-        workOrderHelper.addDistributeAndCheckInfo(workOrder.getId(),distributeId, staff.getId());
+        workOrderHelper.addHandleInfo(workOrder.getId(), HandleTypeEnum.CREATED,
+                0L, workOrder.getContent());
+        Long distributeId = nodes.stream().filter(node -> Objects.equals(node.getNodeType(), HandleUserInfoHandleTypeEnum.DISTRIBUTE.getValue()))
+                .toList().get(0).getHandlerId();
+        Long checkId = nodes.stream().filter(node -> Objects.equals(node.getNodeType(), HandleUserInfoHandleTypeEnum.CHECK.getValue()))
+                .toList().get(0).getHandlerId();
+        Long firstAuditId = nodes.stream().filter(node -> Objects.equals(node.getNodeType(), HandleUserInfoHandleTypeEnum.CHECK.getValue()))
+                .toList().get(0).getHandlerId();
+        workOrderHelper.addDistributeAndCheckInfo(workOrder.getId(), distributeId, checkId);
 
         //发送信息
-        Message message = workOrderHelper.buildMessage(WorkOrderStatusEnum.getByValue(workOrder.getStatus()), workOrder.getCode(),staff.getId());
+        Message message = workOrderHelper.buildMessage(WorkOrderStatusEnum.getByValue(workOrder.getStatus()), workOrder.getCode(), staff.getId());
         int msgSuccess = messageMapper.insert(message);
-        long auditId = workOrderHelper.findAuditId(staff.getId());
-        boolean isSuccess=dispatchToAuditor(workOrder.getId(),workOrder.getCode(),auditId,true);
-        workOrderCreateVO.setIsSuccess(isSuccess && (msgSuccess==1) && isSaved );
+//        long auditId = workOrderHelper.findAuditId(staff.getId());
+        boolean isSuccess = dispatchToAuditor(workOrder.getId(), workOrder.getCode(), firstAuditId, true);
+        workOrderCreateVO.setIsSuccess(isSuccess && (msgSuccess == 1) && isSaved);
         return Result.success(workOrderCreateVO);
     }
 
+
     @Transactional
     @Override
-    public boolean dispatchToAuditor(Long workOrderId,String workOrderCode,Long auditId,boolean isFirstAudit) {
+    public boolean dispatchToAuditor(Long workOrderId, String workOrderCode, Long auditId, boolean isFirstAudit) {
         HandleTypeEnum handleType = HandleTypeEnum.AUDIT;
         //校验工单id和code不能全为空
         workOrderHelper.checkIdAndCodeNotNull(workOrderId, workOrderCode);
@@ -244,13 +258,13 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         //校验工单状态和操作是否匹配
         workOrderHelper.checkHandleWorkOrderStatus(workOrder, handleType);
         //更新状态为待审核
-        if(!isFirstAudit) {
-            workOrderHelper.updateNextStatus(handleType,workOrder,false);
+        if (!isFirstAudit) {
+            workOrderHelper.updateNextStatus(handleType, workOrder, false);
             updateById(workOrder);
         }
-        Message message=workOrderHelper.buildMessage(AUDITING, workOrder.getCode(), auditId);
+        Message message = workOrderHelper.buildMessage(AUDITING, workOrder.getCode(), auditId);
         int msgSuccess = messageMapper.insert(message);
-        if(msgSuccess != 1){
+        if (msgSuccess != 1) {
             return false;
         }
         //添加操作信息
@@ -266,12 +280,13 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         WorkOrder workOrder = getOne(workOrderWrapper);
         workOrderHelper.checkWorkOrderExist(workOrder);
         //找到对应的handle—user-info数据，添加审批意见,更新finished位
+        // todo:校验工单状态为待审核
+        // todo:校验当前用户是否有对应处理信息
         workOrderHelper.updateHandleUserInfo(param);
         WorkOrderApprovalVO workOrderApprovalVO = new WorkOrderApprovalVO();
         workOrderApprovalVO.setId(param.getId());
         workOrderApprovalVO.setCode(param.getCode());
-        if(!param.getIsApproved())
-        {
+        if (!param.getIsApproved()) {
             //审核不通过，流程结束
             workOrder.setStatus(WorkOrderStatusEnum.AUDIT_FAILURE.getValue());
             updateById(workOrder);
@@ -279,9 +294,11 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
 
             return Result.success(workOrderApprovalVO);
         }
-        Long nextAuditId = workOrderHelper.findNextStaff();
-        if(nextAuditId == null)
-        {
+
+        Long userId = StaffHolder.get().getId();
+        Long flowId = workOrder.getFlowId();
+        FlowNodeVO nextNode = flowService.getNextFlowNode(userId,flowId);
+        if (nextNode == null) {
             //没有下一个，已经结束了,更新状态
             workOrder.setStatus(WorkOrderStatusEnum.UNDISTRIBUTED.getValue());
             updateById(workOrder);
@@ -289,8 +306,9 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
             return Result.success(workOrderApprovalVO);
         }
         workOrderApprovalVO.setResult(Boolean.FALSE);
+        Long nextAuditId=nextNode.getHandlerId();
         //转发
-        dispatchToAuditor(workOrder.getId(),workOrder.getCode(),nextAuditId,false);
+        dispatchToAuditor(workOrder.getId(), workOrder.getCode(), nextAuditId, false);
         return Result.success(workOrderApprovalVO);
     }
 
@@ -357,7 +375,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
             bodyStyle.setVerticalAlignment(VerticalAlignment.CENTER);
             // 设置文件名
             String fileName = URLEncoder.encode(fileName_zh, "UTF-8");
-            response.setHeader("Content-disposition", "attachment;filename=" + fileName+".xlsx");
+            response.setHeader("Content-disposition", "attachment;filename=" + fileName + ".xlsx");
             // 读文件
             excelWriter = EasyExcel.write(response.getOutputStream())
                     .needHead(true)
@@ -376,10 +394,10 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     @Override
     public void print(WorkOrderDetailParam param, HttpServletResponse response) {
         WorkOrderDetailVO workOrder = detail(param);
-        String fileName=URLEncoder.encode("工单_" + workOrder.getCode());
+        String fileName = URLEncoder.encode("工单_" + workOrder.getCode());
         // 设置响应头
         response.setContentType("application/pdf");
-        response.setHeader("Content-Disposition", "attachment; filename="+fileName+".pdf");
+        response.setHeader("Content-Disposition", "attachment; filename=" + fileName + ".pdf");
         try (OutputStream out = response.getOutputStream()) {
             // 2. 生成PDF
             ByteArrayOutputStream pdfStream = WorkOrderPdfGenerator.generateWorkOrderPdf(workOrder);

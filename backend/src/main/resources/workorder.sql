@@ -8,6 +8,7 @@ create table work_order(
     title varchar(128) comment '工单标题',
     priority_level tinyint comment '优先级',
     status int not null comment '状态',
+    flow_id bigint not null comment '流程id',
     create_time bigint not null comment '创建时间',
     update_time bigint comment '更新时间',
     cancel_time  bigint comment '取消时间',
@@ -73,7 +74,21 @@ CREATE TABLE department (
                             create_time bigint COMMENT '创建时间',
                             update_time bigint COMMENT '修改时间'
 ) COMMENT='部门信息表';
-
+drop table if exists flow;
+CREATE TABLE flow (
+                       id bigint primary key NOT NULL AUTO_INCREMENT comment 'id',
+                       flow_id bigint NOT NULL COMMENT '流程id',
+                       flow_name varchar(128) NOT NULL COMMENT '流程名',
+                       node_type tinyint NOT NULL COMMENT '节点类型:审批2，指派3，验收5',
+                       handler_id bigint NOT NULL COMMENT '处理人id',
+                       handler_name varchar(128) NOT NULL COMMENT '处理人名',
+                       is_parallel tinyint DEFAULT '0' COMMENT '是否并行处理',
+                       head_flow_id bigint comment '头节点id(只有审核有)',
+                       next_flow_id bigint comment '下一节点id(只有审核有)',
+                       is_last_node tinyint DEFAULT '0' COMMENT '是否为该流程终止节点',
+                       create_time bigint NOT NULL COMMENT '创建时间',
+                       update_time bigint COMMENT '更新时间'
+) COMMENT='工单流程定义表';
 
 drop table if exists staff;
 CREATE TABLE staff (

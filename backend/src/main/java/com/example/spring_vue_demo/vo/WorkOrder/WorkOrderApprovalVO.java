@@ -1,12 +1,16 @@
-package com.example.spring_vue_demo.vo;
+package com.example.spring_vue_demo.vo.WorkOrder;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import io.swagger.v3.oas.annotations.media.Schema;
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
-public class WorkOrderCreateVO {
+@AllArgsConstructor
+@NoArgsConstructor
+public class WorkOrderApprovalVO {
     @TableId(type = IdType.AUTO)
     @Schema(description = "工单id")
     private Long id;
@@ -14,6 +18,7 @@ public class WorkOrderCreateVO {
     @Schema(description = "工单编号")
     private String code;
 
-    @Schema(description = "是否成功创建")
-    private Boolean isSuccess;
+    @Schema(description = "审核结果，0表示结束，1表示未结束")
+    private Boolean result;
+
 }

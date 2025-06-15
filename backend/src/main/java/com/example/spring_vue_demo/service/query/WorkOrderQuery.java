@@ -8,7 +8,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.spring_vue_demo.entity.WorkOrder;
 import com.example.spring_vue_demo.enums.ErrorCode;
 import com.example.spring_vue_demo.exception.UserSideException;
-import com.example.spring_vue_demo.param.WorkOrderPageParam;
+import com.example.spring_vue_demo.param.WorkOrder.WorkOrderPageParam;
 import io.micrometer.common.util.StringUtils;
 
 import java.util.List;
