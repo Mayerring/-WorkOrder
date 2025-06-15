@@ -1,6 +1,7 @@
 package com.example.spring_vue_demo.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -12,8 +13,10 @@ import com.example.spring_vue_demo.entity.Staff;
 import com.example.spring_vue_demo.mapper.CompanyMapper;
 import com.example.spring_vue_demo.mapper.DepartmentMapper;
 import com.example.spring_vue_demo.mapper.StaffMapper;
+import com.example.spring_vue_demo.param.ChangePersonalInfoParam;
 import com.example.spring_vue_demo.param.StaffPageParam;
 import com.example.spring_vue_demo.service.UserService;
+import com.example.spring_vue_demo.utils.StaffHolder;
 import com.example.spring_vue_demo.vo.OrganizationStructureVO;
 import com.example.spring_vue_demo.vo.StaffBelongInfoVO;
 import lombok.val;
@@ -36,8 +39,9 @@ public class UserServiceImpl extends ServiceImpl<StaffMapper, Staff> implements 
     }
 
     @Override
-    public Result belong(Long staffId) {
+    public Result belong() {
         // 1. 根据ID查Staff
+        Long staffId = StaffHolder.get().getId();
         Staff staff = this.getById(staffId);
         if (staff == null) {
             return Result.error("员工不存在");
@@ -51,6 +55,11 @@ public class UserServiceImpl extends ServiceImpl<StaffMapper, Staff> implements 
         vo.setDepartmentCode(staff.getDepartmentCode());
         vo.setDepartmentName(staff.getDepartment());
         vo.setPosition(staff.getPosition());
+        vo.setRole(staff.getRole());
+        vo.setCreateTime(staff.getCreateTime());
+        vo.setUpdateTime(staff.getUpdateTime());
+        vo.setManagerNumber(staff.getManagerNumber());
+        vo.setManagerName(staff.getManagerName());
 
         // 3. 返回
         return Result.success(vo);
@@ -132,5 +141,34 @@ public class UserServiceImpl extends ServiceImpl<StaffMapper, Staff> implements 
         // 执行查询
         Page<Staff> staffPage = staffMapper.selectPage(page, queryWrapper);
         return Result.success(staffPage);
+    }
+
+    @Override
+    public Result change(ChangePersonalInfoParam param) {
+        Staff staff = StaffHolder.get();
+
+        UpdateWrapper<Staff> updateWrapper = new UpdateWrapper<>();
+
+        // 设置更新条件
+        updateWrapper.eq("id", staff.getId());
+
+        // 设置更新字段
+        if (StringUtils.isNotBlank(param.getPassword())) {
+            updateWrapper.set("password", param.getPassword());
+        }
+        if (StringUtils.isNotBlank(param.getPhone())) {
+            updateWrapper.set("phone", param.getPhone());
+        }
+        if (StringUtils.isNotBlank(param.getEmail())) {
+            updateWrapper.set("email", param.getEmail());
+        }
+
+        updateWrapper.set("update_time", System.currentTimeMillis() / 1000); // 秒级时间戳
+
+        int rows = staffMapper.update(null, updateWrapper);
+        if (rows == 0) {
+            return Result.error("无更新");
+        }
+        return Result.success();
     }
 }
