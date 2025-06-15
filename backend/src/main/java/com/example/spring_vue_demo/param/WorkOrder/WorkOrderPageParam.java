@@ -1,5 +1,7 @@
-package com.example.spring_vue_demo.param;
+package com.example.spring_vue_demo.param.WorkOrder;
 
+import com.example.spring_vue_demo.param.BasePageParam;
+import com.example.spring_vue_demo.param.HandleUserInfoParam;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -14,7 +16,7 @@ import java.util.List;
 @Data
 @EqualsAndHashCode(callSuper = true)
 @ToString(callSuper = true)
-public class WorkOrderPageParam extends BasePageParam{
+public class WorkOrderPageParam extends BasePageParam {
 
     //查询条件
     @Schema(description = "工单id")

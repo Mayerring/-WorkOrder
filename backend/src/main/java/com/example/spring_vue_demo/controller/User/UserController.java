@@ -1,6 +1,7 @@
 package com.example.spring_vue_demo.controller.User;
 
 import com.example.spring_vue_demo.entity.Result;
+import com.example.spring_vue_demo.param.ChangePersonalInfoParam;
 import com.example.spring_vue_demo.param.StaffPageParam;
 import com.example.spring_vue_demo.service.UserService;
 import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
@@ -17,18 +18,18 @@ public class UserController {
     @Autowired
     private UserService userService;
     @ApiOperationSupport(order = 1)
-    @Operation(summary = "根据查询员工的信息")
-    @PostMapping("belong")
-    public Result belong(Long staffId) {
-        return userService.belong(staffId);
+    @Operation(summary = "查询个人信息")
+    @PostMapping("me")
+    public Result belong() {
+        return userService.belong();
     }
 
     @ApiOperationSupport(order = 2)
     @Operation(summary = "修改个人信息")
     @PostMapping("/change")
-    public Result changeInfo()
+    public Result changeInfo(@RequestBody ChangePersonalInfoParam param)
     {
-        return Result.error("暂未实现");
+        return userService.change(param);
     }
 
     @ApiOperationSupport(order=3)

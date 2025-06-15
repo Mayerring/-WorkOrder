@@ -1,4 +1,4 @@
-package com.example.spring_vue_demo.param;
+package com.example.spring_vue_demo.param.WorkOrder;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;

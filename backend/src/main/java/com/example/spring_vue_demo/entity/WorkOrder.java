@@ -32,6 +32,9 @@ public class WorkOrder {
     @Schema(description = "工单标题")
     private String title;
 
+    @Schema(description = "流程id")
+    private Long flowId;
+
     @TableField(exist = false)
     @Schema(description = "提交信息")
     private HandleUserInfo submitterInfo;

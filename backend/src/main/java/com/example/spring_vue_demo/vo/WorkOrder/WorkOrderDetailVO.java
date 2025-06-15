@@ -1,5 +1,6 @@
-package com.example.spring_vue_demo.vo;
+package com.example.spring_vue_demo.vo.WorkOrder;
 
+import com.example.spring_vue_demo.vo.HandleUserInfoVO;
 import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.Data;
 

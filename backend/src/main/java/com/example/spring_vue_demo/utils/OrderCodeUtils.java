@@ -9,4 +9,8 @@ public class OrderCodeUtils {
         long snowflakeId = cn.hutool.core.util.IdUtil.getSnowflake(1, 1).nextId(); // 机器ID=1, 数据中心ID=1
         return prefix+snowflakeId;
     }
+    public static Long generateFlowId(){
+        long snowflakeId = cn.hutool.core.util.IdUtil.getSnowflake(1, 1).nextId(); // 机器ID=1, 数据中心ID=1
+        return snowflakeId;
+    }
 }

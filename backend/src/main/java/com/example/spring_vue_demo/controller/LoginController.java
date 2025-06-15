@@ -27,11 +27,4 @@ public class LoginController {
     public Result login(@RequestBody LoginParam loginParam) {
         return loginService.login(loginParam);
     }
-    @ApiOperationSupport(order = 1)
-    @Operation(summary = "获取个人信息")
-    @PostMapping("/me")
-    public Result me() {
-        Staff staff = StaffHolder.get();
-        return Result.success(staff);
-    }
 }
