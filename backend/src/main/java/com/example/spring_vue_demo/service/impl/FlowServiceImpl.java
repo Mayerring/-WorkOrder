@@ -21,9 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.stream.Collectors;
 
 /**
@@ -37,8 +35,8 @@ public class FlowServiceImpl extends ServiceImpl<FlowMapper, Flow> implements Fl
     @Override
     @Transactional
     public FlowCreateVO create(FlowCreateParam param,Long flowId) {
-        //todo:校验审核节点处理人是否重复，校验节点判空
-
+        // 校验审核节点处理人是否重复
+        checkAuditHandlerNotRepeat(param.getNodes());
         // 1. 先保存所有节点，获取数据库生成的ID
         List<Flow> allNodes = new ArrayList<>();
         if(flowId==null){
@@ -90,6 +88,16 @@ public class FlowServiceImpl extends ServiceImpl<FlowMapper, Flow> implements Fl
         // 4. 更新节点关系
         boolean b2=updateBatchById(auditNodes);
         return new FlowCreateVO(flowId,b1&&b2);
+    }
+
+    private void checkAuditHandlerNotRepeat(List<FlowNode> nodes) {
+        Set<Long>userSet=new HashSet<>();
+        for(FlowNode node:nodes){
+            userSet.add(node.getHandlerId());
+            if(userSet.contains(node.getHandlerId())){
+                throw new UserSideException(ErrorCode.AUDIT_HANDLER_CAN_NOT_REPEAT);
+            }
+        }
     }
 
     @Override

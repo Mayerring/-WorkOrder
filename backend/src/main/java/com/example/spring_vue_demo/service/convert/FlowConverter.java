@@ -1,5 +1,6 @@
 package com.example.spring_vue_demo.service.convert;
 
+import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.example.spring_vue_demo.entity.Flow;
 import com.example.spring_vue_demo.param.Flow.FlowNode;
@@ -30,6 +31,9 @@ public interface FlowConverter {
     }
 
     default FlowVO toFlowVO(List<Flow> flowList){
+        if(CollectionUtils.isEmpty(flowList)){
+            return null;
+        }
         FlowVO flowVO=new FlowVO();
         flowVO.setFlowId(flowList.get(0).getFlowId());
         flowVO.setNodes(flowList.stream().map(this::toNodeVO).collect(Collectors.toList()));

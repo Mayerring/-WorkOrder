@@ -25,13 +25,16 @@ public enum ErrorCode {
     AFTER_FINISHED_NOT_ALLOW_CANCELLED("已完成、已确认完成的工单不能取消",10013),
     ONLY_SUBMIT_USER_CAN_CANCEL_WORK_ORDER("只有提交的用户可以取消工单",10014),
     AUDIT_ING_STATUS_WRONG("只有待审核和审核中的工单才能进行审核操作",10015),
+    UNAUDITED_AUDITING_STATUS_WRONG("待审核、审核中工单才能审核",10016 ),
 
     //流程错误信息
     EXIST_NODE_HANDLE_TYPE_WRONG("存在节点处理类型传参错误",10100),
     ONLY_ONE_DISTRIBUTER_IN_A_FLOW("一个流程中只能有一个分配人",10101),
     ONLY_ONE_CHECKER_IN_A_FLOW("一个流程中只能有一个验收人",10102),
     FLOW_ERROR_CURRENT_HANDLER_IS_WRONG("当前用户没查询到对应流程节点",10103),
-    FLOW_ERROR_NEXT_NODE_IS_NULL("当前用户没查询到下一个流程节点", 10103);
+    FLOW_ERROR_NEXT_NODE_IS_NULL("当前用户没查询到下一个流程节点", 10104),
+    AUDIT_HANDLER_CAN_NOT_REPEAT("审核操作人不允许重复",10105),
+    FLOW_NOT_EXIST("流程不存在",10106 );
     private final String msg;
     private final Integer code;
     ErrorCode(String msg,Integer code){

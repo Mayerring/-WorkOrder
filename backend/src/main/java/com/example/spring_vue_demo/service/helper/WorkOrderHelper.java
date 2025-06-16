@@ -24,6 +24,7 @@ import com.example.spring_vue_demo.vo.WorkOrder.WorkOrderPageVO;
 import com.example.spring_vue_demo.vo.WorkOrder.WorkOrderUpdateStatusVO;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.web.server.authentication.ServerAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -620,5 +621,24 @@ public class WorkOrderHelper {
                 return null;
         }
         return leader.getId();
+    }
+
+    public void checkApprovalWorkOrderStatus(WorkOrder workOrder) {
+        Integer workOrderStatus = workOrder.getStatus();
+        List<WorkOrderStatusEnum> correctStatusEnums = List.of(WorkOrderStatusEnum.UNAUDITED,WorkOrderStatusEnum.AUDITING);
+        for (WorkOrderStatusEnum correctWorkOrderStatusEnum : correctStatusEnums) {
+            if (workOrderStatus.equals(correctWorkOrderStatusEnum.getValue())) {
+                return;
+            }
+        }
+        throw new UserSideException(ErrorCode.UNAUDITED_AUDITING_STATUS_WRONG);
+    }
+
+    public void checkHandleUserInfoExist(Long userId, Long orderId) {
+        LambdaQueryWrapper<HandleUserInfo> wrapper = HandleUserInfoQuery.getHandleTypeUserIdWrapper(orderId, HandleUserInfoHandleTypeEnum.AUDIT.getValue(), userId);
+        HandleUserInfo currentHandleInfo = handleUserInfoMapper.selectOne(wrapper);
+        if (currentHandleInfo == null) {
+            throw new UserSideException(ErrorCode.CURRENT_USER_IS_NOT_HANDLE_USER);
+        }
     }
 }

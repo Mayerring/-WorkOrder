@@ -13,9 +13,11 @@ import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.spring_vue_demo.entity.*;
+import com.example.spring_vue_demo.enums.ErrorCode;
 import com.example.spring_vue_demo.enums.HandleTypeEnum;
 import com.example.spring_vue_demo.enums.HandleUserInfoHandleTypeEnum;
 import com.example.spring_vue_demo.enums.WorkOrderStatusEnum;
+import com.example.spring_vue_demo.exception.UserSideException;
 import com.example.spring_vue_demo.mapper.HandleUserInfoMapper;
 import com.example.spring_vue_demo.mapper.MessageMapper;
 import com.example.spring_vue_demo.mapper.StaffMapper;
@@ -214,10 +216,13 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
                 || param.getFlowId() == null) {
             return Result.error("参数不完整");
         }
-        //todo: 校验流程是否存在
+        // 校验流程是否存在
         WorkOrder workOrder = workOrderHelper.createWorkOrder(param);
         //查询流程
         FlowVO flowList = flowService.getByFlowId(new FlowIdParam(param.getFlowId()));
+        if(flowList==null){
+            throw new UserSideException(ErrorCode.FLOW_NOT_EXIST);
+        }
         List<FlowNodeVO> nodes = flowList.getNodes();
         //插入新建工单
         boolean isSaved = this.save(workOrder);
@@ -278,10 +283,14 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         //查询工单，如果不存在返回错误信息
         LambdaQueryWrapper<WorkOrder> workOrderWrapper = WorkOrderQuery.getWorkOrderWrapper(param.getId(), param.getCode());
         WorkOrder workOrder = getOne(workOrderWrapper);
+        // 校验工单是否存在
         workOrderHelper.checkWorkOrderExist(workOrder);
+        // 校验工单状态为待审核
+        workOrderHelper.checkApprovalWorkOrderStatus(workOrder);
+        Long userId = StaffHolder.get().getId();
+        // 校验当前用户是否有对应处理信息
+        workOrderHelper.checkHandleUserInfoExist(userId,workOrder.getId());
         //找到对应的handle—user-info数据，添加审批意见,更新finished位
-        // todo:校验工单状态为待审核
-        // todo:校验当前用户是否有对应处理信息
         workOrderHelper.updateHandleUserInfo(param);
         WorkOrderApprovalVO workOrderApprovalVO = new WorkOrderApprovalVO();
         workOrderApprovalVO.setId(param.getId());
@@ -295,7 +304,6 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
             return Result.success(workOrderApprovalVO);
         }
 
-        Long userId = StaffHolder.get().getId();
         Long flowId = workOrder.getFlowId();
         FlowNodeVO nextNode = flowService.getNextFlowNode(userId,flowId);
         if (nextNode == null) {
@@ -314,7 +322,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
 
     //5min检查一次数据库中延迟的工单
     @Async
-    @Scheduled(fixedRate = 5 * 60 * 3600)
+    @Scheduled(fixedDelay = 5 * 60 * 1000)
     @Transactional
     public void checkAndUpdateOverdueOrders() {
         // 查询所有状态是handle且deadlineTime已过的工单
