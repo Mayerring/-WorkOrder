@@ -36,6 +36,7 @@ public interface FlowConverter {
         }
         FlowVO flowVO=new FlowVO();
         flowVO.setFlowId(flowList.get(0).getFlowId());
+        flowVO.setFlowName(flowList.get(0).getFlowName());
         flowVO.setNodes(flowList.stream().map(this::toNodeVO).collect(Collectors.toList()));
         return flowVO;
     }
