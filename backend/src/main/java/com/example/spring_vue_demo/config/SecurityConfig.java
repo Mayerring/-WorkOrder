@@ -19,7 +19,7 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable()) // ✅ 新写法
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/user/login").permitAll()
+                        .requestMatchers("/user/login","/doc.html", "/webjars/**", "/v3/api-docs/**", "/swagger-resources/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
