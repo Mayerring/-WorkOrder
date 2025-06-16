@@ -12,7 +12,7 @@ import java.util.List;
 @Data
 public class FlowVO {
     @Schema(description = "流程id")
-    private Long flowId;
+    private String flowId;
 
     @Schema(description = "流程名")
     private String flowName;
