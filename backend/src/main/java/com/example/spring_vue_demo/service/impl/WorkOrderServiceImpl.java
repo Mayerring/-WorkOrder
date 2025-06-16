@@ -29,6 +29,7 @@ import com.example.spring_vue_demo.param.WorkOrder.WorkOrderPageParam;
 import com.example.spring_vue_demo.service.FlowService;
 import com.example.spring_vue_demo.service.HandleUserInfoService;
 import com.example.spring_vue_demo.service.WorkOrderService;
+import com.example.spring_vue_demo.service.helper.WorkOrderExportHelper;
 import com.example.spring_vue_demo.service.helper.WorkOrderPdfGenerator;
 import com.example.spring_vue_demo.utils.StaffHolder;
 import com.example.spring_vue_demo.vo.*;
@@ -90,6 +91,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     private final StaffMapper staffMapper;
     private final HandleUserInfoMapper handleUserInfoMapper;
     private final FlowService flowService;
+    private final WorkOrderExportHelper workOrderExportHelper;
 
     private final DateTimeFormatter formatterDate = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -355,61 +357,113 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         log.info("已完成一次延期工单扫描");
     }
 
-    @Override
-    public void export(WorkOrderPageParam param, HttpServletResponse response) {
-        ExcelWriter excelWriter = null;
-        String fileName_zh = formatterDate.format(LocalDateTime.now()) + "工单";
+//    @Override
+//    public void export(WorkOrderPageParam param, HttpServletResponse response) {
+//        ExcelWriter excelWriter = null;
+//        String fileName_zh = formatterDate.format(LocalDateTime.now()) + "工单";
+//
+//        List<WorkOrderPageVO> pageVOS = this.pageWorkOrder(param).getRecords();
+//        List<WorkOrderExportVO> excelVOS = WorkOrderConverter.INSTANCE.toExcelVOS(pageVOS);
+//        Map<String, List<HandleUserInfoVO>> collectHandle = pageVOS.stream().filter(vo -> vo.getHandlerInfo() != null).collect(Collectors.toMap(WorkOrderPageVO::getCode, WorkOrderPageVO::getHandlerInfo));
+//        Map<String, List<HandleUserInfoVO>> collectAudit = pageVOS.stream().filter(vo -> vo.getHandlerInfo() != null).collect(Collectors.toMap(WorkOrderPageVO::getCode, WorkOrderPageVO::getAuditorInfo));
+//        for (WorkOrderExportVO exportVO : excelVOS) {
+//            String code = exportVO.getCode();
+//            List<HandleUserInfoVO> handleInfos = collectHandle.getOrDefault(code, null);
+//            List<HandleUserInfoVO> auditInfos = collectAudit.getOrDefault(code, null);
+//            if (CollectionUtils.isNotEmpty(handleInfos)) {
+//                List<String> handleTimes = handleInfos.stream().filter(HandleUserInfoVO::getFinished).map(HandleUserInfoVO::getHandleTime).toList();
+//                List<Long> handleTimeStamps = handleTimes.stream().map(handleTime -> LocalDateTime.parse(handleTime, formatter).atZone(ZoneId.systemDefault()).toInstant().getEpochSecond()).toList();
+//                Long maxHandleTimeStamps = handleTimeStamps.stream().max(Comparator.comparingLong(Long::longValue)).orElse(null);
+//                exportVO.setFinishTime(maxHandleTimeStamps != null ? formatter.format(Instant.ofEpochSecond(maxHandleTimeStamps).atZone(ZoneId.systemDefault()).toLocalDateTime()) : null);
+//            }
+//            if (CollectionUtils.isNotEmpty(auditInfos)) {
+//                List<String> auditTimes = auditInfos.stream().filter(HandleUserInfoVO::getFinished).map(HandleUserInfoVO::getHandleTime).toList();
+//                List<Long> auditTimeStamps = auditTimes.stream().map(handleTime -> LocalDateTime.parse(handleTime, formatter).atZone(ZoneId.systemDefault()).toInstant().getEpochSecond()).toList();
+//                Long maxAuditTimeStamps = auditTimeStamps.stream().max(Comparator.comparingLong(Long::longValue)).orElse(null);
+//                exportVO.setFinishedAuditTime(maxAuditTimeStamps != null ? formatter.format(Instant.ofEpochSecond(maxAuditTimeStamps).atZone(ZoneId.systemDefault()).toLocalDateTime()) : null);
+//            }
+//        }
+//
+//        try {
+//            //设置文件类型和编码格式
+//            response.setContentType("application/vnd.ms-excel");
+//            response.setCharacterEncoding("utf-8");
+//            // 设置表头样式
+//            WriteCellStyle headStyle = new WriteCellStyle();
+//            headStyle.setHorizontalAlignment(HorizontalAlignment.CENTER);
+//            // 设置表格内容样式
+//            WriteCellStyle bodyStyle = new WriteCellStyle();
+//            bodyStyle.setHorizontalAlignment(HorizontalAlignment.CENTER);
+//            bodyStyle.setVerticalAlignment(VerticalAlignment.CENTER);
+//            // 设置文件名
+//            String fileName = URLEncoder.encode(fileName_zh, "UTF-8");
+//            response.setHeader("Content-disposition", "attachment;filename=" + fileName + ".xlsx");
+//            // 读文件
+//            excelWriter = EasyExcel.write(response.getOutputStream())
+//                    .needHead(true)
+//                    .excelType(ExcelTypeEnum.XLSX)
+//                    .build();
+//            WriteSheet sheet = EasyExcel.writerSheet("工单信息").head(WorkOrderExportVO.class).sheetNo(1).build();
+//            excelWriter.write(excelVOS, sheet);
+//        } catch (Exception e) {
+//            log.error("export excel {} error", fileName_zh, e);
+//        } finally {
+//            assert excelWriter != null;
+//            excelWriter.finish();
+//        }
+//    }
+@Override
+public void export(WorkOrderPageParam param, HttpServletResponse response) {
+    // 线程池配置
+    ExecutorService exportExecutor = ThreadPoolManager.getInstance().getThreadPool("exportPool");
 
-        List<WorkOrderPageVO> pageVOS = this.pageWorkOrder(param).getRecords();
-        List<WorkOrderExportVO> excelVOS = WorkOrderConverter.INSTANCE.toExcelVOS(pageVOS);
-        Map<String, List<HandleUserInfoVO>> collectHandle = pageVOS.stream().filter(vo -> vo.getHandlerInfo() != null).collect(Collectors.toMap(WorkOrderPageVO::getCode, WorkOrderPageVO::getHandlerInfo));
-        Map<String, List<HandleUserInfoVO>> collectAudit = pageVOS.stream().filter(vo -> vo.getHandlerInfo() != null).collect(Collectors.toMap(WorkOrderPageVO::getCode, WorkOrderPageVO::getAuditorInfo));
-        for (WorkOrderExportVO exportVO : excelVOS) {
-            String code = exportVO.getCode();
-            List<HandleUserInfoVO> handleInfos = collectHandle.getOrDefault(code, null);
-            List<HandleUserInfoVO> auditInfos = collectAudit.getOrDefault(code, null);
-            if (CollectionUtils.isNotEmpty(handleInfos)) {
-                List<String> handleTimes = handleInfos.stream().filter(HandleUserInfoVO::getFinished).map(HandleUserInfoVO::getHandleTime).toList();
-                List<Long> handleTimeStamps = handleTimes.stream().map(handleTime -> LocalDateTime.parse(handleTime, formatter).atZone(ZoneId.systemDefault()).toInstant().getEpochSecond()).toList();
-                Long maxHandleTimeStamps = handleTimeStamps.stream().max(Comparator.comparingLong(Long::longValue)).orElse(null);
-                exportVO.setFinishTime(maxHandleTimeStamps != null ? formatter.format(Instant.ofEpochSecond(maxHandleTimeStamps).atZone(ZoneId.systemDefault()).toLocalDateTime()) : null);
-            }
-            if (CollectionUtils.isNotEmpty(auditInfos)) {
-                List<String> auditTimes = auditInfos.stream().filter(HandleUserInfoVO::getFinished).map(HandleUserInfoVO::getHandleTime).toList();
-                List<Long> auditTimeStamps = auditTimes.stream().map(handleTime -> LocalDateTime.parse(handleTime, formatter).atZone(ZoneId.systemDefault()).toInstant().getEpochSecond()).toList();
-                Long maxAuditTimeStamps = auditTimeStamps.stream().max(Comparator.comparingLong(Long::longValue)).orElse(null);
-                exportVO.setFinishedAuditTime(maxAuditTimeStamps != null ? formatter.format(Instant.ofEpochSecond(maxAuditTimeStamps).atZone(ZoneId.systemDefault()).toLocalDateTime()) : null);
-            }
+    try {
+        // 1. 先查询总记录数，计算总页数
+        int totalRecords = param.getPageSize();
+        int pageSize = 1; // 每页大小，可根据实际情况调整
+        int totalPages = (totalRecords + pageSize - 1) / pageSize;
+
+        // 2. 创建CompletableFuture列表
+        List<CompletableFuture<Void>> futures = new ArrayList<>();
+
+        // 3. 分页查询并导出
+        for (int i = 0; i < totalPages; i++) {
+            final int pageNum = i + 1;
+            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                try {
+                    // 创建分页参数
+                    WorkOrderPageParam pageParam = new WorkOrderPageParam();
+                    BeanUtils.copyProperties(param, pageParam);
+                    pageParam.setPageNum(pageNum);
+                    pageParam.setPageSize(pageSize);
+
+                    // 查询数据
+                    List<WorkOrderPageVO> pageVOS = this.pageWorkOrder(pageParam).getRecords();
+                    List<WorkOrderExportVO> excelVOS = WorkOrderConverter.INSTANCE.toExcelVOS(pageVOS);
+
+                    // 处理数据
+                    workOrderExportHelper.processExportData(pageVOS, excelVOS);
+
+                    // 导出到单独文件
+                    workOrderExportHelper.exportToSingleFile(excelVOS, pageNum);
+                } catch (Exception e) {
+                    log.error("导出第{}页数据失败", pageNum, e);
+                }
+            }, exportExecutor);
+
+            futures.add(future);
         }
 
-        try {
-            //设置文件类型和编码格式
-            response.setContentType("application/vnd.ms-excel");
-            response.setCharacterEncoding("utf-8");
-            // 设置表头样式
-            WriteCellStyle headStyle = new WriteCellStyle();
-            headStyle.setHorizontalAlignment(HorizontalAlignment.CENTER);
-            // 设置表格内容样式
-            WriteCellStyle bodyStyle = new WriteCellStyle();
-            bodyStyle.setHorizontalAlignment(HorizontalAlignment.CENTER);
-            bodyStyle.setVerticalAlignment(VerticalAlignment.CENTER);
-            // 设置文件名
-            String fileName = URLEncoder.encode(fileName_zh, "UTF-8");
-            response.setHeader("Content-disposition", "attachment;filename=" + fileName + ".xlsx");
-            // 读文件
-            excelWriter = EasyExcel.write(response.getOutputStream())
-                    .needHead(true)
-                    .excelType(ExcelTypeEnum.XLSX)
-                    .build();
-            WriteSheet sheet = EasyExcel.writerSheet("工单信息").head(WorkOrderExportVO.class).sheetNo(1).build();
-            excelWriter.write(excelVOS, sheet);
-        } catch (Exception e) {
-            log.error("export excel {} error", fileName_zh, e);
-        } finally {
-            assert excelWriter != null;
-            excelWriter.finish();
-        }
+        // 4. 等待所有任务完成
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+        // 5. 将所有文件合并为一个文件（如果需要）
+        workOrderExportHelper.mergeFiles(response, totalPages);
+
+    } catch (Exception e) {
+        log.error("导出失败", e);
     }
+}
 
     @Override
     public void print(WorkOrderDetailParam param, HttpServletResponse response) {
