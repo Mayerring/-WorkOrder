@@ -12,6 +12,7 @@ import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
 import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.example.spring_vue_demo.common.ThreadPoolManager;
 import com.example.spring_vue_demo.entity.*;
 import com.example.spring_vue_demo.enums.ErrorCode;
 import com.example.spring_vue_demo.enums.HandleTypeEnum;
@@ -44,6 +45,7 @@ import lombok.RequiredArgsConstructor;
 import org.apache.ibatis.executor.BatchResult;
 import org.apache.poi.ss.usermodel.HorizontalAlignment;
 import org.apache.poi.ss.usermodel.VerticalAlignment;
+import org.springframework.beans.BeanUtils;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -60,6 +62,9 @@ import java.time.ZoneId;
 
 import java.time.format.DateTimeFormatter;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import java.util.stream.Collectors;
 
 import static com.example.spring_vue_demo.enums.WorkOrderStatusEnum.AUDITING;
@@ -92,8 +97,15 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     @Override
     public IPage<WorkOrderPageVO> pageWorkOrder(WorkOrderPageParam param) {
         //查询操作信息对应orderIds，or关系
-        List<HandleUserInfo> queryHandleUserInfos = workOrderHelper.getQueryWorkOrderIds(param);
-        List<Long> queryOrderIds = queryHandleUserInfos.stream().map(HandleUserInfo::getOrderId).distinct().toList();
+        List<Long> queryOrderIds=new ArrayList<>();
+        if(param.getSubmitterInfo()!=null||param.getAuditorInfo()!=null||param.getDistributerInfo()!=null||param.getHandlerInfo()!=null||param.getCheckerInfo()!=null){
+            List<HandleUserInfo> queryHandleUserInfos = workOrderHelper.getQueryWorkOrderIds(param);
+            queryOrderIds = queryHandleUserInfos.stream().map(HandleUserInfo::getOrderId).distinct().toList();
+            if(CollectionUtils.isEmpty(queryOrderIds)){
+                return new Page<>(param.getPageNum(),param.getPageSize());
+            }
+        }
+
         //查询工单主表
         LambdaQueryWrapper<WorkOrder> workWrapper = WorkOrderQuery.getPageWorkWrapper(param, queryOrderIds);
         Page<WorkOrder> pageWrapper = WorkOrderQuery.getPageInfoWrapper(param);

@@ -5,6 +5,10 @@ import lombok.Data;
 
 @Data
 public class StaffBelongInfoVO {
+    @Schema(description = "员工id")
+    private String userId;
+    @Schema(description = "员工姓名")
+    private String name;
     @Schema(description = "员工编码")
     private String staffNumber;
     @Schema(description = "公司编码")

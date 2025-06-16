@@ -15,15 +15,13 @@ import java.util.List;
  * @date 2025/05/31
  */
 public class HandleUserInfoQuery {
-    public static LambdaQueryWrapper<HandleUserInfo> getWorkOrderPageWrapper(List<HandleUserInfoParam> handleUserInfos, Integer type) {
-        List<Long> userIds = handleUserInfos.stream().map(HandleUserInfoParam::getUserId).toList();
-        List<String> departmentCodes = handleUserInfos.stream().map(HandleUserInfoParam::getDepartmentCode).toList();
-        List<String> companyCodes = handleUserInfos.stream().map(HandleUserInfoParam::getCompanyCode).toList();
+    public static LambdaQueryWrapper<HandleUserInfo> getWorkOrderPageWrapper(HandleUserInfoParam handleUserInfo, Integer type) {
         LambdaQueryWrapper<HandleUserInfo> wrapper = new LambdaQueryWrapper<HandleUserInfo>()
                 .eq(true, HandleUserInfo::getHandleType, type)
-                .in(CollectionUtils.isNotEmpty(userIds), HandleUserInfo::getUserId, userIds)
-                .in(CollectionUtils.isNotEmpty(departmentCodes), HandleUserInfo::getDepartmentCode, departmentCodes)
-                .in(CollectionUtils.isNotEmpty(companyCodes), HandleUserInfo::getCompanyCode, departmentCodes);
+                .eq(handleUserInfo.getUserId()!=null, HandleUserInfo::getUserId, handleUserInfo.getUserId() )
+                .eq(handleUserInfo.getDepartmentCode()!=null, HandleUserInfo::getDepartmentCode, handleUserInfo.getDepartmentCode())
+                .eq(handleUserInfo.getCompanyCode()!=null, HandleUserInfo::getCompanyCode, handleUserInfo.getCompanyCode())
+                .eq(handleUserInfo.getFinished()!=null,HandleUserInfo::getFinished,handleUserInfo.getFinished());
         return wrapper;
     }
 

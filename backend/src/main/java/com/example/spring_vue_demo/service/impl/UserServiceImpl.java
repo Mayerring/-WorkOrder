@@ -49,6 +49,8 @@ public class UserServiceImpl extends ServiceImpl<StaffMapper, Staff> implements 
 
         // 2. 构造VO
         StaffBelongInfoVO vo = new StaffBelongInfoVO();
+        vo.setUserId(staff.getId().toString());
+        vo.setName(staff.getName());
         vo.setStaffNumber(staff.getStaffNumber());
         vo.setCompanyCode(staff.getCompanyCode());
         vo.setCompanyName(staff.getCompany());

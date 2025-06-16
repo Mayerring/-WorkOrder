@@ -13,12 +13,12 @@ public class HandleUserInfoParam {
     @Schema(description = "用户id")
     private Long userId;
 
-    @Schema(description = "操作类型")
-    private Integer handleType;
-
     @Schema(description = "公司编码")
     private String companyCode;
 
     @Schema(description = "部门编码")
     private String departmentCode;
+
+    @Schema(description = "已处理")
+    private Boolean finished;
 }

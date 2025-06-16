@@ -49,11 +49,11 @@ public class WorkOrderHelper {
     private final FlowService flowService;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
-    private void gatherQueryWorkOrderId(List<HandleUserInfo> handleUserInfos, List<HandleUserInfoParam> userInfoParams, HandleUserInfoHandleTypeEnum userInfoType) {
-        if (CollectionUtils.isEmpty(userInfoParams)) {
+    private void gatherQueryWorkOrderId(List<HandleUserInfo> handleUserInfos, HandleUserInfoParam userInfoParam, HandleUserInfoHandleTypeEnum userInfoType) {
+        if (userInfoParam==null) {
             return;
         }
-        LambdaQueryWrapper<HandleUserInfo> checkerWrapper = HandleUserInfoQuery.getWorkOrderPageWrapper(userInfoParams, userInfoType.getValue());
+        LambdaQueryWrapper<HandleUserInfo> checkerWrapper = HandleUserInfoQuery.getWorkOrderPageWrapper(userInfoParam, userInfoType.getValue());
         List<HandleUserInfo> submitterInfolist = handleUserInfoMapper.selectList(checkerWrapper);
         handleUserInfos.addAll(submitterInfolist);
     }
@@ -63,7 +63,7 @@ public class WorkOrderHelper {
         gatherQueryWorkOrderId(queryHandleUserInfos, param.getSubmitterInfo(), HandleUserInfoHandleTypeEnum.SUBMIT);
         gatherQueryWorkOrderId(queryHandleUserInfos, param.getAuditorInfo(), HandleUserInfoHandleTypeEnum.AUDIT);
         gatherQueryWorkOrderId(queryHandleUserInfos, param.getDistributerInfo(), HandleUserInfoHandleTypeEnum.DISTRIBUTE);
-        gatherQueryWorkOrderId(queryHandleUserInfos, param.getHandleInfo(), HandleUserInfoHandleTypeEnum.HANDLE);
+        gatherQueryWorkOrderId(queryHandleUserInfos, param.getHandlerInfo(), HandleUserInfoHandleTypeEnum.HANDLE);
         gatherQueryWorkOrderId(queryHandleUserInfos, param.getCheckerInfo(), HandleUserInfoHandleTypeEnum.CHECK);
         return queryHandleUserInfos;
     }

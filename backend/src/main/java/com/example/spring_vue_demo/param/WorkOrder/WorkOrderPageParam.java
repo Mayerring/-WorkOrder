@@ -29,19 +29,19 @@ public class WorkOrderPageParam extends BasePageParam {
     private Integer type;
 
     @Schema(description = "提交信息")
-    private List<HandleUserInfoParam> submitterInfo;
+    private HandleUserInfoParam submitterInfo;
 
     @Schema(description = "审批信息")
-    private List<HandleUserInfoParam> auditorInfo;
+    private HandleUserInfoParam auditorInfo;
 
     @Schema(description = "派单信息")
-    private List<HandleUserInfoParam> distributerInfo ;
+    private HandleUserInfoParam distributerInfo ;
 
     @Schema(description = "处理信息")
-    private List<HandleUserInfoParam> handleInfo;
+    private HandleUserInfoParam handlerInfo;
 
     @Schema(description = "确认信息")
-    private List<HandleUserInfoParam> checkerInfo ;
+    private HandleUserInfoParam checkerInfo ;
 
     @Schema(description = "优先级，0高，1中，2低")
     private Integer priorityLevel;
