@@ -34,18 +34,25 @@ public class DepartmentController {
     public Result addDepartment(@RequestBody AddDepartmentParam param) {
         return departmentService.addDepartment(param);
     }
-
+    @ApiOperationSupport(order = 2)
     @Operation(summary = "查看某个公司的所有部门")
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/all")
     public Result allDepartment(@RequestParam String companyName) {
         return departmentService.allDepartmentInCompany(companyName);
     }
-
+    @ApiOperationSupport(order = 3)
     @Operation(summary = "修改部门信息（主管等信息）")
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/change")
     public Result changeDepartment(@RequestBody ChangeDepartmentParam param) {
         return departmentService.changeDepartment(param);
+    }
+    @ApiOperationSupport(order = 4)
+    @Operation(summary = "删除部门")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/delete")
+    public Result delete(@RequestParam Long id) {
+        return departmentService.delete(id);
     }
 }
