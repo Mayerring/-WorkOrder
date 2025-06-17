@@ -1,6 +1,8 @@
 package com.example.spring_vue_demo.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.spring_vue_demo.entity.Flow;
@@ -16,6 +18,8 @@ import com.example.spring_vue_demo.vo.Flow.FlowCreateVO;
 import com.example.spring_vue_demo.vo.Flow.FlowNodeVO;
 import com.example.spring_vue_demo.vo.Flow.FlowVO;
 import lombok.RequiredArgsConstructor;
+import org.apache.commons.collections4.CollectionUtils;
+import org.springframework.security.core.parameters.P;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -152,10 +156,24 @@ public class FlowServiceImpl extends ServiceImpl<FlowMapper, Flow> implements Fl
 
     @Override
     public Page<FlowVO> page(FlowPageParam param) {
-        Page<Flow> pageParam = new Page<>();
-        pageParam.setSize(param.getPageSize());
-        pageParam.setCurrent(param.getPageNum());
-        Page<Flow> flowPage = page(pageParam);
+        int pageSize=param.getPageSize();
+        int pageNum=param.getPageNum();
+        QueryWrapper<Flow> wrapper = new QueryWrapper<>();
+        wrapper.select("DISTINCT flow_id")
+                .last("LIMIT " + (pageNum-1)*pageSize + "," + pageSize);
+        List<Flow> list = list(wrapper);
+        List<Long>flowIds=list.stream().distinct().map(Flow::getFlowId).toList();
+        QueryWrapper<Flow>wrapperCount=new QueryWrapper<Flow>()
+                .select("DISTINCT flow_id");
+        Long total=count(wrapperCount);
+        LambdaQueryWrapper<Flow>wrapper1=new LambdaQueryWrapper<Flow>()
+                .in(CollectionUtils.isNotEmpty(flowIds),Flow::getFlowId,flowIds);
+        List<Flow> flowList=this.list(wrapper1);
+        Page<Flow> flowPage=new Page<>();
+        flowPage.setRecords(flowList);
+        flowPage.setSize(param.getPageSize());
+        flowPage.setCurrent(param.getPageNum());
+        flowPage.setTotal(total);
         Page<FlowVO> flowVOPage = FlowConverter.INSTANCE.toPageVO(flowPage);
         return flowVOPage;
     }
