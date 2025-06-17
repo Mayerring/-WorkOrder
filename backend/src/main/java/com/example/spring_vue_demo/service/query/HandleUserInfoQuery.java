@@ -3,6 +3,7 @@ package com.example.spring_vue_demo.service.query;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.CollectionUtils;
+import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.example.spring_vue_demo.entity.HandleUserInfo;
 import com.example.spring_vue_demo.entity.WorkOrder;
 import com.example.spring_vue_demo.enums.HandleUserInfoHandleTypeEnum;
@@ -19,8 +20,8 @@ public class HandleUserInfoQuery {
         LambdaQueryWrapper<HandleUserInfo> wrapper = new LambdaQueryWrapper<HandleUserInfo>()
                 .eq(true, HandleUserInfo::getHandleType, type)
                 .eq(handleUserInfo.getUserId()!=null, HandleUserInfo::getUserId, handleUserInfo.getUserId() )
-                .eq(handleUserInfo.getDepartmentCode()!=null, HandleUserInfo::getDepartmentCode, handleUserInfo.getDepartmentCode())
-                .eq(handleUserInfo.getCompanyCode()!=null, HandleUserInfo::getCompanyCode, handleUserInfo.getCompanyCode())
+                .eq( StringUtils.isNotBlank(handleUserInfo.getDepartmentCode()), HandleUserInfo::getDepartmentCode, handleUserInfo.getDepartmentCode())
+                .eq(StringUtils.isNotBlank(handleUserInfo.getCompanyCode()), HandleUserInfo::getCompanyCode, handleUserInfo.getCompanyCode())
                 .eq(handleUserInfo.getFinished()!=null,HandleUserInfo::getFinished,handleUserInfo.getFinished());
         return wrapper;
     }
