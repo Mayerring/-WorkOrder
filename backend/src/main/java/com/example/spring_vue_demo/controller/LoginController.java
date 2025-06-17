@@ -7,6 +7,7 @@ import com.example.spring_vue_demo.service.LoginService;
 import com.example.spring_vue_demo.utils.StaffHolder;
 import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.*;
  */
 
 @RestController
+@Tag(name="登录控制")
 @RequestMapping("/user")
 public class LoginController {
     @Autowired
