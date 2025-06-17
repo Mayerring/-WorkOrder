@@ -1,10 +1,16 @@
 package com.example.spring_vue_demo.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.spring_vue_demo.entity.Company;
+import com.example.spring_vue_demo.entity.Department;
 import com.example.spring_vue_demo.entity.Result;
+import com.example.spring_vue_demo.entity.Staff;
 import com.example.spring_vue_demo.mapper.CompanyMapper;
+import com.example.spring_vue_demo.mapper.DepartmentMapper;
+import com.example.spring_vue_demo.mapper.StaffMapper;
 import com.example.spring_vue_demo.param.AddCompanyParam;
 import com.example.spring_vue_demo.service.CompanyService;
 import com.example.spring_vue_demo.utils.OrderCodeUtils;
@@ -17,6 +23,7 @@ import java.lang.annotation.Retention;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  *
@@ -29,6 +36,11 @@ public class CompanyServiceImpl extends ServiceImpl<CompanyMapper, Company> impl
     @Autowired
     private CompanyMapper companyMapper;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+    @Autowired
+    private StaffMapper staffMapper;
+    @Autowired
+    private DepartmentMapper departmentMapper;
+
     @Override
     public Result addCompany(AddCompanyParam param) {
         String code = OrganizationCodeUtils.generateCompanyCode();
@@ -72,5 +84,34 @@ public class CompanyServiceImpl extends ServiceImpl<CompanyMapper, Company> impl
     public Result allCompany() {
         List<Company> companies = companyMapper.selectList(null);
         return Result.success(companies);
+    }
+
+    @Override
+    public Result delete(Long id) {
+        Company company = companyMapper.selectById(id);
+        if(company==null){
+            return Result.error("没有对应id的公司");
+        }
+        LambdaQueryWrapper<Staff> staffWrapper = new LambdaQueryWrapper<>();
+        staffWrapper.eq(Staff::getCompanyCode, company.getCode());
+        staffMapper.delete(staffWrapper);        //删除员工
+        //查找该公司的部门
+        LambdaQueryWrapper<Department> departmentWrapper = new LambdaQueryWrapper<>();
+        departmentWrapper.eq(Department::getCompanyCode, company.getCode());
+        List<Department> departments = departmentMapper.selectList(departmentWrapper);
+        //更改下级部门的上级为null
+        if(!departments.isEmpty()){
+            List<String> departmentCodes = departments.stream().
+                    map(Department::getCode).collect(Collectors.toList());
+            LambdaUpdateWrapper<Department> updateDepartmentWrapper = new LambdaUpdateWrapper<>();
+            updateDepartmentWrapper.in(Department::getCode, departmentCodes)
+                    .set(Department::getParentDepartmentCode,null);
+            departmentMapper.update(updateDepartmentWrapper);
+            departmentMapper.update(updateDepartmentWrapper);
+        }
+        //删除该公司的部门
+        departmentMapper.delete(departmentWrapper);
+        companyMapper.deleteById(id);
+        return Result.success();
     }
 }

@@ -12,4 +12,6 @@ public interface DepartmentService extends IService<Department> {
     Result allDepartmentInCompany(String companyName);
 
     Result changeDepartment(ChangeDepartmentParam param);
+
+    Result delete(Long id);
 }
