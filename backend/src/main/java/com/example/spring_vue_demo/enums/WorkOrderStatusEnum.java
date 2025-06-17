@@ -16,9 +16,9 @@ public enum WorkOrderStatusEnum {
     UNDISTRIBUTED(300,"未派单"),
     HANDLING(400,"处理中"),
     DELAYED(410,"已超时"),
-    FINISHED(500,"已完成"),
-    CHECKED(600,"已确认完成"),
-    CHECK_FAILURE(670,"确认失败"),
+    FINISHED(500,"已处理"),
+    CHECKED(600,"已验收"),
+    CHECK_FAILURE(670,"验收失败"),
     CANCELLED(700,"已取消"),
 
     ;
