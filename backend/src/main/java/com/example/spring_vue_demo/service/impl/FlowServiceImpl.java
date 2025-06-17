@@ -93,10 +93,10 @@ public class FlowServiceImpl extends ServiceImpl<FlowMapper, Flow> implements Fl
     private void checkAuditHandlerNotRepeat(List<FlowNode> nodes) {
         Set<Long>userSet=new HashSet<>();
         for(FlowNode node:nodes){
-            userSet.add(node.getHandlerId());
             if(userSet.contains(node.getHandlerId())){
                 throw new UserSideException(ErrorCode.AUDIT_HANDLER_CAN_NOT_REPEAT);
             }
+            userSet.add(node.getHandlerId());
         }
     }
 
