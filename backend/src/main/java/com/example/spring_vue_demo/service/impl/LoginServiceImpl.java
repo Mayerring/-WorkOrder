@@ -27,8 +27,6 @@ public class LoginServiceImpl extends ServiceImpl<StaffMapper, Staff> implements
         //校验密码
         Staff staff = staffMapper.selectOne(
                 new LambdaQueryWrapper<Staff>()
-                        .eq(Staff::getStaffNumber, loginParam.getStaffNumber())
-                        .or()
                         .eq(Staff::getPhone, loginParam.getPhone())
         );
         if(staff == null){

@@ -8,6 +8,7 @@ import com.github.xiaoymin.knife4j.annotations.ApiOperationSupport;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -48,5 +49,12 @@ public class UserController {
     public Result staffPage(@RequestBody StaffPageParam param)
     {
         return userService.staffPage(param);
+    }
+
+    @ApiOperationSupport(order = 5)
+    @Operation(summary = "所有员工")
+    @PostMapping("/all")
+    public Result all(){
+        return userService.allStaff();
     }
 }
