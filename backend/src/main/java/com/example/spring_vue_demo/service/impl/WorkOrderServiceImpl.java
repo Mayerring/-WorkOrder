@@ -180,9 +180,11 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         boolean updateSuccess = updateById(workOrder);
         FlowVO flowVO = flowService.getByFlowId(new FlowIdParam(workOrder.getFlowId()));
         List<FlowNodeVO>nodes=flowVO.getNodes();
-        Long checkId = nodes.stream().filter(node -> Objects.equals(node.getNodeType(), HandleUserInfoHandleTypeEnum.CHECK.getValue()))
-                .toList().get(0).getHandlerId();
-        workOrderHelper.addCheckInfo(workOrder.getId(), checkId);
+        if(workOrder.getStatus()==WorkOrderStatusEnum.HANDLING.getValue()&& finished) {
+            Long checkId = nodes.stream().filter(node -> Objects.equals(node.getNodeType(), HandleUserInfoHandleTypeEnum.CHECK.getValue()))
+                    .toList().get(0).getHandlerId();
+            workOrderHelper.addCheckInfo(workOrder.getId(), checkId);
+        }
         //发送信息
         List<Long> receiverIds = workOrderHelper.getReceiverIds(handleType, workOrder.getId(), param.getAssignedUserId());
         List<Message> messages = workOrderHelper.buildMessages(WorkOrderStatusEnum.getByValue(workOrder.getStatus()), workOrder.getCode(), receiverIds, finished);
@@ -251,7 +253,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         Staff staff = StaffHolder.get();
         workOrderHelper.addHandleInfo(workOrder.getId(), HandleTypeEnum.CREATED,
                 0L, workOrder.getContent());
-        Long firstAuditId = nodes.stream().filter(node -> Objects.equals(node.getNodeType(), HandleUserInfoHandleTypeEnum.CHECK.getValue()))
+        Long firstAuditId = nodes.stream().filter(node -> Objects.equals(node.getNodeType(), HandleUserInfoHandleTypeEnum.AUDIT.getValue()))
                 .toList().get(0).getHandlerId();
 
 
