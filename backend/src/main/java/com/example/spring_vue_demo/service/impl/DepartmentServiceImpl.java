@@ -1,5 +1,6 @@
 package com.example.spring_vue_demo.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.query.QueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.UpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -171,6 +172,22 @@ public class DepartmentServiceImpl extends ServiceImpl<DepartmentMapper, Departm
         changeDepartmentVO.setIsSuccess(updated);
         return Result.success(changeDepartmentVO);
 
+    }
+
+    @Override
+    public Result delete(Long id) {
+        Department department = departmentMapper.selectById(id);
+        if(department == null)
+        {
+            return Result.error("该部门不存在");
+        }
+        //查找该部门的员工
+        LambdaQueryWrapper<Staff> staffLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        staffLambdaQueryWrapper.eq(Staff::getCompanyCode, department.getCompanyCode())
+                .eq(Staff::getDepartmentCode,department.getCode());
+        staffMapper.delete(staffLambdaQueryWrapper);        //删除员工
+        departmentMapper.deleteById(id);
+        return Result.success();
     }
 }
 

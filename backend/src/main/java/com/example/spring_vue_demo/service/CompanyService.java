@@ -9,4 +9,6 @@ public interface CompanyService extends IService<Company> {
     Result addCompany(AddCompanyParam param);
 
     Result allCompany();
+
+    Result delete(Long id);
 }
