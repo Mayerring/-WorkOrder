@@ -178,6 +178,11 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         //更新工单主表状态
         workOrderHelper.updateNextStatus(handleType, workOrder, finished);
         boolean updateSuccess = updateById(workOrder);
+        FlowVO flowVO = flowService.getByFlowId(new FlowIdParam(workOrder.getId()));
+        List<FlowNodeVO>nodes=flowVO.getNodes();
+        Long checkId = nodes.stream().filter(node -> Objects.equals(node.getNodeType(), HandleUserInfoHandleTypeEnum.CHECK.getValue()))
+                .toList().get(0).getHandlerId();
+        workOrderHelper.addCheckInfo(workOrder.getId(), checkId);
         //发送信息
         List<Long> receiverIds = workOrderHelper.getReceiverIds(handleType, workOrder.getId(), param.getAssignedUserId());
         List<Message> messages = workOrderHelper.buildMessages(WorkOrderStatusEnum.getByValue(workOrder.getStatus()), workOrder.getCode(), receiverIds, finished);
@@ -246,13 +251,9 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         Staff staff = StaffHolder.get();
         workOrderHelper.addHandleInfo(workOrder.getId(), HandleTypeEnum.CREATED,
                 0L, workOrder.getContent());
-        Long distributeId = nodes.stream().filter(node -> Objects.equals(node.getNodeType(), HandleUserInfoHandleTypeEnum.DISTRIBUTE.getValue()))
-                .toList().get(0).getHandlerId();
-        Long checkId = nodes.stream().filter(node -> Objects.equals(node.getNodeType(), HandleUserInfoHandleTypeEnum.CHECK.getValue()))
-                .toList().get(0).getHandlerId();
         Long firstAuditId = nodes.stream().filter(node -> Objects.equals(node.getNodeType(), HandleUserInfoHandleTypeEnum.CHECK.getValue()))
                 .toList().get(0).getHandlerId();
-        workOrderHelper.addDistributeAndCheckInfo(workOrder.getId(), distributeId, checkId);
+
 
         //发送信息
         Message message = workOrderHelper.buildMessage(WorkOrderStatusEnum.getByValue(workOrder.getStatus()), workOrder.getCode(), staff.getId());
@@ -325,6 +326,11 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
             workOrder.setStatus(WorkOrderStatusEnum.UNDISTRIBUTED.getValue());
             updateById(workOrder);
             workOrderApprovalVO.setResult(Boolean.TRUE);
+            FlowVO flowVO = flowService.getByFlowId(new FlowIdParam(workOrder.getId()));
+            List<FlowNodeVO>nodes=flowVO.getNodes();
+            Long distributeId = nodes.stream().filter(node -> Objects.equals(node.getNodeType(), HandleUserInfoHandleTypeEnum.DISTRIBUTE.getValue()))
+                    .toList().get(0).getHandlerId();
+            workOrderHelper.addDistributeInfo(workOrder.getId(), distributeId);
             return Result.success(workOrderApprovalVO);
         }
         workOrderApprovalVO.setResult(Boolean.FALSE);

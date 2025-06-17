@@ -354,9 +354,22 @@ public class WorkOrderHelper {
             handleUserInfoMapper.insert(handleUserInfo);
         }
     }
+    public void addCheckInfo(Long orderId,Long checkId){
+        Staff checker = staffMapper.selectById(checkId);
+        HandleUserInfo checkInfo = new HandleUserInfo();
+        checkInfo.setOrderId(orderId);
+        checkInfo.setUserId(checkId);
+        checkInfo.setUserName(checker.getName());
+        checkInfo.setCompanyCode(checker.getCompanyCode());
+        checkInfo.setCompanyName(checker.getCompany());
+        checkInfo.setDepartmentCode(checker.getDepartmentCode());
+        checkInfo.setDepartmentName(checker.getDepartment());
+        checkInfo.setHandleType(HandleUserInfoHandleTypeEnum.CHECK.getValue());
+        checkInfo.setFinished(Boolean.FALSE);
+        handleUserInfoMapper.insert(checkInfo);
+    }
 
-
-    public void addDistributeAndCheckInfo(Long orderId,Long distributeId,Long checkId)
+    public void addDistributeInfo(Long orderId,Long distributeId)
     {
         Staff distributor = staffMapper.selectById(distributeId);
         HandleUserInfo distributeInfo = new HandleUserInfo();
@@ -369,19 +382,8 @@ public class WorkOrderHelper {
         distributeInfo.setDepartmentName(distributor.getDepartment());
         distributeInfo.setHandleType(HandleUserInfoHandleTypeEnum.DISTRIBUTE.getValue());
         distributeInfo.setFinished(Boolean.FALSE);
-        Staff checker = staffMapper.selectById(checkId);
-        HandleUserInfo checkInfo = new HandleUserInfo();
-        checkInfo.setOrderId(orderId);
-        checkInfo.setUserId(checkId);
-        checkInfo.setUserName(checker.getName());
-        checkInfo.setCompanyCode(checker.getCompanyCode());
-        checkInfo.setCompanyName(checker.getCompany());
-        checkInfo.setDepartmentCode(checker.getDepartmentCode());
-        checkInfo.setDepartmentName(checker.getDepartment());
-        checkInfo.setHandleType(HandleUserInfoHandleTypeEnum.CHECK.getValue());
-        checkInfo.setFinished(Boolean.FALSE);
         handleUserInfoMapper.insert(distributeInfo);
-        handleUserInfoMapper.insert(checkInfo);
+
     }
     public void checkAssignedUserInfo(HandleTypeEnum handleType, Long assignedUserId) {
         if (handleType.equals(HandleTypeEnum.DISTRIBUTE) && assignedUserId == null) {
