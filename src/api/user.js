@@ -59,3 +59,12 @@ export function getOrganization() {
     baseURL: 'http://localhost:8080'
   })
 }
+
+// 获取所有员工
+export function getAllStaff() {
+  return request({
+    url: '/user/all',
+    method: 'post',
+    baseURL: 'http://localhost:8080'
+  })
+}

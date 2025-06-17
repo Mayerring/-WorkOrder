@@ -105,8 +105,8 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getUserInfo } from '@/api/user'
-import { getAllStaff } from '@/api/admin'
+import { getUserInfo, getAllStaff } from '@/api/user'
+// import { getAllStaff } from '@/api/admin'
 import { createWorkflow, getFlowPage, deleteFlow, editFlow } from '@/api/flow'
 import { useUserStore } from '@/stores/user'
 

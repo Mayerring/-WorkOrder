@@ -174,7 +174,7 @@ const submitForm = async () => {
       try {
         const submitData = {
           ...form,
-          deadlineTime: Number(form.deadlineTime),
+          deadlineTime: Math.floor(Number(form.deadlineTime) / 1000),
           type: Number(form.type),
           priorityLevel: Number(form.priorityLevel)
         }

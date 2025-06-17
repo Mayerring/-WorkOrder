@@ -1,7 +1,7 @@
 <template>
   <div class="todo-container">
     <el-tabs v-model="activeTab">
-      <el-tab-pane label="未处理工单" name="pending">
+      <el-tab-pane label="未处理" name="pending">
         <el-table :data="pendingList" style="width: 100%" v-loading="loading">
           <el-table-column prop="code" label="工单编号" width="120" />
           <el-table-column prop="title" label="工单标题" width="200" show-overflow-tooltip />
@@ -25,14 +25,14 @@
           <el-table-column prop="deadlineTime" label="截止时间" width="180" />
           <el-table-column label="操作" fixed="right" width="150">
             <template #default="{ row }">
-              <el-button type="primary" link @click="handleWorkOrder(row)">处理</el-button>
-              <el-button type="info" link @click="viewDetail(row)">查看</el-button>
+              <el-button type="primary" link @click="handleWorkOrderAction(row)">处理</el-button>
+              <el-button type="info" link @click="getWorkOrderDetailAction(row)">查看</el-button>
             </template>
           </el-table-column>
         </el-table>
       </el-tab-pane>
 
-      <el-tab-pane label="已处理工单" name="finished">
+      <el-tab-pane label="已处理" name="finished">
         <el-table :data="finishedList" style="width: 100%" v-loading="loading">
           <el-table-column prop="code" label="工单编号" width="120" />
           <el-table-column prop="title" label="工单标题" width="200" show-overflow-tooltip />
@@ -56,7 +56,7 @@
           <el-table-column prop="deadlineTime" label="截止时间" width="180" />
           <el-table-column label="操作" fixed="right" width="100">
             <template #default="{ row }">
-              <el-button type="info" link @click="viewDetail(row)">查看</el-button>
+              <el-button type="info" link @click="getWorkOrderDetailAction(row)">查看</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -74,8 +74,12 @@
 
 <script setup>
 import { ref, reactive, onMounted, watch } from 'vue'
-import { getWorkOrderPage } from '@/api/workorder'
+import { useRouter } from 'vue-router'
+import { getWorkOrderPage, handleWorkOrder } from '@/api/workorder'
+import { getUserInfo } from '@/api/user'
 import { ElMessage } from 'element-plus'
+
+const router = useRouter()
 
 // 标签页激活状态
 const activeTab = ref('pending')
@@ -84,6 +88,7 @@ const activeTab = ref('pending')
 const loading = ref(false)
 const pendingList = ref([])
 const finishedList = ref([])
+const userId = ref(null)
 
 // 分页参数
 const pagination = reactive({
@@ -91,6 +96,21 @@ const pagination = reactive({
   pageSize: 10,
   total: 0
 })
+
+// 获取当前用户信息
+const getCurrentUserInfo = async () => {
+  try {
+    const res = await getUserInfo()
+    if (res.code === 1) {
+      userId.value = Number(res.data.userId)
+    } else {
+      ElMessage.error(res.msg || '获取用户信息失败')
+    }
+  } catch (error) {
+    console.error('获取用户信息失败：', error)
+    ElMessage.error('获取用户信息失败')
+  }
+}
 
 // 获取优先级标签类型
 const getPriorityType = (level) => {
@@ -122,9 +142,9 @@ const getStatusType = (status) => {
     case 410:
       return 'danger' // 已超时
     case 500:
-      return 'success' // 已完成
+      return 'success' // 已处理
     case 600:
-      return 'success' // 已确认完成
+      return 'success' // 已验收
     case 670:
       return 'danger' // 确认失败
     case 700:
@@ -141,17 +161,36 @@ const loadWorkOrderList = async () => {
     const params = {
       pageNum: pagination.pageNum,
       pageSize: pagination.pageSize,
-      finished: activeTab.value === 'pending' ? 0 : 1 // 使用finished字段区分待处理和已处理
+      handlerInfo: {
+        userId: userId.value,
+        finished: activeTab.value === 'pending' ? false : true // 未处理：false，已处理：true
+      }
     }
 
     const res = await getWorkOrderPage(params)
     if (res.code === 1) {
       const { records, total, current, size } = res.data
+      // 筛选当前用户需要处理的工单
+      const userWorkOrders = records.filter(order =>
+        order.handlerInfo?.some(handler =>
+          Number(handler.userId) === userId.value
+        )
+      )
+      // 根据 finished 状态分类
       if (activeTab.value === 'pending') {
-        pendingList.value = records
+        pendingList.value = userWorkOrders.filter(order =>
+          order.handlerInfo.some(handler =>
+            Number(handler.userId) === userId.value && !handler.finished
+          )
+        )
       } else {
-        finishedList.value = records
+        finishedList.value = userWorkOrders.filter(order =>
+          order.handlerInfo.some(handler =>
+            Number(handler.userId) === userId.value && handler.finished
+          )
+        )
       }
+
       pagination.total = total
       pagination.pageNum = current
       pagination.pageSize = size
@@ -179,15 +218,35 @@ const handlePageChange = (page) => {
 }
 
 // 处理工单
-const handleWorkOrder = (row) => {
-  // TODO: 实现工单处理逻辑
-  console.log('处理工单：', row)
+const handleWorkOrderAction = async (row) => {
+  try {
+    // 这里可以根据工单状态决定处理类型
+    // 例如：如果工单是处理中状态，可以选择完成操作
+    const handleType = 4 // 4: 完成
+    const params = {
+      id: row.id,
+      code: row.code,
+      handleType: handleType,
+      remark: '工单处理完成'
+    }
+
+    const res = await handleWorkOrder(params)
+    if (res.code === 1) {
+      ElMessage.success('工单处理成功')
+      loadWorkOrderList() // 重新加载列表
+    } else {
+      ElMessage.error(res.msg || '工单处理失败')
+    }
+  } catch (error) {
+    console.error('工单处理失败：', error)
+    ElMessage.error('工单处理失败')
+  }
 }
 
 // 查看工单详情
-const viewDetail = (row) => {
-  // TODO: 实现查看详情逻辑
-  console.log('查看工单详情：', row)
+const getWorkOrderDetailAction = async (row) => {
+  // 直接跳转到详情页面
+  router.push(`/workorder/detail/${row.id}`)
 }
 
 // 监听标签页切换
@@ -197,7 +256,8 @@ watch(activeTab, () => {
 })
 
 // 初始化
-onMounted(() => {
+onMounted(async () => {
+  await getCurrentUserInfo()
   loadWorkOrderList()
 })
 </script>

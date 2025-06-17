@@ -19,11 +19,10 @@ export function getTodoList() {
 }
 
 // 获取工单状态统计
-export function getWorkOrderStats(data) {
+export function getStatusData(data) {
     return request({
         url: '/dashboard/status',
         method: 'post',
-        baseURL: 'http://localhost:8080',
         data
     })
 }
@@ -33,7 +32,6 @@ export function getHandleQuantity(data) {
     return request({
         url: '/dashboard/handleQuantity',
         method: 'post',
-        baseURL: 'http://localhost:8080',
         data
     })
 }

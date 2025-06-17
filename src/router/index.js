@@ -51,47 +51,40 @@ const router = createRouter({
           ]
         },
         {
-          path: 'todo',
-          name: 'Todo',
-          component: () => import('@/views/todo/Index.vue'),
-          meta: { title: '待办事项', icon: 'List' }
-        },
-        {
           path: 'approval',
           name: 'Approval',
-          component: () => import('@/views/approval/Index.vue'),
-          meta: { title: '审批管理', icon: 'Check' },
-          children: [
-            {
-              path: 'pending',
-              name: 'ApprovalPending',
-              component: () => import('@/views/approval/Pending.vue'),
-              meta: { title: '待审批' }
-            },
-            {
-              path: 'processed',
-              name: 'ApprovalProcessed',
-              component: () => import('@/views/approval/Processed.vue'),
-              meta: { title: '已处理' }
-            }
-          ]
+          component: () => import('@/views/approval/Approval.vue'),
+          meta: { title: '审批管理', icon: 'Check' }
         },
         {
           path: 'dispatch',
           name: 'Dispatch',
-          component: () => import('@/views/dispatch/Index.vue'),
+          component: () => import('@/views/dispatch/Dispatch.vue'),
           meta: { title: '派单管理', icon: 'Share' }
+        },
+        {
+          path: 'todo',
+          name: 'Todo',
+          component: () => import('@/views/todo/Todo.vue'),
+          meta: { title: '待办工单', icon: 'List' }
+        },
+        //确认工单
+        {
+          path: 'confirm',
+          name: 'Confirm',
+          component: () => import('@/views/confirm/Confirm.vue'),
+          meta: { title: '确认工单', icon: 'List' }
         },
         {
           path: 'statistics',
           name: 'Statistics',
-          component: () => import('@/views/statistics/Index.vue'),
+          component: () => import('@/views/statistics/Statistics.vue'),
           meta: { title: '统计报表', icon: 'TrendCharts' }
         },
         {
           path: 'system',
           name: 'System',
-          component: () => import('@/views/system/Index.vue'),
+          component: () => import('@/views/system/System.vue'),
           meta: { title: '系统设置', icon: 'Setting' },
           children: [
             {

@@ -59,3 +59,22 @@ export function createWorkOrder(data) {
     data
   })
 }
+
+//审批工单
+export function approvalWorkOrder(data) {
+  return request({
+    url: '/workOrder/approval',
+    method: 'post',
+    baseURL: 'http://localhost:8080',
+    data
+  })
+}
+
+// 获取可分配的员工列表（用于派单）
+export function getAssignableStaff() {
+  return request({
+    url: '/workOrder/assignableStaff',
+    method: 'post',
+    baseURL: 'http://localhost:8080'
+  })
+}

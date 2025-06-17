@@ -4,8 +4,11 @@
       <template #header>
         <div class="card-header">
           <span>工单统计</span>
-          <el-date-picker v-model="dateRange" type="daterange" range-separator="至" start-placeholder="开始日期"
-            end-placeholder="结束日期" @change="handleDateChange" />
+          <el-radio-group v-model="timeType" @change="handleTimeTypeChange">
+            <el-radio-button :label="1">本周</el-radio-button>
+            <el-radio-button :label="2">本月</el-radio-button>
+            <el-radio-button :label="3">本年</el-radio-button>
+          </el-radio-group>
         </div>
       </template>
 
@@ -61,32 +64,98 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive, onUnmounted } from 'vue'
+import { ref, onMounted, onUnmounted } from 'vue'
 import * as echarts from 'echarts'
-import axios from 'axios'
+import { ElMessage } from 'element-plus'
+import { getStatusData, getHandleQuantity } from '@/api/dashboard'
 
-const dateRange = ref([])
 const trendChart = ref(null)
 const typeChart = ref(null)
-const statistics = reactive({
+const timeType = ref(1) // 1:周，2：月，3：年
+const statistics = ref({
   total: 0,
   pending: 0,
   processing: 0,
   completed: 0
 })
 
+// 获取工单状态统计
+const fetchStatusData = async () => {
+  try {
+    const res = await getStatusData({ timeType: timeType.value })
+    if (res.code === 1) {
+      const data = res.data
+      // 更新统计数据
+      statistics.value.total = data.reduce((sum, item) => sum + item.quantity, 0)
+      // 更新饼图数据
+      if (typeChart.value) {
+        const chart = echarts.getInstanceByDom(typeChart.value)
+        chart.setOption({
+          series: [{
+            data: data.map(item => ({
+              value: item.quantity,
+              name: item.statusDesc
+            }))
+          }]
+        })
+      }
+    }
+  } catch (error) {
+    console.error('获取工单状态统计失败:', error)
+    ElMessage.error('获取工单状态统计失败')
+  }
+}
+
+// 获取工单处理数量
+const fetchHandleQuantity = async () => {
+  try {
+    const today = new Date()
+    const res = await getHandleQuantity({
+      date: today.toISOString().split('T')[0] // 格式化为 yyyy-MM-dd
+    })
+    if (res.code === 1) {
+      const data = res.data
+      // 更新趋势图数据
+      if (trendChart.value) {
+        const chart = echarts.getInstanceByDom(trendChart.value)
+        chart.setOption({
+          xAxis: {
+            data: [data.date]
+          },
+          series: [
+            {
+              name: '工单总数',
+              data: [data.dailyTotalNum]
+            },
+            {
+              name: '已完成工单',
+              data: [data.dailyFinishedNum]
+            }
+          ]
+        })
+      }
+    }
+  } catch (error) {
+    console.error('获取工单处理数量失败:', error)
+    ElMessage.error('获取工单处理数量失败')
+  }
+}
+
 // 初始化趋势图
 const initTrendChart = () => {
   const chart = echarts.init(trendChart.value)
   const option = {
     title: {
-      text: '工单趋势'
+      text: '工单处理趋势'
     },
     tooltip: {
       trigger: 'axis'
     },
+    legend: {
+      data: ['工单总数', '已完成工单']
+    },
     grid: {
-      top: 40,
+      top: 60,
       left: '3%',
       right: '4%',
       bottom: '3%',
@@ -94,16 +163,25 @@ const initTrendChart = () => {
     },
     xAxis: {
       type: 'category',
-      data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+      data: []
     },
     yAxis: {
       type: 'value'
     },
-    series: [{
-      data: [0, 0, 0, 0, 0, 0, 0],
-      type: 'line',
-      smooth: true
-    }]
+    series: [
+      {
+        name: '工单总数',
+        type: 'line',
+        smooth: true,
+        data: []
+      },
+      {
+        name: '已完成工单',
+        type: 'line',
+        smooth: true,
+        data: []
+      }
+    ]
   }
   chart.setOption(option)
   window.addEventListener('resize', () => {
@@ -111,16 +189,17 @@ const initTrendChart = () => {
   })
 }
 
-// 初始化类型分布图
+// 初始化状态分布图
 const initTypeChart = () => {
   const chart = echarts.init(typeChart.value)
   const option = {
     title: {
-      text: '工单类型分布',
+      text: '工单状态分布',
       left: 'center'
     },
     tooltip: {
-      trigger: 'item'
+      trigger: 'item',
+      formatter: '{b}: {c} ({d}%)'
     },
     legend: {
       orient: 'horizontal',
@@ -130,12 +209,7 @@ const initTypeChart = () => {
       type: 'pie',
       radius: '50%',
       center: ['50%', '45%'],
-      data: [
-        { value: 0, name: '硬件故障' },
-        { value: 0, name: '软件问题' },
-        { value: 0, name: '网络故障' },
-        { value: 0, name: '其他' }
-      ],
+      data: [],
       emphasis: {
         itemStyle: {
           shadowBlur: 10,
@@ -151,33 +225,18 @@ const initTypeChart = () => {
   })
 }
 
-// 获取统计数据
-const fetchStatistics = async () => {
-  try {
-    const response = await axios.get('/api/workorder/statistics', {
-      params: {
-        startDate: dateRange.value[0],
-        endDate: dateRange.value[1]
-      }
-    })
-    // 更新统计数据
-    Object.assign(statistics, response.data)
-    // TODO: 更新图表数据
-  } catch (error) {
-    console.error('获取统计数据失败:', error)
-    ElMessage.error('获取统计数据失败')
-  }
-}
-
-// 日期变化处理
-const handleDateChange = () => {
-  fetchStatistics()
+// 时间范围变化处理
+const handleTimeTypeChange = (type) => {
+  timeType.value = type
+  fetchStatusData()
+  fetchHandleQuantity()
 }
 
 onMounted(() => {
   initTrendChart()
   initTypeChart()
-  fetchStatistics()
+  fetchStatusData()
+  fetchHandleQuantity()
 })
 
 // 组件卸载时移除事件监听

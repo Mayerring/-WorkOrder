@@ -8,9 +8,9 @@
     <el-card class="detail-card" v-loading="loading">
       <template #header>
         <div class="card-header">
-          <span class="workorder-id">工单号：{{ workorder.id }}</span>
+          <span class="workorder-id">工单号：{{ workorder.code }}</span>
           <el-tag :type="getStatusType(workorder.status)">
-            {{ getStatusText(workorder.status) }}
+            {{ workorder.statusDesc }}
           </el-tag>
         </div>
       </template>
@@ -18,31 +18,35 @@
       <el-descriptions :column="2" border>
         <el-descriptions-item label="标题">{{ workorder.title }}</el-descriptions-item>
         <el-descriptions-item label="类型">
-          <el-tag :type="workorder.type === 'fault' ? 'danger' : 'warning'">
-            {{ workorder.type === 'fault' ? '故障' : '需求' }}
+          <el-tag :type="workorder.type === 0 ? 'primary' : 'warning'">
+            {{ workorder.typeDesc }}
           </el-tag>
         </el-descriptions-item>
         <el-descriptions-item label="优先级">
-          <el-tag :type="getPriorityType(workorder.priority)">
-            {{ getPriorityText(workorder.priority) }}
+          <el-tag :type="getPriorityType(workorder.priorityLevel)">
+            {{ workorder.priorityLevelDesc }}
           </el-tag>
         </el-descriptions-item>
-        <el-descriptions-item label="创建人">{{ workorder.creator }}</el-descriptions-item>
+        <el-descriptions-item label="创建人">{{ workorder.submitterInfo?.userName || '-' }}</el-descriptions-item>
         <el-descriptions-item label="创建时间">{{ workorder.createTime }}</el-descriptions-item>
-        <el-descriptions-item label="当前处理人">{{ workorder.handler || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="截止时间">{{ workorder.deadlineTime || '-' }}</el-descriptions-item>
+        <el-descriptions-item label="当前处理人">
+          <span v-if="workorder.handlerInfo && workorder.handlerInfo.length > 0">
+            {{ workorder.handlerInfo[workorder.handlerInfo.length - 1].userName }}
+          </span>
+          <span v-else>-</span>
+        </el-descriptions-item>
         <el-descriptions-item label="描述" :span="2">
-          {{ workorder.description }}
+          {{ workorder.content || '-' }}
         </el-descriptions-item>
         <el-descriptions-item label="附件" :span="2">
-          <div v-if="workorder.attachments && workorder.attachments.length">
-            <div v-for="file in workorder.attachments" :key="file.name" class="attachment-item">
-              <el-link :underline="false" type="primary" @click="downloadFile(file)">
-                <el-icon>
-                  <Document />
-                </el-icon>
-                {{ file.name }}
-              </el-link>
-            </div>
+          <div v-if="workorder.accessoryName">
+            <el-link :underline="false" type="primary" @click="downloadFile(workorder)">
+              <el-icon>
+                <Document />
+              </el-icon>
+              {{ workorder.accessoryName }}
+            </el-link>
           </div>
           <span v-else>无</span>
         </el-descriptions-item>
@@ -51,13 +55,66 @@
       <!-- 处理记录 -->
       <div class="section-title">处理记录</div>
       <el-timeline>
-        <el-timeline-item v-for="record in workorder.records" :key="record.id" :timestamp="record.time"
-          :type="getTimelineItemType(record.action)">
+        <!-- 提交记录 -->
+        <el-timeline-item v-if="workorder.submitterInfo" :timestamp="workorder.submitterInfo.handleTime" type="primary">
           <div class="timeline-content">
-            <div class="action">{{ getActionText(record.action) }}</div>
-            <div class="operator">操作人：{{ record.operator }}</div>
-            <div class="comment" v-if="record.comment">
-              备注：{{ record.comment }}
+            <div class="action">{{ workorder.submitterInfo.handleTypeDesc }}</div>
+            <div class="operator">操作人：{{ workorder.submitterInfo.userName }} ({{ workorder.submitterInfo.departmentName
+              }})
+            </div>
+            <div class="comment" v-if="workorder.submitterInfo.remark">
+              备注：{{ workorder.submitterInfo.remark }}
+            </div>
+          </div>
+        </el-timeline-item>
+
+        <!-- 审批记录 -->
+        <el-timeline-item v-for="auditor in workorder.auditorInfo" :key="auditor.id" :timestamp="auditor.handleTime"
+          :type="auditor.finished ? 'success' : 'warning'">
+          <div class="timeline-content">
+            <div class="action">{{ auditor.handleTypeDesc }}</div>
+            <div class="operator">操作人：{{ auditor.userName }} ({{ auditor.departmentName }})</div>
+            <div class="comment" v-if="auditor.remark">
+              备注：{{ auditor.remark }}
+            </div>
+          </div>
+        </el-timeline-item>
+
+        <!-- 派单记录 -->
+        <el-timeline-item v-if="workorder.distributerInfo" :timestamp="workorder.distributerInfo.handleTime"
+          type="warning">
+          <div class="timeline-content">
+            <div class="action">{{ workorder.distributerInfo.handleTypeDesc }}</div>
+            <div class="operator">操作人：{{ workorder.distributerInfo.userName }} ({{
+              workorder.distributerInfo.departmentName
+              }})</div>
+            <div class="comment" v-if="workorder.distributerInfo.remark">
+              备注：{{ workorder.distributerInfo.remark }}
+            </div>
+          </div>
+        </el-timeline-item>
+
+        <!-- 处理记录 -->
+        <el-timeline-item v-for="handler in workorder.handlerInfo" :key="handler.id" :timestamp="handler.handleTime"
+          :type="handler.finished ? 'success' : 'warning'">
+          <div class="timeline-content">
+            <div class="action">{{ handler.handleTypeDesc }}</div>
+            <div class="operator">操作人：{{ handler.userName }} ({{ handler.departmentName }})</div>
+            <div class="comment" v-if="handler.remark">
+              备注：{{ handler.remark }}
+            </div>
+          </div>
+        </el-timeline-item>
+
+        <!-- 确认记录 -->
+        <el-timeline-item v-if="workorder.checkerInfo" :timestamp="workorder.checkerInfo.handleTime || '待确认'"
+          :type="workorder.checkerInfo.finished ? 'success' : 'info'">
+          <div class="timeline-content">
+            <div class="action">{{ workorder.checkerInfo.handleTypeDesc }}</div>
+            <div class="operator">操作人：{{ workorder.checkerInfo.userName }} ({{ workorder.checkerInfo.departmentName }})
+            </div>
+            <div class="comment" v-if="workorder.checkerInfo.remark">
+              备注：{{ workorder.checkerInfo.remark }}
             </div>
           </div>
         </el-timeline-item>
@@ -99,9 +156,10 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
+import { getWorkOrderDetail } from '@/api/workorder'
 
 const route = useRoute()
 const router = useRouter()
@@ -109,36 +167,30 @@ const loading = ref(false)
 const submitting = ref(false)
 const handleFormRef = ref(null)
 
-// 模拟数据
+// 工单详情数据
 const workorder = reactive({
-  id: route.params.id,
-  title: '服务器CPU使用率异常',
-  type: 'fault',
-  status: 'pending',
-  priority: 'high',
-  creator: '张三',
-  createTime: '2025-05-20 10:00:00',
-  handler: '李四',
-  description: '生产环境服务器CPU使用率持续超过90%，需要紧急处理。',
-  attachments: [
-    { name: '监控截图.png', url: '#' }
-  ],
-  records: [
-    {
-      id: 1,
-      action: 'create',
-      operator: '张三',
-      time: '2025-05-20 10:00:00',
-      comment: '创建工单'
-    },
-    {
-      id: 2,
-      action: 'assign',
-      operator: '系统',
-      time: '2025-05-20 10:01:00',
-      comment: '自动分配给李四'
-    }
-  ]
+  id: null,
+  code: '',
+  type: 0,
+  typeDesc: '',
+  title: '',
+  submitterInfo: null,
+  auditorInfo: [],
+  distributerInfo: null,
+  handlerInfo: [],
+  checkerInfo: null,
+  priorityLevel: 0,
+  priorityLevelDesc: '',
+  status: 0,
+  statusDesc: '',
+  createTime: '',
+  updateTime: '',
+  cancelTime: null,
+  deleteTime: null,
+  deadlineTime: '',
+  content: '',
+  accessoryUrl: '',
+  accessoryName: ''
 })
 
 const handleForm = reactive({
@@ -154,75 +206,79 @@ const handleRules = {
 }
 
 const canHandle = computed(() => {
-  return workorder.status === 'pending'
+  // 根据工单状态判断是否可以处理
+  return workorder.status === 400 || workorder.status === 410
 })
 
+// 获取工单详情
+const loadWorkOrderDetail = async () => {
+  loading.value = true
+  try {
+    const params = {
+      id: Number(route.params.id),
+      code: route.params.code || ''
+    }
+
+    const res = await getWorkOrderDetail(params)
+    if (res.code === 1) {
+      Object.assign(workorder, res.data)
+    } else {
+      ElMessage.error(res.msg || '获取工单详情失败')
+    }
+  } catch (error) {
+    console.error('获取工单详情失败：', error)
+    ElMessage.error('获取工单详情失败')
+  } finally {
+    loading.value = false
+  }
+}
+
 const getStatusType = (status) => {
-  const map = {
-    pending: 'warning',
-    processing: 'primary',
-    completed: 'success',
-    rejected: 'danger'
+  switch (status) {
+    case 100:
+      return 'info' // 未审核
+    case 200:
+      return 'warning' // 审核中
+    case 270:
+      return 'danger' // 审核失败
+    case 300:
+      return 'info' // 未派单
+    case 400:
+      return 'warning' // 处理中
+    case 410:
+      return 'danger' // 已超时
+    case 500:
+      return 'success' // 已完成
+    case 600:
+      return 'success' // 已确认完成
+    case 670:
+      return 'danger' // 确认失败
+    case 700:
+      return 'info' // 已取消
+    default:
+      return 'info'
   }
-  return map[status]
 }
 
-const getStatusText = (status) => {
-  const map = {
-    pending: '待审批',
-    processing: '处理中',
-    completed: '已完成',
-    rejected: '已驳回'
+const getPriorityType = (level) => {
+  switch (level) {
+    case 0:
+      return 'danger'
+    case 1:
+      return 'warning'
+    case 2:
+      return 'info'
+    default:
+      return 'info'
   }
-  return map[status]
-}
-
-const getPriorityType = (priority) => {
-  const map = {
-    low: 'info',
-    medium: '',
-    high: 'warning',
-    urgent: 'danger'
-  }
-  return map[priority]
-}
-
-const getPriorityText = (priority) => {
-  const map = {
-    low: '低',
-    medium: '中',
-    high: '高',
-    urgent: '紧急'
-  }
-  return map[priority]
-}
-
-const getTimelineItemType = (action) => {
-  const map = {
-    create: 'primary',
-    approve: 'success',
-    reject: 'danger',
-    transfer: 'warning',
-    complete: 'success'
-  }
-  return map[action]
-}
-
-const getActionText = (action) => {
-  const map = {
-    create: '创建工单',
-    approve: '审批通过',
-    reject: '驳回',
-    transfer: '转派',
-    assign: '分配',
-    complete: '完成'
-  }
-  return map[action]
 }
 
 const downloadFile = (file) => {
-  // TODO: 实现文件下载
-  console.log('下载文件：', file)
+  if (file.accessoryUrl) {
+    window.open(file.accessoryUrl, '_blank')
+  } else {
+    ElMessage.warning('文件链接不可用')
+  }
 }
 
 const submitHandle = async () => {
@@ -244,6 +300,11 @@ const submitHandle = async () => {
     }
   })
 }
+
+// 初始化
+onMounted(() => {
+  loadWorkOrderDetail()
+})
 </script>
 
 <style scoped>

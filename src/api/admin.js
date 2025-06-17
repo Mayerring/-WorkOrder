@@ -47,14 +47,14 @@ export function addStaff(data) {
   })
 }
 
-//查询所有员工
-export function getAllStaff() {
-  return request({
-    url: '/admin/staff/all',
-    method: 'post',
-    baseURL: 'http://localhost:8080',
-  })
-}
+// //查询所有员工
+// export function getAllStaff() {
+//   return request({
+//     url: '/admin/staff/all',
+//     method: 'post',
+//     baseURL: 'http://localhost:8080',
+//   })
+// }
 
 // 部门相关接口
 // 新增部门，这个只有管理员可以操作
