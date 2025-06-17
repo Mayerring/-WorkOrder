@@ -2,54 +2,94 @@
   <div class="workflow-settings">
     <!-- 工具栏 -->
     <div class="toolbar">
-      <el-button type="primary" @click="handleAdd">新增工作流</el-button>
+      <el-button v-if="isAdmin" type="primary" @click="handleAdd">新增工作流</el-button>
     </div>
 
     <!-- 工作流列表 -->
     <el-table :data="tableData" style="width: 100%" v-loading="loading">
-      <el-table-column prop="name" label="工作流名称" width="180" />
-      <el-table-column prop="type" label="工单类型" width="120">
+      <el-table-column prop="flowId" label="流程ID" width="100" />
+      <el-table-column prop="flowName" label="工作流名称" width="180" />
+      <el-table-column label="节点信息" show-overflow-tooltip>
         <template #default="{ row }">
-          <el-tag :type="getTypeTag(row.type)">{{ getTypeName(row.type) }}</el-tag>
+          <div class="node-info">
+            <div class="node-item">
+              <span class="node-label">审核节点：</span>
+              <el-tag v-for="node in row.nodes?.filter(n => n.nodeType === 2)" :key="node.id" size="small"
+                type="primary" class="mx-1">
+                {{ node.handlerName }}
+              </el-tag>
+            </div>
+            <div class="node-item">
+              <span class="node-label">指派节点：</span>
+              <el-tag size="small" type="warning">
+                {{row.nodes?.find(n => n.nodeType === 3)?.handlerName || '-'}}
+              </el-tag>
+            </div>
+            <div class="node-item">
+              <span class="node-label">验收节点：</span>
+              <el-tag size="small" type="success">
+                {{row.nodes?.find(n => n.nodeType === 5)?.handlerName || '-'}}
+              </el-tag>
+            </div>
+          </div>
         </template>
       </el-table-column>
-      <el-table-column prop="description" label="描述" show-overflow-tooltip />
-      <el-table-column prop="status" label="状态" width="100">
+      <el-table-column label="操作" width="200" fixed="right">
         <template #default="{ row }">
-          <el-tag :type="row.status === 'active' ? 'success' : 'info'">
-            {{ row.status === 'active' ? '启用' : '停用' }}
-          </el-tag>
-        </template>
-      </el-table-column>
-      <el-table-column prop="createTime" label="创建时间" width="180" />
-      <el-table-column label="操作" width="250" fixed="right">
-        <template #default="{ row }">
-          <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
-          <el-button type="success" link @click="handleConfig(row)">流程配置</el-button>
-          <el-button type="danger" link @click="handleDelete(row)">删除</el-button>
+          <el-button v-if="isAdmin" type="primary" link @click="handleEdit(row)">编辑</el-button>
+          <el-button v-if="isAdmin" type="danger" link @click="handleDelete(row)">删除</el-button>
         </template>
       </el-table-column>
     </el-table>
 
+    <!-- 分页器 -->
+    <div class="pagination-container">
+      <el-pagination v-model:current-page="pagination.pageNum" v-model:page-size="pagination.pageSize"
+        :page-sizes="[10, 20, 50, 100]" :total="pagination.total" layout="total, sizes, prev, pager, next"
+        @size-change="handleSizeChange" @current-change="handlePageChange" />
+    </div>
+
     <!-- 工作流表单对话框 -->
-    <el-dialog v-model="dialogVisible" :title="dialogType === 'add' ? '新增工作流' : '编辑工作流'" width="500px">
-      <el-form :model="workflowForm" label-width="100px" :rules="rules" ref="workflowFormRef">
-        <el-form-item label="工作流名称" prop="name">
-          <el-input v-model="workflowForm.name" />
+    <el-dialog v-model="dialogVisible" :title="dialogType === 'add' ? '新增工作流' : '编辑工作流'" width="500px"
+      :close-on-click-modal="false">
+      <el-form :model="workflowForm" label-width="120px" :rules="rules" ref="workflowFormRef">
+        <el-form-item label="工作流名称" prop="flowName">
+          <div class="select-wrapper">
+            <el-input v-model="workflowForm.flowName" placeholder="请输入工作流名称" />
+          </div>
         </el-form-item>
-        <el-form-item label="工单类型" prop="type">
-          <el-select v-model="workflowForm.type" placeholder="请选择工单类型">
-            <el-option label="故障报修" value="fault" />
-            <el-option label="需求申请" value="requirement" />
-            <el-option label="运维服务" value="operation" />
-          </el-select>
+
+        <el-form-item label="审核人选择" required>
+          <el-form-item prop="auditHandlerIds">
+            <div class="select-wrapper">
+              <el-select v-model="workflowForm.auditHandlerIds" multiple placeholder="请选择审核处理人"
+                @change="handleMultiHandlerChange">
+                <el-option v-for="item in handlerOptions" :key="item.id" :label="item.name" :value="item.id" />
+              </el-select>
+            </div>
+          </el-form-item>
         </el-form-item>
-        <el-form-item label="描述" prop="description">
-          <el-input v-model="workflowForm.description" type="textarea" rows="3" />
+
+        <el-form-item label="指派人选择" required>
+          <el-form-item prop="distributeNode.handlerId">
+            <div class="select-wrapper">
+              <el-select v-model="workflowForm.distributeNode.handlerId"
+                @change="(val) => handleSingleHandlerChange(val, 'distributeNode')" placeholder="请选择指派处理人">
+                <el-option v-for="item in handlerOptions" :key="item.id" :label="item.name" :value="item.id" />
+              </el-select>
+            </div>
+          </el-form-item>
         </el-form-item>
-        <el-form-item label="状态" prop="status">
-          <el-switch v-model="workflowForm.status" :active-value="'active'" :inactive-value="'inactive'"
-            active-text="启用" inactive-text="停用" />
+
+        <el-form-item label="验收人选择" required>
+          <el-form-item prop="checkNode.handlerId">
+            <div class="select-wrapper">
+              <el-select v-model="workflowForm.checkNode.handlerId"
+                @change="(val) => handleSingleHandlerChange(val, 'checkNode')" placeholder="请选择验收处理人">
+                <el-option v-for="item in handlerOptions" :key="item.id" :label="item.name" :value="item.id" />
+              </el-select>
+            </div>
+          </el-form-item>
         </el-form-item>
       </el-form>
       <template #footer>
@@ -59,386 +99,378 @@
         </span>
       </template>
     </el-dialog>
-
-    <!-- 流程配置对话框 -->
-    <el-dialog v-model="configDialogVisible" title="流程配置" width="800px">
-      <div class="workflow-config">
-        <div class="node-list">
-          <div class="node-title">节点列表</div>
-          <draggable v-model="workflowNodes" item-key="id" handle=".el-card" ghost-class="ghost" @end="handleDragEnd">
-            <template #item="{ element }">
-              <div class="node-item">
-                <el-card :body-style="{ padding: '10px' }">
-                  <div class="node-content">
-                    <span>{{ element.name }}</span>
-                    <div class="node-actions">
-                      <el-button type="primary" link @click="handleEditNode(element)">编辑</el-button>
-                      <el-button type="danger" link @click="handleDeleteNode(element)">删除</el-button>
-                    </div>
-                  </div>
-                </el-card>
-              </div>
-            </template>
-          </draggable>
-          <el-button type="primary" plain class="add-node-btn" @click="handleAddNode">添加节点</el-button>
-        </div>
-      </div>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="configDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="saveWorkflowConfig">保存配置</el-button>
-        </span>
-      </template>
-    </el-dialog>
-
-    <!-- 节点配置对话框 -->
-    <el-dialog v-model="nodeDialogVisible" :title="nodeDialogType === 'add' ? '添加节点' : '编辑节点'" width="500px">
-      <el-form :model="nodeForm" label-width="100px" :rules="nodeRules" ref="nodeFormRef">
-        <el-form-item label="节点名称" prop="name">
-          <el-input v-model="nodeForm.name" />
-        </el-form-item>
-        <el-form-item label="处理角色" prop="roles">
-          <el-select v-model="nodeForm.roles" multiple placeholder="请选择处理角色">
-            <el-option v-for="role in roleOptions" :key="role.value" :label="role.label" :value="role.value" />
-          </el-select>
-        </el-form-item>
-        <el-form-item label="处理时限" prop="timeLimit">
-          <el-input-number v-model="nodeForm.timeLimit" :min="1" :max="72" />
-          <span class="unit">小时</span>
-        </el-form-item>
-        <el-form-item label="是否可转派" prop="canReassign">
-          <el-switch v-model="nodeForm.canReassign" />
-        </el-form-item>
-        <el-form-item label="备注" prop="remark">
-          <el-input v-model="nodeForm.remark" type="textarea" rows="3" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <span class="dialog-footer">
-          <el-button @click="nodeDialogVisible = false">取消</el-button>
-          <el-button type="primary" @click="submitNodeForm">确认</el-button>
-        </span>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import draggable from 'vuedraggable'
+import { getUserInfo } from '@/api/user'
+import { getAllStaff } from '@/api/admin'
+import { createWorkflow, getFlowPage, deleteFlow, editFlow } from '@/api/flow'
+import { useUserStore } from '@/stores/user'
+
+const userStore = useUserStore()
+const isAdmin = ref(false)
 
 // 表格数据
 const loading = ref(false)
-const tableData = ref([
-  {
-    id: 1,
-    name: '故障报修工作流',
-    type: 'fault',
-    description: '处理故障报修工单的标准流程',
-    status: 'active',
-    createTime: '2025-05-20 10:00:00'
-  },
-  {
-    id: 2,
-    name: '需求申请工作流',
-    type: 'requirement',
-    description: '处理需求申请工单的标准流程',
-    status: 'active',
-    createTime: '2025-05-20 11:00:00'
-  }
-])
+const tableData = ref([])
 
-// 工作流表单对话框
+// 分页参数
+const pagination = reactive({
+  pageNum: 1,
+  pageSize: 10,
+  total: 0
+})
+
+// 表单相关
 const dialogVisible = ref(false)
 const dialogType = ref('add')
 const workflowFormRef = ref(null)
+const handlerOptions = ref([])
+
+// 根据接口文档修改表单数据结构
 const workflowForm = reactive({
-  name: '',
-  type: '',
-  description: '',
-  status: 'active'
+  flowId: undefined,
+  flowName: '',
+  auditHandlerIds: [], // 用于绑定多选框的值
+  nodes: [], // 审核节点
+  distributeNode: { // 指派节点
+    handlerId: undefined,
+    handlerName: ''
+  },
+  checkNode: { // 验收节点
+    handlerId: undefined,
+    handlerName: ''
+  }
 })
 
 // 表单验证规则
 const rules = {
-  name: [
+  flowName: [
     { required: true, message: '请输入工作流名称', trigger: 'blur' }
   ],
-  type: [
-    { required: true, message: '请选择工单类型', trigger: 'change' }
+  'distributeNode.handlerId': [
+    { required: true, message: '请选择指派处理人', trigger: 'change' }
+  ],
+  'auditHandlerIds': [
+    { required: true, message: '请选择审核处理人', trigger: 'change' }
+  ],
+  'checkNode.handlerId': [
+    { required: true, message: '请选择验收节点处理人', trigger: 'change' }
   ]
 }
 
-// 工单类型标签
-const getTypeTag = (type) => {
-  const map = {
-    fault: 'danger',
-    requirement: 'warning',
-    operation: 'success'
+// 获取用户信息并设置权限
+const getUserRole = async () => {
+  try {
+    const res = await getUserInfo()
+    if (res.code === 1) {
+      isAdmin.value = res.data.role === 'admin'
+      userStore.setUserInfo(res.data)
+    } else {
+      ElMessage.error(res.msg || '获取用户信息失败')
+    }
+  } catch (error) {
+    console.error('获取用户信息失败:', error)
+    ElMessage.error('获取用户信息失败')
   }
-  return map[type]
 }
 
-// 工单类型名称
-const getTypeName = (type) => {
-  const map = {
-    fault: '故障报修',
-    requirement: '需求申请',
-    operation: '运维服务'
+// 获取处理人列表
+const loadHandlerOptions = async () => {
+  try {
+    const res = await getAllStaff()
+    if (res.code === 1 && Array.isArray(res.data)) {
+      // 过滤掉管理员角色，只保留普通用户
+      handlerOptions.value = res.data
+        .filter(staff => staff.role === 'user')
+        .map(staff => ({
+          id: staff.id,
+          name: staff.name
+        }))
+      console.log('处理人列表：', handlerOptions.value) // 添加日志
+    } else {
+      console.error('获取处理人列表失败：', res) // 添加错误日志
+      ElMessage.error(res.msg || '获取处理人列表失败')
+    }
+  } catch (error) {
+    console.error('获取处理人列表失败:', error)
+    ElMessage.error('获取处理人列表失败')
   }
-  return map[type]
 }
 
-// 流程配置对话框
-const configDialogVisible = ref(false)
-const currentWorkflow = ref(null)
-const workflowNodes = ref([
-  {
-    id: 1,
-    name: '提交申请',
-    roles: ['USER'],
-    timeLimit: 24,
-    canReassign: false,
-    remark: '用户提交工单'
-  },
-  {
-    id: 2,
-    name: '部门审批',
-    roles: ['DEPT_MANAGER'],
-    timeLimit: 48,
-    canReassign: true,
-    remark: '部门经理审批'
-  },
-  {
-    id: 3,
-    name: '运维处理',
-    roles: ['OPS'],
-    timeLimit: 72,
-    canReassign: true,
-    remark: '运维人员处理'
+// 加载工作流列表
+const loadWorkflowList = async () => {
+  loading.value = true
+  try {
+    const res = await getFlowPage({
+      pageNum: pagination.pageNum,
+      pageSize: pagination.pageSize
+    })
+    if (res.code === 1) {
+      tableData.value = res.data.records || []
+      pagination.total = res.data.total || 0
+      pagination.pageNum = res.data.current || 1
+      pagination.pageSize = res.data.size || 10
+    } else {
+      ElMessage.error(res.msg || '获取工作流列表失败')
+    }
+  } catch (error) {
+    console.error('获取工作流列表失败：', error)
+    ElMessage.error('获取工作流列表失败')
+  } finally {
+    loading.value = false
   }
-])
-
-// 节点配置对话框
-const nodeDialogVisible = ref(false)
-const nodeDialogType = ref('add')
-const nodeFormRef = ref(null)
-const nodeForm = reactive({
-  name: '',
-  roles: [],
-  timeLimit: 24,
-  canReassign: false,
-  remark: ''
-})
-
-// 节点表单验证规则
-const nodeRules = {
-  name: [
-    { required: true, message: '请输入节点名称', trigger: 'blur' }
-  ],
-  roles: [
-    { required: true, message: '请选择处理角色', trigger: 'change' }
-  ],
-  timeLimit: [
-    { required: true, message: '请输入处理时限', trigger: 'blur' }
-  ]
 }
 
-// 角色选项
-const roleOptions = [
-  { value: 'USER', label: '普通用户' },
-  { value: 'DEPT_MANAGER', label: '部门经理' },
-  { value: 'OPS', label: '运维人员' },
-  { value: 'ADMIN', label: '系统管理员' }
-]
+// 处理分页变化
+const handleSizeChange = (size) => {
+  pagination.pageSize = size
+  pagination.pageNum = 1
+  loadWorkflowList()
+}
+
+const handlePageChange = (page) => {
+  pagination.pageNum = page
+  loadWorkflowList()
+}
+
+// 处理人选择变更
+const handleSingleHandlerChange = (value, nodeType) => {
+  const handler = handlerOptions.value.find(h => h.id === value)
+  if (handler) {
+    workflowForm[nodeType] = {
+      nodeType: nodeType === 'distributeNode' ? 3 : 5,
+      handlerId: handler.id,
+      handlerName: handler.name
+    }
+  }
+}
+
+const handleMultiHandlerChange = (values) => {
+  // 更新 nodes 数组
+  workflowForm.nodes = values.map(value => {
+    const handler = handlerOptions.value.find(h => h.id === value)
+    return {
+      nodeType: 2, // 审核节点类型
+      handlerId: handler?.id,
+      handlerName: handler?.name || ''
+    }
+  })
+}
 
 // 新增工作流
-const handleAdd = () => {
+const handleAdd = async () => {
+  if (!isAdmin.value) {
+    ElMessage.warning('只有管理员可以新增工作流')
+    return
+  }
   dialogType.value = 'add'
-  Object.keys(workflowForm).forEach(key => {
-    workflowForm[key] = key === 'status' ? 'active' : ''
-  })
+  resetWorkflowForm()
   dialogVisible.value = true
 }
 
 // 编辑工作流
-const handleEdit = (row) => {
-  dialogType.value = 'edit'
-  Object.keys(workflowForm).forEach(key => {
-    workflowForm[key] = row[key]
-  })
-  dialogVisible.value = true
+const handleEdit = async (row) => {
+  if (!isAdmin.value) {
+    ElMessage.warning('只有管理员可以编辑工作流')
+    return
+  }
+  try {
+    // 加载处理人列表
+    await loadHandlerOptions()
+    dialogType.value = 'edit'
+
+    // 根据接口文档重构数据
+    const auditNodes = row.nodes.filter(n => n.nodeType === 2)
+    const distributeNode = row.nodes.find(n => n.nodeType === 3) || { handlerId: undefined, handlerName: '' }
+    const checkNode = row.nodes.find(n => n.nodeType === 5) || { handlerId: undefined, handlerName: '' }
+
+    Object.assign(workflowForm, {
+      flowId: row.flowId,
+      flowName: row.flowName,
+      auditHandlerIds: auditNodes.map(node => node.handlerId), // 设置多选框的值
+      nodes: auditNodes.map(node => ({
+        handlerId: node.handlerId,
+        handlerName: node.handlerName
+      })),
+      distributeNode: {
+        handlerId: distributeNode.handlerId,
+        handlerName: distributeNode.handlerName
+      },
+      checkNode: {
+        handlerId: checkNode.handlerId,
+        handlerName: checkNode.handlerName
+      }
+    })
+    dialogVisible.value = true
+  } catch (error) {
+    console.error('编辑工作流失败：', error)
+    ElMessage.error('编辑失败，请稍后重试')
+  }
 }
 
 // 删除工作流
-const handleDelete = (row) => {
-  ElMessageBox.confirm(
-    '确认删除该工作流吗？',
-    '提示',
-    {
+const handleDelete = async (row) => {
+  if (!isAdmin.value) {
+    ElMessage.warning('只有管理员可以删除工作流')
+    return
+  }
+  try {
+    await ElMessageBox.confirm('确认删除该工作流吗？', '提示', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
+    })
+
+    const res = await deleteFlow({ flowId: row.flowId })
+    if (res.code === 1) {
+      ElMessage.success('删除成功')
+      loadWorkflowList()
+    } else {
+      ElMessage.error(res.msg || '删除失败')
     }
-  ).then(() => {
-    // TODO: 实现删除
-    const index = tableData.value.findIndex(item => item.id === row.id)
-    if (index > -1) {
-      tableData.value.splice(index, 1)
+  } catch (error) {
+    if (error !== 'cancel') {
+      console.error('删除工作流失败：', error)
+      ElMessage.error('删除失败，请稍后重试')
     }
-    ElMessage.success('删除成功')
-  }).catch(() => { })
+  }
 }
 
-// 打开流程配置
-const handleConfig = (row) => {
-  currentWorkflow.value = row
-  // TODO: 获取工作流节点配置
-  configDialogVisible.value = true
+// 重置表单
+const resetWorkflowForm = () => {
+  workflowForm.flowId = undefined
+  workflowForm.flowName = ''
+  workflowForm.auditHandlerIds = []
+  workflowForm.nodes = []
+  workflowForm.distributeNode = {
+    nodeType: 3,
+    handlerId: undefined,
+    handlerName: ''
+  }
+  workflowForm.checkNode = {
+    nodeType: 5,
+    handlerId: undefined,
+    handlerName: ''
+  }
 }
 
-// 节点拖拽结束
-const handleDragEnd = () => {
-  // TODO: 保存节点顺序
-}
-
-// 添加节点
-const handleAddNode = () => {
-  nodeDialogType.value = 'add'
-  Object.keys(nodeForm).forEach(key => {
-    nodeForm[key] = key === 'timeLimit' ? 24 : key === 'canReassign' ? false : key === 'roles' ? [] : ''
-  })
-  nodeDialogVisible.value = true
-}
-
-// 编辑节点
-const handleEditNode = (node) => {
-  nodeDialogType.value = 'edit'
-  Object.keys(nodeForm).forEach(key => {
-    nodeForm[key] = node[key]
-  })
-  nodeDialogVisible.value = true
-}
-
-// 删除节点
-const handleDeleteNode = (node) => {
-  ElMessageBox.confirm(
-    '确认删除该节点吗？',
-    '提示',
-    {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    }
-  ).then(() => {
-    const index = workflowNodes.value.findIndex(item => item.id === node.id)
-    if (index > -1) {
-      workflowNodes.value.splice(index, 1)
-    }
-    ElMessage.success('删除成功')
-  }).catch(() => { })
-}
-
-// 提交工作流表单
+// 提交表单
 const submitForm = () => {
+  if (!isAdmin.value) {
+    ElMessage.warning('只有管理员可以操作工作流')
+    return
+  }
+
   if (!workflowFormRef.value) return
-  workflowFormRef.value.validate((valid) => {
+  workflowFormRef.value.validate(async (valid) => {
     if (valid) {
-      // TODO: 实现表单提交
-      ElMessage.success(dialogType.value === 'add' ? '添加成功' : '修改成功')
-      dialogVisible.value = false
-    }
-  })
-}
-
-// 提交节点表单
-const submitNodeForm = () => {
-  if (!nodeFormRef.value) return
-  nodeFormRef.value.validate((valid) => {
-    if (valid) {
-      if (nodeDialogType.value === 'add') {
-        workflowNodes.value.push({
-          id: Date.now(),
-          ...nodeForm
-        })
-      } else {
-        const index = workflowNodes.value.findIndex(node => node.id === nodeForm.id)
-        if (index > -1) {
-          workflowNodes.value[index] = { ...nodeForm }
+      try {
+        const api = dialogType.value === 'add' ? createWorkflow : editFlow
+        const submitData = {
+          flowId: workflowForm.flowId,
+          flowName: workflowForm.flowName,
+          nodes: workflowForm.nodes.map(node => ({
+            nodeType: 2,
+            handlerId: node.handlerId,
+            handlerName: node.handlerName
+          })),
+          distributeNode: {
+            nodeType: 3,
+            handlerId: workflowForm.distributeNode.handlerId,
+            handlerName: workflowForm.distributeNode.handlerName
+          },
+          checkNode: {
+            nodeType: 5,
+            handlerId: workflowForm.checkNode.handlerId,
+            handlerName: workflowForm.checkNode.handlerName
+          }
         }
+        const res = await api(submitData)
+        if (res.code === 1 && res.data.success) {
+          ElMessage.success(dialogType.value === 'add' ? '添加成功' : '修改成功')
+          dialogVisible.value = false
+          loadWorkflowList()
+        } else {
+          ElMessage.error(res.msg || '操作失败')
+        }
+      } catch (error) {
+        console.error('提交工作流失败：', error)
+        ElMessage.error('提交失败，请稍后重试')
       }
-      ElMessage.success(nodeDialogType.value === 'add' ? '添加成功' : '修改成功')
-      nodeDialogVisible.value = false
     }
   })
 }
 
-// 保存工作流配置
-const saveWorkflowConfig = () => {
-  // TODO: 保存工作流配置
-  ElMessage.success('保存成功')
-  configDialogVisible.value = false
-}
+// 初始化
+onMounted(async () => {
+  try {
+    await getUserRole()
+    await loadHandlerOptions() // 移除 isAdmin 判断，所有用户都需要加载处理人列表
+    await loadWorkflowList()
+  } catch (error) {
+    console.error('初始化失败：', error)
+    ElMessage.error('初始化失败，请刷新页面重试')
+  }
+})
 </script>
 
 <style scoped>
 .workflow-settings {
-  padding: 20px 0;
+  padding: 20px;
 }
 
 .toolbar {
   margin-bottom: 20px;
 }
 
-.workflow-config {
-  min-height: 400px;
-}
-
-.node-list {
-  border: 1px solid var(--el-border-color-light);
-  border-radius: 4px;
-  padding: 20px;
-}
-
-.node-title {
-  font-size: 16px;
-  font-weight: bold;
-  margin-bottom: 20px;
+.node-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .node-item {
-  margin-bottom: 10px;
-}
-
-.node-content {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  gap: 8px;
 }
 
-.node-actions {
-  display: flex;
-  gap: 10px;
+.node-label {
+  color: #606266;
+  font-size: 14px;
+  min-width: 70px;
 }
 
-.add-node-btn {
+.pagination-container {
   margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.select-wrapper {
   width: 100%;
 }
 
-.ghost {
-  opacity: 0.5;
-  background: #c8ebfb;
+.select-wrapper :deep(.el-select) {
+  width: 100%;
 }
 
-.unit {
-  margin-left: 10px;
+.select-wrapper :deep(.el-input) {
+  width: 100%;
+}
+
+/* 添加处理人选择框的宽度样式 */
+:deep(.el-form-item__content) {
+  width: 350px;
 }
 
 @media screen and (max-width: 768px) {
   .workflow-settings {
-    padding: 10px 0;
+    padding: 10px;
   }
 }
 </style>

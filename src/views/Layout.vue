@@ -75,19 +75,124 @@
         </el-main>
       </el-container>
     </el-container>
+
+    <!-- 个人信息对话框 -->
+    <el-dialog v-model="profileDialogVisible" title="个人信息" width="500px">
+      <el-form :model="profileForm" label-width="100px">
+        <el-form-item label="姓名">
+          <el-input v-model="profileForm.managerName" disabled />
+        </el-form-item>
+        <el-form-item label="工号">
+          <el-input v-model="profileForm.staffNumber" disabled />
+        </el-form-item>
+        <el-form-item label="公司">
+          <el-input v-model="profileForm.companyName" disabled />
+        </el-form-item>
+        <el-form-item label="部门">
+          <el-input v-model="profileForm.departmentName" disabled />
+        </el-form-item>
+        <el-form-item label="职位">
+          <el-input v-model="profileForm.position" disabled />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="profileDialogVisible = false">关闭</el-button>
+        </span>
+      </template>
+    </el-dialog>
+
+    <!-- 修改密码对话框 -->
+    <el-dialog v-model="passwordDialogVisible" title="修改密码" width="500px">
+      <el-form :model="passwordForm" :rules="passwordRules" ref="passwordFormRef" label-width="100px">
+        <el-form-item label="原密码" prop="oldPassword">
+          <el-input v-model="passwordForm.oldPassword" type="password" show-password />
+        </el-form-item>
+        <el-form-item label="新密码" prop="newPassword">
+          <el-input v-model="passwordForm.newPassword" type="password" show-password />
+        </el-form-item>
+        <el-form-item label="确认密码" prop="confirmPassword">
+          <el-input v-model="passwordForm.confirmPassword" type="password" show-password />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="passwordDialogVisible = false">取消</el-button>
+          <el-button type="primary" @click="submitPassword">确认</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
+import { ElMessageBox, ElMessage } from 'element-plus'
+import { updateUserInfo } from '@/api/user'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 const isCollapse = ref(false)
 const hasNotification = ref(true)
+
+// 个人信息对话框
+const profileDialogVisible = ref(false)
+const profileForm = ref({
+  staffNumber: '',
+  companyCode: '',
+  companyName: '',
+  departmentCode: '',
+  departmentName: '',
+  position: '',
+  managerNumber: '',
+  managerName: '',
+  role: '',
+  createTime: '',
+  updateTime: ''
+})
+
+// 修改密码对话框
+const passwordDialogVisible = ref(false)
+const passwordFormRef = ref(null)
+const passwordForm = ref({
+  oldPassword: '',
+  newPassword: '',
+  confirmPassword: ''
+})
+
+const passwordRules = {
+  oldPassword: [
+    { required: true, message: '请输入原密码', trigger: 'blur' }
+  ],
+  newPassword: [
+    { required: true, message: '请输入新密码', trigger: 'blur' },
+    { min: 6, message: '密码长度不能小于6位', trigger: 'blur' }
+  ],
+  confirmPassword: [
+    { required: true, message: '请确认新密码', trigger: 'blur' },
+    {
+      validator: (rule, value, callback) => {
+        if (value !== passwordForm.value.newPassword) {
+          callback(new Error('两次输入的密码不一致'))
+        } else {
+          callback()
+        }
+      },
+      trigger: 'blur'
+    }
+  ]
+}
+
+// 获取用户信息
+const fetchUserData = async () => {
+  const res = await userStore.fetchUserInfo()
+  if (res) {
+    profileForm.value = { ...res }
+  }
+}
 
 // 获取菜单项（排除工单详情）
 const menuItems = computed(() => {
@@ -124,19 +229,69 @@ const showNotification = () => {
 
 // 处理个人信息
 const handleProfile = () => {
-  // TODO: 跳转到个人信息页面
+  profileDialogVisible.value = true
 }
 
 // 处理修改密码
 const handlePassword = () => {
-  // TODO: 显示修改密码对话框
+  passwordDialogVisible.value = true
+  passwordForm.value = {
+    oldPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  }
+}
+
+// 提交修改密码
+const submitPassword = async () => {
+  if (!passwordFormRef.value) return
+
+  await passwordFormRef.value.validate(async (valid) => {
+    if (valid) {
+      try {
+        const res = await updateUserInfo({
+          id: userStore.userInfo.id,
+          password: passwordForm.value.newPassword,
+          phone: userStore.userInfo.phone
+        })
+
+        if (res.code === 1) {
+          passwordDialogVisible.value = false
+          ElMessage.success('密码修改成功，请重新登录')
+          localStorage.removeItem('token')
+          userStore.clearUserInfo()
+          router.push('/login')
+        } else {
+          ElMessage.error(res.msg || '修改失败')
+        }
+      } catch (error) {
+        console.error('修改密码失败：', error)
+        ElMessage.error('修改失败，请稍后重试')
+      }
+    }
+  })
 }
 
 // 处理退出登录
 const handleLogout = () => {
-  userStore.logout()
-  router.push('/login')
+  ElMessageBox.confirm(
+    '确认退出登录吗？',
+    '提示',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }
+  ).then(() => {
+    userStore.clearUserInfo()
+    router.push('/login')
+    ElMessage.success('已退出登录')
+  }).catch(() => { })
 }
+
+onMounted(() => {
+  fetchUserData()
+})
 </script>
 
 <style scoped>

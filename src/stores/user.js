@@ -1,12 +1,20 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
+import { getUserInfo } from '@/api/user'
 
 export const useUserStore = defineStore('user', () => {
   const token = ref(localStorage.getItem('token') || '')
   const userInfo = ref({
-    username: '',
+    staffNumber: '',
+    name: '',
+    phone: '',
+    email: '',
+    company: '',
+    department: '',
+    position: '',
     role: localStorage.getItem('role') || '',
     avatar: '',
+    status: 0,
     permissions: []
   })
 
@@ -24,33 +32,37 @@ export const useUserStore = defineStore('user', () => {
     }
   }
 
-  const login = async (username, password) => {
-    // 模拟登录API调用
-    if (username === 'admin' && password === '123456') {
-      const token = 'demo-token'
-      const userInfo = {
-        username: 'admin',
-        role: 'admin',
-        avatar: '',
-        permissions: ['*']
-      }
-      setToken(token)
-      setUserInfo(userInfo)
-      return true
-    }
-    throw new Error('用户名或密码错误')
-  }
-
-  const logout = () => {
+  const clearUserInfo = () => {
     token.value = ''
     userInfo.value = {
-      username: '',
+      staffNumber: '',
+      name: '',
+      phone: '',
+      email: '',
+      company: '',
+      department: '',
+      position: '',
       role: '',
       avatar: '',
+      status: 0,
       permissions: []
     }
     localStorage.removeItem('token')
     localStorage.removeItem('role')
+  }
+
+  const fetchUserInfo = async () => {
+    try {
+      const res = await getUserInfo()
+      if (res.code === 1 && res.data) {
+        setUserInfo(res.data)
+        return res.data
+      }
+      return null
+    } catch (error) {
+      console.error('获取用户信息失败：', error)
+      return null
+    }
   }
 
   return {
@@ -59,7 +71,7 @@ export const useUserStore = defineStore('user', () => {
     isLoggedIn,
     setToken,
     setUserInfo,
-    login,
-    logout
+    clearUserInfo,
+    fetchUserInfo
   }
 }) 

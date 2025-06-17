@@ -1,7 +1,7 @@
 <template>
   <div class="role-management">
     <!-- 工具栏 -->
-    <div class="toolbar">
+    <div class="toolbar" v-if="isAdmin">
       <el-button type="primary" @click="handleAdd">新增角色</el-button>
     </div>
 
@@ -11,7 +11,7 @@
       <el-table-column prop="code" label="角色标识" width="180" />
       <el-table-column prop="description" label="角色描述" />
       <el-table-column prop="createTime" label="创建时间" width="180" />
-      <el-table-column label="操作" width="250" fixed="right">
+      <el-table-column label="操作" width="250" fixed="right" v-if="isAdmin">
         <template #default="{ row }">
           <el-button type="primary" link @click="handleEdit(row)">编辑</el-button>
           <el-button type="success" link @click="handlePermission(row)">权限设置</el-button>
@@ -56,8 +56,12 @@
 </template>
 
 <script setup>
-import { ref, reactive } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import { useUserStore } from '@/stores/user'
+
+const userStore = useUserStore()
+const isAdmin = computed(() => userStore.role === 'admin')
 
 // 表格数据
 const loading = ref(false)
@@ -153,6 +157,10 @@ const permissionData = [
 
 // 新增角色
 const handleAdd = () => {
+  if (!isAdmin.value) {
+    ElMessage.warning('只有管理员可以添加角色')
+    return
+  }
   dialogType.value = 'add'
   Object.keys(roleForm).forEach(key => {
     roleForm[key] = ''
@@ -162,6 +170,10 @@ const handleAdd = () => {
 
 // 编辑角色
 const handleEdit = (row) => {
+  if (!isAdmin.value) {
+    ElMessage.warning('只有管理员可以编辑角色')
+    return
+  }
   dialogType.value = 'edit'
   Object.keys(roleForm).forEach(key => {
     roleForm[key] = row[key]
@@ -171,6 +183,10 @@ const handleEdit = (row) => {
 
 // 删除角色
 const handleDelete = (row) => {
+  if (!isAdmin.value) {
+    ElMessage.warning('只有管理员可以删除角色')
+    return
+  }
   ElMessageBox.confirm(
     '确认删除该角色吗？',
     '提示',
@@ -191,6 +207,10 @@ const handleDelete = (row) => {
 
 // 打开权限设置
 const handlePermission = (row) => {
+  if (!isAdmin.value) {
+    ElMessage.warning('只有管理员可以设置权限')
+    return
+  }
   currentRole.value = row
   // TODO: 获取角色的权限列表
   checkedPermissions.value = [111, 121, 211] // 示例数据

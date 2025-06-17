@@ -128,10 +128,21 @@ const router = createRouter({
 // 路由守卫
 router.beforeEach((to, from, next) => {
   const userStore = useUserStore()
+  const token = localStorage.getItem('token')
   const requiresAuth = to.matched.some(record => record.meta.requiresAuth !== false)
 
-  if (requiresAuth && !userStore.isLoggedIn) {
-    next('/login')
+  if (to.path === '/login') {
+    if (token) {
+      next('/dashboard')
+    } else {
+      next()
+    }
+  } else if (requiresAuth) {
+    if (token) {
+      next()
+    } else {
+      next('/login')
+    }
   } else {
     next()
   }

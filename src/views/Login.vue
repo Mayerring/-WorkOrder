@@ -2,6 +2,7 @@
 import { ref, reactive } from 'vue';
 import { useRouter } from 'vue-router';
 import { ElMessage } from 'element-plus';
+import { login } from '@/api/user';
 import { useUserStore } from '@/stores/user';
 
 const router = useRouter();
@@ -10,13 +11,19 @@ const loginFormRef = ref(null);
 const loading = ref(false);
 
 const loginForm = reactive({
-  username: '',
+  phone: '',
   password: ''
 });
 
 const rules = {
-  username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
-  password: [{ required: true, message: '请输入密码', trigger: 'blur' }]
+  phone: [
+    { required: true, message: '请输入手机号', trigger: 'blur' },
+    { pattern: /^[1-9]\d{10}$/, message: '请输入11位数字且以1开头的手机号', trigger: 'blur' }
+  ],
+  password: [
+    { required: true, message: '请输入密码', trigger: 'blur' },
+    { min: 6, message: '密码长度不能小于6位', trigger: 'blur' }
+  ]
 };
 
 const handleLogin = async () => {
@@ -26,11 +33,36 @@ const handleLogin = async () => {
     if (valid) {
       loading.value = true;
       try {
-        await userStore.login(loginForm.username, loginForm.password);
-        ElMessage.success('登录成功');
-        router.push('/dashboard');
+        // 清除旧的token
+        localStorage.removeItem('token');
+        userStore.clearUserInfo();
+
+        console.log('正在发送登录请求...');
+        const res = await login({
+          phone: loginForm.phone,
+          password: loginForm.password
+        });
+
+        console.log('登录响应数据：', res);
+
+        if (res.code === 1) { // 后端返回的成功状态码是1
+          console.log('登录成功，存储token...');
+          // 存储JWT token
+          localStorage.setItem('token', res.data);
+          userStore.setToken(res.data);
+
+          ElMessage.success('登录成功');
+          console.log('准备跳转到仪表盘...');
+
+          // 直接执行路由跳转
+          await router.push('/dashboard');
+          console.log('路由跳转已执行');
+        } else {
+          ElMessage.error(res.msg || '登录失败');
+        }
       } catch (error) {
-        ElMessage.error(error.message || '登录失败');
+        console.error('登录错误详情：', error);
+        ElMessage.error('登录失败，请稍后重试');
       } finally {
         loading.value = false;
       }
@@ -53,12 +85,12 @@ const handleLogin = async () => {
         <div class="login-form">
           <h2 class="login-title">用户登录</h2>
           <el-form :model="loginForm" :rules="rules" ref="loginFormRef">
-            <el-form-item prop="username">
-              <el-input v-model="loginForm.username" placeholder="请输入用户名" prefix-icon="User" />
+            <el-form-item prop="phone">
+              <el-input v-model="loginForm.phone" placeholder="请输入手机号" prefix-icon="Iphone" />
             </el-form-item>
             <el-form-item prop="password">
               <el-input v-model="loginForm.password" type="password" placeholder="请输入密码" prefix-icon="Lock"
-                show-password />
+                show-password @keyup.enter="handleLogin" />
             </el-form-item>
             <el-form-item>
               <el-button type="primary" :loading="loading" @click="handleLogin" class="login-button">
@@ -151,7 +183,6 @@ const handleLogin = async () => {
 input {
   width: 100%;
   padding: 20px;
-  /* 增加输入框高度 */
   border: 1.5px solid #6b6a6a;
   border-radius: 6px;
   font-size: 16px;
@@ -170,7 +201,6 @@ input {
   display: flex;
   justify-content: center;
   margin: 0 auto;
-  /* 按钮居中 */
 }
 
 .login-button:hover {

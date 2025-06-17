@@ -56,12 +56,12 @@ initActiveTab()
 
 <style scoped>
 .system-container {
-  padding: 20px;
+  padding: 10px;
   height: 100%;
 }
 
 .system-card {
-  height: calc(100vh - 140px);
+  height: 100%;
 }
 
 .system-tabs {

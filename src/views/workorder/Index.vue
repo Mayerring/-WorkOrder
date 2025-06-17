@@ -7,7 +7,7 @@
 <style scoped>
 .workorder-container {
   background-color: white;
-  padding: 20px;
+  padding: 10px;
   border-radius: 4px;
   min-height: calc(100vh - 120px);
 }
