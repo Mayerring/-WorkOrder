@@ -173,4 +173,10 @@ public class UserServiceImpl extends ServiceImpl<StaffMapper, Staff> implements 
         }
         return Result.success();
     }
+
+    @Override
+    public Result allStaff() {
+        List<Staff> staffList = staffMapper.selectList(null); // 查询所有员工
+        return Result.success(staffList);
+    }
 }

@@ -17,4 +17,6 @@ public interface UserService extends IService<Staff> {
     Result staffPage(StaffPageParam param);
 
     Result change(ChangePersonalInfoParam param);
+
+    Result allStaff();
 }
