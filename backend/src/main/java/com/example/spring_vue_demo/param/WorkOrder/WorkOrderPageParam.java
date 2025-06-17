@@ -28,6 +28,9 @@ public class WorkOrderPageParam extends BasePageParam {
     @Schema(description = "工单类型")
     private Integer type;
 
+    @Schema(description = "工单标题")
+    private String title;
+
     @Schema(description = "提交信息")
     private HandleUserInfoParam submitterInfo;
 
@@ -60,4 +63,6 @@ public class WorkOrderPageParam extends BasePageParam {
 
     @Schema(description = "截止时间止")
     private Long deadLineTo;
+
+
 }

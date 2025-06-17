@@ -26,6 +26,7 @@ public class WorkOrderQuery {
                 .in(CollectionUtils.isNotEmpty(orderIds),WorkOrder::getId,orderIds)
                 .eq(StringUtils.isNotBlank(param.getCode()),WorkOrder::getCode,param.getCode())
                 .eq(Objects.nonNull(param.getType()),WorkOrder::getType,param.getType())
+                .eq(StringUtils.isNotBlank(param.getTitle()),WorkOrder::getTitle,param.getTitle())
                 .eq(Objects.nonNull(param.getPriorityLevel()),WorkOrder::getPriorityLevel,param.getPriorityLevel())
                 .in(CollectionUtils.isNotEmpty(param.getStatus()),WorkOrder::getStatus,param.getStatus())
                 .ge(Objects.nonNull(param.getCreateTimeFrom()),WorkOrder::getCreateTime,param.getCreateTimeFrom())
