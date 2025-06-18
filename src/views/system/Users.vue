@@ -12,7 +12,7 @@
         <el-input v-model="queryParams.department" placeholder="请输入部门" clearable />
       </el-form-item>
       <el-form-item label="状态">
-        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable>
+        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 120px;">
           <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
       </el-form-item>
@@ -391,23 +391,19 @@ onMounted(async () => {
 <style scoped>
 .users-container {
   padding: 8px;
-  height: 980px;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
+  background: #fff;
+  border-radius: 4px;
+  height: 98%;
 }
 
 .search-form {
   background-color: #fff;
   padding: 8px;
   border-radius: 4px;
-  margin-bottom: 16px;
-  flex-shrink: 0;
 }
 
 .table-toolbar {
-  margin-bottom: 6px;
-  flex-shrink: 0;
+  margin-bottom: 2px;
 }
 
 .table-container {
@@ -416,17 +412,12 @@ onMounted(async () => {
   border-radius: 4px;
   margin-bottom: 3px;
   flex: 0.5;
-  overflow: auto;
 }
 
 .pagination-container {
-  margin-top: 16px;
-  padding: 10px;
-  background-color: #fff;
-  border-radius: 4px;
+  margin-top: 20px;
   display: flex;
   justify-content: flex-end;
-  flex-shrink: 0;
 }
 
 :deep(.el-table) {

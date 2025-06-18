@@ -290,6 +290,9 @@ onMounted(async () => {
 <style scoped>
 .confirm-container {
   padding: 20px;
+  background: #fff;
+  border-radius: 4px;
+  height: 100%;
 }
 
 .pagination-container {

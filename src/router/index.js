@@ -73,7 +73,7 @@ const router = createRouter({
           path: 'confirm',
           name: 'Confirm',
           component: () => import('@/views/confirm/Confirm.vue'),
-          meta: { title: '确认工单', icon: 'List' }
+          meta: { title: '确认工单', icon: 'Tickets' }
         },
         {
           path: 'statistics',

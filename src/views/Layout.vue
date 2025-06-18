@@ -122,6 +122,31 @@
         </span>
       </template>
     </el-dialog>
+
+    <!-- 消息通知对话框 -->
+    <el-dialog v-model="notificationDialogVisible" title="消息通知" width="600px">
+      <el-table :data="messageList" v-loading="messageLoading" max-height="400px">
+        <el-table-column prop="content" label="消息内容" min-width="300" show-overflow-tooltip />
+        <el-table-column prop="typeDesc" label="类型" width="100">
+          <template #default="{ row }">
+            <el-tag :type="getMessageTypeStyle(row.type).type" size="small">
+              {{ row.typeDesc || getMessageTypeStyle(row.type).label }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column prop="sendTime" label="发送时间" width="150" />
+      </el-table>
+      <div class="pagination-container">
+        <el-pagination v-model:current-page="messagePagination.pageNum" v-model:page-size="messagePagination.pageSize"
+          :page-sizes="[10, 20, 50]" :total="messagePagination.total" layout="total, sizes, prev, pager, next"
+          @current-change="handleMessagePageChange" @size-change="handleMessageSizeChange" />
+      </div>
+      <template #footer>
+        <span class="dialog-footer">
+          <el-button @click="notificationDialogVisible = false">关闭</el-button>
+        </span>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -131,12 +156,23 @@ import { useRouter, useRoute } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { ElMessageBox, ElMessage } from 'element-plus'
 import { updateUserInfo } from '@/api/user'
+import { getMessages } from '@/api/dashboard'
 
 const router = useRouter()
 const route = useRoute()
 const userStore = useUserStore()
 const isCollapse = ref(false)
-const hasNotification = ref(true)
+const hasNotification = ref(false)
+
+// 消息通知相关
+const notificationDialogVisible = ref(false)
+const messageList = ref([])
+const messageLoading = ref(false)
+const messagePagination = ref({
+  pageNum: 1,
+  pageSize: 10,
+  total: 0
+})
 
 // 个人信息对话框
 const profileDialogVisible = ref(false)
@@ -194,6 +230,51 @@ const fetchUserData = async () => {
   }
 }
 
+// 获取消息列表
+const fetchMessages = async () => {
+  try {
+    messageLoading.value = true
+    const res = await getMessages({
+      pageNum: messagePagination.value.pageNum,
+      pageSize: messagePagination.value.pageSize
+    })
+
+    if (res.code === 1) {
+      messageList.value = res.data.records || []
+      messagePagination.value.total = res.data.total || 0
+      messagePagination.value.pageNum = res.data.current || 1
+      messagePagination.value.pageSize = res.data.size || 10
+
+      // 更新通知红点状态
+      hasNotification.value = messageList.value.length > 0
+    } else {
+      ElMessage.error(res.msg || '获取消息失败')
+    }
+  } catch (error) {
+    console.error('获取消息失败：', error)
+    ElMessage.error('获取消息失败')
+  } finally {
+    messageLoading.value = false
+  }
+}
+
+// 获取消息类型标签样式
+const getMessageTypeStyle = (type) => {
+  const typeMap = {
+    100: { type: 'info', label: '未审核' },
+    200: { type: 'warning', label: '审核中' },
+    270: { type: 'danger', label: '审核失败' },
+    300: { type: 'warning', label: '未派单' },
+    400: { type: 'primary', label: '处理中' },
+    410: { type: 'danger', label: '已超时' },
+    500: { type: 'success', label: '已处理' },
+    600: { type: 'success', label: '已验收' },
+    670: { type: 'danger', label: '确认失败' },
+    700: { type: 'info', label: '已取消' }
+  }
+  return typeMap[type] || { type: 'info', label: '未知' }
+}
+
 // 获取菜单项（排除工单详情）
 const menuItems = computed(() => {
   const rootRoute = router.options.routes.find(route => route.path === '/')
@@ -223,8 +304,21 @@ const toggleCollapse = () => {
 }
 
 // 显示通知
-const showNotification = () => {
-  // TODO: 实现通知功能
+const showNotification = async () => {
+  notificationDialogVisible.value = true
+  await fetchMessages()
+}
+
+// 处理消息分页
+const handleMessagePageChange = (page) => {
+  messagePagination.value.pageNum = page
+  fetchMessages()
+}
+
+const handleMessageSizeChange = (size) => {
+  messagePagination.value.pageSize = size
+  messagePagination.value.pageNum = 1
+  fetchMessages()
 }
 
 // 处理个人信息
@@ -297,7 +391,7 @@ onMounted(() => {
 <style scoped>
 .layout-container {
   height: 100vh;
-  width: 100vw;
+  width: 100%;
   overflow: hidden;
 }
 
@@ -424,5 +518,11 @@ onMounted(() => {
   .breadcrumb {
     display: none;
   }
+}
+
+.pagination-container {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
 }
 </style>

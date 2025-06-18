@@ -1,21 +1,19 @@
 <template>
   <div class="system-container">
-    <el-card class="system-card">
-      <el-tabs v-model="activeTab" class="system-tabs" @tab-click="handleTabClick">
-        <el-tab-pane label="用户管理" name="users">
-          <Users v-if="activeTab === 'users'" />
-        </el-tab-pane>
-        <el-tab-pane label="角色权限" name="roles">
-          <Roles v-if="activeTab === 'roles'" />
-        </el-tab-pane>
-        <el-tab-pane label="组织架构" name="organization">
-          <Organization v-if="activeTab === 'organization'" />
-        </el-tab-pane>
-        <el-tab-pane label="流程配置" name="workflow">
-          <Workflow v-if="activeTab === 'workflow'" />
-        </el-tab-pane>
-      </el-tabs>
-    </el-card>
+    <el-tabs v-model="activeTab" class="system-tabs" @tab-click="handleTabClick">
+      <el-tab-pane label="用户管理" name="users">
+        <Users v-if="activeTab === 'users'" />
+      </el-tab-pane>
+      <el-tab-pane label="角色权限" name="roles">
+        <Roles v-if="activeTab === 'roles'" />
+      </el-tab-pane>
+      <el-tab-pane label="组织架构" name="organization">
+        <Organization v-if="activeTab === 'organization'" />
+      </el-tab-pane>
+      <el-tab-pane label="流程配置" name="workflow">
+        <Workflow v-if="activeTab === 'workflow'" />
+      </el-tab-pane>
+    </el-tabs>
   </div>
 </template>
 
@@ -56,11 +54,9 @@ initActiveTab()
 
 <style scoped>
 .system-container {
-  padding: 10px;
-  height: 100%;
-}
-
-.system-card {
+  padding: 20px;
+  background: #fff;
+  border-radius: 4px;
   height: 100%;
 }
 

@@ -449,7 +449,7 @@ onMounted(async () => {
 
 <style scoped>
 .organization-container {
-  height: 100vh;
+  height: 100%;
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
@@ -466,17 +466,17 @@ onMounted(async () => {
 
 /* 左侧组织树卡片 */
 .tree-card {
-  height: 100%;
+  height: 95%;
   display: flex;
   flex-direction: column;
+  margin-bottom: 10px;
   overflow: hidden;
 }
 
 /* 树容器可滚动 */
 .tree-container {
-  flex: 1;
-  overflow-y: auto;
   margin-top: 10px;
+  margin-bottom: 10px;
   padding: 10px;
   background-color: #fff;
   border-radius: 4px;
@@ -484,7 +484,7 @@ onMounted(async () => {
 
 /* 右侧员工卡片 */
 .staff-card {
-  height: 100%;
+  height: 95%;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -493,28 +493,19 @@ onMounted(async () => {
 /* 表格容器撑满剩余空间并可滚动 */
 .table-container {
   flex: 1;
-  overflow-y: auto;
   min-height: 0;
+  margin-bottom: 10px;
   margin-top: 10px;
   padding: 10px;
   background-color: #fff;
   border-radius: 4px;
 }
 
-/* 分页固定在底部 */
 .pagination-container {
-  margin-top: 16px;
-  padding: 10px;
-  background-color: #fff;
-  border-radius: 4px;
+  margin-top: 20px;
+  margin-bottom: 10px;
   display: flex;
   justify-content: flex-end;
-  flex-shrink: 0;
-}
-
-/* 自定义滚动条样式 */
-:deep(.el-scrollbar__wrap) {
-  overflow-x: hidden;
 }
 
 .tree-container::-webkit-scrollbar,
@@ -526,7 +517,7 @@ onMounted(async () => {
 .tree-container::-webkit-scrollbar-thumb,
 .table-container::-webkit-scrollbar-thumb {
   border-radius: 3px;
-  background: #c0c4cc;
+  background: #c7d1e5;
 }
 
 .tree-container::-webkit-scrollbar-track,

@@ -243,7 +243,10 @@ const submitForm = () => {
 
 <style scoped>
 .role-management {
-  padding: 20px 0;
+  padding: 20px;
+  background: #fff;
+  border-radius: 4px;
+  height: 100%;
 }
 
 .toolbar {

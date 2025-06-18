@@ -421,6 +421,9 @@ onMounted(async () => {
 <style scoped>
 .workflow-settings {
   padding: 20px;
+  background: #fff;
+  border-radius: 4px;
+  height: 100%;
 }
 
 .toolbar {
@@ -429,7 +432,6 @@ onMounted(async () => {
 
 .node-info {
   display: flex;
-  flex-direction: column;
   gap: 8px;
 }
 

@@ -89,7 +89,7 @@
           <template #header>
             <div class="card-header">
               <span class="header-title">工单统计</span>
-              <el-radio-group v-model="chartTimeRange" size="small">
+              <el-radio-group v-model="chartTimeRange" size="small" @change="handleTimeRangeChange">
                 <el-radio-button label="week">本周</el-radio-button>
                 <el-radio-button label="month">本月</el-radio-button>
                 <el-radio-button label="year">全年</el-radio-button>
@@ -101,11 +101,11 @@
       </el-col>
     </el-row>
 
-    <!-- 处理进度 -->
+    <!-- 工单处理进度 -->
     <el-card class="section-card progress">
       <template #header>
         <div class="card-header">
-          <span class="header-title">处理进度</span>
+          <span class="header-title">本周工单处理进度</span>
           <el-select v-model="progressTimeRange" size="small" style="width: 120px">
             <el-option label="最近7天" value="week" />
             <el-option label="最近30天" value="month" />
@@ -123,6 +123,8 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import * as echarts from 'echarts'
 import { ArrowRight } from '@element-plus/icons-vue'
+import { getDashboardOverview, getTodoList, getStatusData } from '@/api/dashboard'
+import { ElMessage } from 'element-plus'
 
 const router = useRouter()
 const pieChart = ref(null)
@@ -132,72 +134,191 @@ const progressTimeRange = ref('week')
 let pieInstance = null
 let lineInstance = null
 
-// 数据概览
-const overviewData = [
+// 数据概览 - 改为响应式数据
+const overviewData = ref([
   {
-    title: '待处理工单',
-    number: 28,
-    icon: 'Document',
-    trend: 'up',
-    rate: '12%',
-    bgColor: '#409EFF22'
-  },
-  {
-    title: '处理中工单',
-    number: 15,
-    icon: 'Loading',
-    trend: 'down',
-    rate: '5%',
-    bgColor: '#E6A23C22'
-  },
-  {
-    title: '本周完成',
-    number: 126,
+    title: '本月已处理工单数',
+    number: 0,
     icon: 'Check',
     trend: 'up',
-    rate: '25%',
+    rate: '0%',
     bgColor: '#67C23A22'
   },
   {
-    title: '平均处理时长',
-    number: '2.5h',
+    title: '待处理工单数',
+    number: 0,
+    icon: 'Document',
+    trend: 'up',
+    rate: '0%',
+    bgColor: '#409EFF22'
+  },
+  {
+    title: '未审核工单数',
+    number: 0,
+    icon: 'Loading',
+    trend: 'down',
+    rate: '0%',
+    bgColor: '#E6A23C22'
+  },
+  {
+    title: '超时工单数',
+    number: 0,
     icon: 'Timer',
     trend: 'down',
-    rate: '8%',
+    rate: '0%',
     bgColor: '#F56C6C22'
   }
-]
+])
+
+// 获取数据概览
+const fetchOverviewData = async () => {
+  try {
+    const res = await getDashboardOverview()
+    if (res.code === 1) {
+      const data = res.data
+      // 更新数据概览
+      overviewData.value[0].number = data.monthFinishedNum || 0
+      overviewData.value[1].number = data.unHandledNum || 0
+      overviewData.value[2].number = data.unAuditedNum || 0
+      overviewData.value[3].number = data.delayNum || 0
+    } else {
+      ElMessage.error(res.msg || '获取数据概览失败')
+    }
+  } catch (error) {
+    console.error('获取数据概览失败：', error)
+    ElMessage.error('获取数据概览失败')
+  }
+}
 
 // 快捷操作
 const quickActions = [
+  { name: '工单列表', icon: 'Document', route: '/workorder/list' },
   { name: '发起工单', icon: 'Plus', route: '/workorder/create' },
+  { name: '待您审批', icon: 'Check', route: '/approval' },
+  { name: '派单管理', icon: 'Share', route: '/dispatch' },
   { name: '待办事项', icon: 'List', route: '/todo' },
-  { name: '我的工单', icon: 'Document', route: '/workorder/list' },
-  { name: '待审批', icon: 'Check', route: '/approval/pending' },
   { name: '统计报表', icon: 'TrendCharts', route: '/statistics' }
 ]
 
-// 待办列表
-const todoList = ref([
-  {
-    title: '服务器维护',
-    type: '运维',
-    status: '待处理',
-    createTime: '2025-05-20 10:00:00'
-  },
-  {
-    title: '网络故障',
-    type: '故障',
-    status: '处理中',
-    createTime: '2025-05-20 09:30:00'
-  },
-  {
-    title: '系统升级',
-    type: '运维',
-    status: '待处理',
-    createTime: '2025-05-20 09:00:00'
+// 待办列表 - 移除静态数据
+const todoList = ref([])
+
+// 获取待办事项数据
+const fetchTodoData = async () => {
+  try {
+    const res = await getTodoList()
+    if (res.code === 1) {
+      // 根据接口返回的数据格式处理数据
+      todoList.value = res.data.map(item => ({
+        title: item.title || '',
+        type: item.typeDesc || '',
+        status: item.statusDesc || '',
+        createTime: item.createTime || ''
+      }))
+    } else {
+      ElMessage.error(res.msg || '获取待办事项失败')
+    }
+  } catch (error) {
+    console.error('获取待办事项失败：', error)
+    ElMessage.error('获取待办事项失败')
   }
-])
+}
+
+// 获取状态统计数据
+const fetchStatusData = async () => {
+  try {
+    // 将时间范围映射为数字：week->1, month->2, year->3
+    const timeTypeMap = {
+      'week': 1,
+      'month': 2,
+      'year': 3
+    }
+
+    const res = await getStatusData({
+      timeType: timeTypeMap[chartTimeRange.value]
+    })
+    if (res.code === 1) {
+      // 更新饼图数据
+      updatePieChart(res.data)
+    } else {
+      ElMessage.error(res.msg || '获取状态统计数据失败')
+    }
+  } catch (error) {
+    console.error('获取状态统计数据失败：', error)
+    ElMessage.error('获取状态统计数据失败')
+  }
+}
+
+// 更新饼图数据
+const updatePieChart = (data) => {
+  if (!pieInstance) return
+
+  // 检查是否有数据
+  if (!data || data.length === 0) {
+    // 没有数据时显示默认状态
+    pieInstance.setOption({
+      series: [{
+        data: [
+          { value: 1, name: '暂无数据', itemStyle: { color: '#F0F0F0' } }
+        ]
+      }]
+    })
+    return
+  }
+
+  // 根据接口返回的数据格式更新饼图
+  const pieData = data.map(item => ({
+    value: item.quantity || 0,
+    name: item.statusDesc || '未知',
+    itemStyle: {
+      color: getStatusColor(item.status, item.statusDesc)
+    }
+  }))
+
+  pieInstance.setOption({
+    series: [{
+      data: pieData
+    }]
+  })
+}
+
+// 获取状态对应的颜色
+const getStatusColor = (status, statusDesc) => {
+  // 马卡龙配色方案
+  const colorMap = {
+    100: '#F5A3A8', // 未审核 - 深粉色
+    200: '#F5C4A3', // 审核中 - 深橙色
+    270: '#F5A3D1', // 审核失败 - 深紫粉
+    300: '#F5D4A3', // 未派单 - 深黄色
+    400: '#A3C4F5', // 处理中 - 深蓝色
+    410: '#F5A3A3', // 已超时 - 深红色
+    500: '#A3F5A3', // 已处理 - 深绿色
+    600: '#A3F5C4', // 已验收 - 深青绿
+    670: '#F5A3D1', // 确认失败 - 深紫粉
+    700: '#D1A3F5'  // 已取消 - 深紫色
+  }
+
+  // 优先使用状态码，如果没有则使用描述
+  if (colorMap[status]) {
+    return colorMap[status]
+  }
+
+  // 根据描述匹配颜色
+  const descColorMap = {
+    '未审核': '#F5A3A8',
+    '审核中': '#F5C4A3',
+    '审核失败': '#F5A3D1',
+    '未派单': '#F5D4A3',
+    '处理中': '#A3C4F5',
+    '已超时': '#F5A3A3',
+    '已处理': '#A3F5A3',
+    '已验收': '#A3F5C4',
+    '确认失败': '#F5A3D1',
+    '已取消': '#D1A3F5'
+  }
+
+  return descColorMap[statusDesc] || '#E0E0E0'
+}
 
 // 状态样式
 const getStatusType = (status) => {
@@ -209,6 +330,7 @@ const getStatusType = (status) => {
   }
   return map[status]
 }
+
 
 // 类型样式
 const getTypeTag = (type) => {
@@ -234,7 +356,7 @@ const viewMore = (type) => {
   router.push(routeMap[type])
 }
 
-// 初始化饼图
+// 初始化饼图 - 移除静态数据
 const initPieChart = () => {
   if (!pieChart.value) return
   pieInstance = echarts.init(pieChart.value)
@@ -273,10 +395,7 @@ const initPieChart = () => {
           show: false
         },
         data: [
-          { value: 20, name: '待处理', itemStyle: { color: '#E6A23C' } },
-          { value: 15, name: '处理中', itemStyle: { color: '#409EFF' } },
-          { value: 30, name: '已完成', itemStyle: { color: '#67C23A' } },
-          { value: 5, name: '已驳回', itemStyle: { color: '#F56C6C' } }
+          { value: 0, name: '暂无数据', itemStyle: { color: '#F0F0F0' } }
         ]
       }
     ]
@@ -284,7 +403,7 @@ const initPieChart = () => {
   pieInstance.setOption(option)
 }
 
-// 初始化折线图
+// 初始化折线图 - 移除静态数据
 const initLineChart = () => {
   if (!lineChart.value) return
   lineInstance = echarts.init(lineChart.value)
@@ -305,7 +424,7 @@ const initLineChart = () => {
     xAxis: {
       type: 'category',
       boundaryGap: false,
-      data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+      data: [],
       axisLine: {
         lineStyle: {
           color: '#dcdfe6'
@@ -325,7 +444,7 @@ const initLineChart = () => {
         name: '工单数量',
         type: 'line',
         smooth: true,
-        data: [12, 13, 10, 13, 9, 23, 21],
+        data: [],
         itemStyle: {
           color: '#409EFF'
         },
@@ -340,7 +459,7 @@ const initLineChart = () => {
         name: '完成数量',
         type: 'line',
         smooth: true,
-        data: [8, 9, 8, 10, 7, 18, 15],
+        data: [],
         itemStyle: {
           color: '#67C23A'
         },
@@ -362,11 +481,22 @@ const handleResize = () => {
   lineInstance?.resize()
 }
 
-onMounted(() => {
+onMounted(async () => {
+  // 先初始化图表
   initPieChart()
   initLineChart()
   window.addEventListener('resize', handleResize)
+
+  // 然后获取数据
+  await fetchOverviewData()
+  await fetchTodoData()
+  await fetchStatusData()
 })
+
+// 监听时间范围变化
+const handleTimeRangeChange = () => {
+  fetchStatusData()
+}
 
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
@@ -441,7 +571,7 @@ onUnmounted(() => {
 }
 
 .section-card {
-  margin-bottom: 20px;
+  margin-bottom: 5px;
 }
 
 .card-header {

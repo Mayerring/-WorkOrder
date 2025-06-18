@@ -501,9 +501,10 @@ onMounted(async () => {
 
 <style scoped>
 .approval-container {
-  height: 100%;
-  width: 100%;
   padding: 20px;
+  background: #fff;
+  border-radius: 4px;
+  height: 100%;
 }
 
 .search-area {
@@ -513,7 +514,6 @@ onMounted(async () => {
 .search-form {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
 }
 
 .pagination-container {

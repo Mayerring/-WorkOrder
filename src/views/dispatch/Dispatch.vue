@@ -380,6 +380,9 @@ onMounted(async () => {
 <style scoped>
 .dispatch-container {
   padding: 20px;
+  background: #fff;
+  border-radius: 4px;
+  height: 100%;
 }
 
 .search-area {

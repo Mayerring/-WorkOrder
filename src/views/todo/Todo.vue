@@ -265,6 +265,9 @@ onMounted(async () => {
 <style scoped>
 .todo-container {
   padding: 20px;
+  background: #fff;
+  border-radius: 4px;
+  height: 100%;
 }
 
 .pagination-container {
