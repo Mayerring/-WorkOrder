@@ -28,6 +28,16 @@ export function getStatusData(data) {
     })
 }
 
+// 获取工单类型统计
+export function getTypeData(data) {
+    return request({
+        url: '/dashboard/type',
+        method: 'post',
+        baseURL: 'http://localhost:8080',
+        data
+    })
+}
+
 // 获取工单处理数量
 export function getHandleQuantity(data) {
     return request({

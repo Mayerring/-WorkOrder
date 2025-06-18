@@ -29,6 +29,7 @@
           <template #header>
             <div class="card-header">
               <span>工单类型分布</span>
+              <el-tag type="info">{{ getTimeTypeText(filterForm.timeType) }}</el-tag>
             </div>
           </template>
           <div class="chart" ref="typeChartRef"></div>
@@ -52,7 +53,8 @@
         <el-card class="chart-card">
           <template #header>
             <div class="card-header">
-              <span>本周工单处理数量</span>
+              <span>工单处理数量趋势</span>
+              <el-tag type="info">{{ getTimeTypeText(filterForm.timeType) }}</el-tag>
             </div>
           </template>
           <div class="chart" ref="trendChartRef"></div>
@@ -69,12 +71,12 @@
       </template>
 
       <el-table :data="timeoutWorkorders" style="width: 100%" v-loading="timeoutLoading">
-        <el-table-column prop="id" label="工单号" width="120" />
+        <el-table-column prop="code" label="工单号" width="120" />
         <el-table-column prop="title" label="标题" />
         <el-table-column prop="type" label="类型" width="100">
           <template #default="{ row }">
-            <el-tag :type="row.type === 'fault' ? 'danger' : 'warning'">
-              {{ row.type === 'fault' ? '故障' : '需求' }}
+            <el-tag :type="row.type === 0 ? 'danger' : 'warning'">
+              {{ getTypeDesc(row.type) }}
             </el-tag>
           </template>
         </el-table-column>
@@ -112,8 +114,8 @@
 import { ref, reactive, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import * as echarts from 'echarts'
-import { getStatusData, getHandleQuantity } from '@/api/dashboard'
-import { getWorkOrderPage } from '@/api/workOrder'
+import { getStatusData, getTypeData, getHandleQuantity } from '@/api/dashboard'
+import { getWorkOrderPage } from '@/api/workorder'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
@@ -121,6 +123,7 @@ const typeChartRef = ref(null)
 const statusChartRef = ref(null)
 const trendChartRef = ref(null)
 const loading = ref(false)
+const typeLoading = ref(false)
 
 const filterForm = reactive({
   dateRange: [],
@@ -129,6 +132,12 @@ const filterForm = reactive({
 
 // 状态统计数据
 const statusData = ref([])
+
+// 工单类型统计数据
+const typeData = ref([])
+
+// 工单处理数量数据
+const handleQuantityData = ref([])
 
 // 超时工单数据
 const timeoutWorkorders = ref([])
@@ -139,21 +148,24 @@ const timeoutPagination = reactive({
   total: 0
 })
 
-// const getStatusDesc = (status) => {
-//   const statusMap = {
-//     100: '未审核',
-//     200: '审核中',
-//     270: '审核失败',
-//     300: '未派单',
-//     400: '处理中',
-//     410: '已超时',
-//     500: '已处理',
-//     600: '已确认',
-//     670: '确认失败',
-//     700: '已取消'
-//   }
-//   return statusMap[status] || `状态${status}`
-// }
+// 获取工单类型对应的颜色
+const getTypeColor = (type) => {
+  const colorMap = {
+    0: '#9ed8f1', // 需求
+    1: '#dfa6ee', // 故障
+  }
+  return colorMap[type] || '#E0E0E0'
+}
+
+// 获取工单类型描述
+const getTypeDesc = (type) => {
+  const typeMap = {
+    0: '需求',
+    1: '故障',
+  }
+  return typeMap[type] || '未知类型'
+}
+
 
 const getTimeTypeText = (timeType) => {
   const map = {
@@ -184,6 +196,43 @@ const fetchStatusData = async () => {
   }
 }
 
+// 获取工单类型统计数据
+const fetchTypeData = async () => {
+  try {
+    typeLoading.value = true
+    const response = await getTypeData({
+      timeType: filterForm.timeType
+    })
+
+    if (response && response.data) {
+      typeData.value = response.data
+      updateTypeChart()
+    }
+  } catch (error) {
+    console.error('获取工单类型统计数据失败：', error)
+    ElMessage.error('获取工单类型统计数据失败')
+  } finally {
+    typeLoading.value = false
+  }
+}
+
+// 获取工单处理数量数据
+const fetchHandleQuantityData = async () => {
+  try {
+    const response = await getHandleQuantity({
+      timeType: filterForm.timeType
+    })
+
+    if (response && response.data) {
+      handleQuantityData.value = response.data
+      updateTrendChart()
+    }
+  } catch (error) {
+    console.error('获取工单处理数量数据失败：', error)
+    ElMessage.error('获取工单处理数量数据失败')
+  }
+}
+
 // 获取超时工单数据
 const fetchTimeoutWorkorders = async () => {
   try {
@@ -195,7 +244,7 @@ const fetchTimeoutWorkorders = async () => {
     })
 
     if (response && response.data) {
-      timeoutWorkorders.value = response.data.list || []
+      timeoutWorkorders.value = response.data.records || []
       timeoutPagination.total = response.data.total || 0
     }
   } catch (error) {
@@ -218,6 +267,8 @@ const handleTimeoutPageChange = (page) => {
 const handleTimeTypeChange = () => {
   setDateRangeByTimeType()
   fetchStatusData()
+  fetchTypeData()
+  fetchHandleQuantityData()
 }
 
 function setDateRangeByTimeType() {
@@ -245,53 +296,22 @@ const handleSearch = () => {
   // TODO: 调用查询API
   console.log('查询条件：', filterForm)
   fetchStatusData()
+  fetchTypeData()
+  fetchHandleQuantityData()
 }
 
 const handleReset = () => {
   filterForm.dateRange = []
   filterForm.timeType = 1
   fetchStatusData()
+  fetchTypeData()
+  fetchHandleQuantityData()
 }
 
 const handleView = (row) => {
   router.push(`/workorder/detail/${row.id}`)
 }
 
-const initTypeChart = () => {
-  const chart = echarts.init(typeChartRef.value)
-  chart.setOption({
-    title: {
-      text: '工单类型分布',
-      left: 'center'
-    },
-    tooltip: {
-      trigger: 'item',
-      formatter: '{a} <br/>{b}: {c} ({d}%)'
-    },
-    legend: {
-      orient: 'vertical',
-      left: 'left'
-    },
-    series: [
-      {
-        name: '工单类型',
-        type: 'pie',
-        radius: '50%',
-        data: [
-          { value: 35, name: '故障' },
-          { value: 65, name: '需求' }
-        ],
-        emphasis: {
-          itemStyle: {
-            shadowBlur: 10,
-            shadowOffsetX: 0,
-            shadowColor: 'rgba(0, 0, 0, 0.5)'
-          }
-        }
-      }
-    ]
-  })
-}
 
 const updateStatusChart = () => {
   if (!statusChartRef.value) return
@@ -337,11 +357,24 @@ const updateStatusChart = () => {
   })
 }
 
-const initStatusChart = () => {
-  const chart = echarts.init(statusChartRef.value)
+// 更新工单类型图表
+const updateTypeChart = () => {
+  if (!typeChartRef.value) return
+
+  const chart = echarts.getInstanceByDom(typeChartRef.value) || echarts.init(typeChartRef.value)
+
+  // 根据接口返回的数据动态生成图表数据
+  const chartData = typeData.value.map(item => ({
+    value: item.quantity || 0,
+    name: item.typeDesc || getTypeDesc(item.type),
+    itemStyle: {
+      color: getTypeColor(item.type)
+    }
+  }))
+
   chart.setOption({
     title: {
-      text: '工单状态分布',
+      text: '工单类型分布',
       left: 'center'
     },
     tooltip: {
@@ -354,11 +387,11 @@ const initStatusChart = () => {
     },
     series: [
       {
-        name: '工单状态',
+        name: '工单类型',
         type: 'pie',
         radius: '50%',
-        data: [
-          { value: 0, name: '加载中...' }
+        data: chartData.length > 0 ? chartData : [
+          { value: 0, name: '暂无数据', itemStyle: { color: '#E0E0E0' } }
         ],
         emphasis: {
           itemStyle: {
@@ -372,33 +405,89 @@ const initStatusChart = () => {
   })
 }
 
-const initTrendChart = () => {
-  const chart = echarts.init(trendChartRef.value)
+// 更新趋势图表
+const updateTrendChart = () => {
+  if (!trendChartRef.value) return
+
+  const chart = echarts.getInstanceByDom(trendChartRef.value) || echarts.init(trendChartRef.value)
+
+  // 根据接口返回的数据动态生成图表数据
+  const dates = handleQuantityData.value.map(item => {
+    const date = new Date(item.date)
+    return `${date.getMonth() + 1}/${date.getDate()}`
+  })
+
+  const totalData = handleQuantityData.value.map(item => item.dailyTotalNum || 0)
+  const finishedData = handleQuantityData.value.map(item => item.dailyFinishedNum || 0)
+
   chart.setOption({
     tooltip: {
-      trigger: 'axis'
+      trigger: 'axis',
+      formatter: function (params) {
+        let result = params[0].axisValue + '<br/>'
+        params.forEach(param => {
+          result += param.marker + param.seriesName + ': ' + param.value + '<br/>'
+        })
+        return result
+      }
     },
     legend: {
       data: ['当日工单总数', '当日完成工单'],
       bottom: 0
     },
+    grid: {
+      left: '3%',
+      right: '4%',
+      bottom: '15%',
+      containLabel: true
+    },
     xAxis: {
       type: 'category',
-      data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+      data: dates.length > 0 ? dates : ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+      axisLine: {
+        lineStyle: {
+          color: '#dcdfe6'
+        }
+      }
     },
     yAxis: {
-      type: 'value'
+      type: 'value',
+      splitLine: {
+        lineStyle: {
+          color: '#ebeef5'
+        }
+      }
     },
     series: [
       {
         name: '当日工单总数',
         type: 'line',
-        data: [10, 15, 8, 12, 9, 5, 7]
+        smooth: true,
+        data: totalData.length > 0 ? totalData : [0, 0, 0, 0, 0, 0, 0],
+        itemStyle: {
+          color: 'RGB(245, 163, 168)'
+        },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'RGB(245, 163, 168, 0.15)' },
+            { offset: 1, color: 'RGB(245, 163, 168, 0)' }
+          ])
+        }
       },
       {
         name: '当日完成工单',
         type: 'line',
-        data: [8, 12, 7, 10, 8, 4, 6]
+        smooth: true,
+        data: finishedData.length > 0 ? finishedData : [0, 0, 0, 0, 0, 0, 0],
+        itemStyle: {
+          color: 'RGB(163, 196, 245)'
+        },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: 'RGB(163, 196, 245, 0.15)' },
+            { offset: 1, color: 'RGB(163, 196, 245, 0)' }
+          ])
+        }
       }
     ]
   })
@@ -409,13 +498,26 @@ watch(statusData, () => {
   updateStatusChart()
 }, { deep: true })
 
+// 监听类型数据变化，自动更新图表
+watch(typeData, () => {
+  updateTypeChart()
+}, { deep: true })
+
+// 监听处理数量数据变化，自动更新图表
+watch(handleQuantityData, () => {
+  updateTrendChart()
+}, { deep: true })
+
 onMounted(() => {
-  initTypeChart()
-  initStatusChart()
-  initTrendChart()
 
   // 初始化时获取状态统计数据
   fetchStatusData()
+
+  // 初始化时获取工单类型统计数据
+  fetchTypeData()
+
+  // 初始化时获取工单处理数量数据
+  fetchHandleQuantityData()
 
   // 初始化时获取超时工单数据
   fetchTimeoutWorkorders()
@@ -465,7 +567,7 @@ onMounted(() => {
 }
 
 .timeout {
-  color: #f56c6c;
+  color: #dfa6ee;
   font-weight: bold;
 }
 

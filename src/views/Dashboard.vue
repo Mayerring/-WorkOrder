@@ -105,8 +105,9 @@
     <el-card class="section-card progress">
       <template #header>
         <div class="card-header">
-          <span class="header-title">本周工单处理进度</span>
-          <el-select v-model="progressTimeRange" size="small" style="width: 120px">
+          <span class="header-title">工单处理数量趋势</span>
+          <el-select v-model="progressTimeRange" size="small" style="width: 120px"
+            @change="handleProgressTimeRangeChange">
             <el-option label="最近7天" value="week" />
             <el-option label="最近30天" value="month" />
             <el-option label="最近90天" value="quarter" />
@@ -123,7 +124,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import * as echarts from 'echarts'
 import { ArrowRight } from '@element-plus/icons-vue'
-import { getDashboardOverview, getTodoList, getStatusData } from '@/api/dashboard'
+import { getDashboardOverview, getTodoList, getStatusData, getHandleQuantity } from '@/api/dashboard'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
@@ -249,6 +250,31 @@ const fetchStatusData = async () => {
   }
 }
 
+// 获取工单处理数量数据
+const fetchHandleQuantityData = async () => {
+  try {
+    // 将时间范围映射为数字：week->1, month->2, quarter->3
+    const timeTypeMap = {
+      'week': 1,
+      'month': 2,
+      'quarter': 3
+    }
+
+    const res = await getHandleQuantity({
+      timeType: timeTypeMap[progressTimeRange.value]
+    })
+    if (res.code === 1) {
+      handleQuantityData.value = res.data || []
+      updateLineChart()
+    } else {
+      ElMessage.error(res.msg || '获取工单处理数量数据失败')
+    }
+  } catch (error) {
+    console.error('获取工单处理数量数据失败：', error)
+    ElMessage.error('获取工单处理数量数据失败')
+  }
+}
+
 // 更新饼图数据
 const updatePieChart = (data) => {
   if (!pieInstance) return
@@ -279,6 +305,36 @@ const updatePieChart = (data) => {
     series: [{
       data: pieData
     }]
+  })
+}
+
+// 更新折线图数据
+const updateLineChart = () => {
+  if (!lineInstance) return
+
+  // 根据接口返回的数据动态生成图表数据
+  const dates = handleQuantityData.value.map(item => {
+    const date = new Date(item.date)
+    return `${date.getMonth() + 1}/${date.getDate()}`
+  })
+
+  const totalData = handleQuantityData.value.map(item => item.dailyTotalNum || 0)
+  const finishedData = handleQuantityData.value.map(item => item.dailyFinishedNum || 0)
+
+  lineInstance.setOption({
+    xAxis: {
+      data: dates.length > 0 ? dates : ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+    },
+    series: [
+      {
+        name: '工单数量',
+        data: totalData.length > 0 ? totalData : [0, 0, 0, 0, 0, 0, 0]
+      },
+      {
+        name: '完成数量',
+        data: finishedData.length > 0 ? finishedData : [0, 0, 0, 0, 0, 0, 0]
+      }
+    ]
   })
 }
 
@@ -367,18 +423,23 @@ const initPieChart = () => {
     },
     legend: {
       orient: 'horizontal',
-      bottom: 0,
+      bottom: 1,
       icon: 'circle'
+    },
+    grid: {
+      top: '10%',
+      bottom: '15%'
     },
     series: [
       {
         type: 'pie',
         radius: ['40%', '70%'],
+        center: ['50%', '45%'],
         avoidLabelOverlap: false,
         itemStyle: {
           borderRadius: 10,
           borderColor: '#fff',
-          borderWidth: 2
+          borderWidth: 2,
         },
         label: {
           show: false,
@@ -409,7 +470,14 @@ const initLineChart = () => {
   lineInstance = echarts.init(lineChart.value)
   const option = {
     tooltip: {
-      trigger: 'axis'
+      trigger: 'axis',
+      formatter: function (params) {
+        let result = params[0].axisValue + '<br/>'
+        params.forEach(param => {
+          result += param.marker + param.seriesName + ': ' + param.value + '<br/>'
+        })
+        return result
+      }
     },
     legend: {
       data: ['工单数量', '完成数量'],
@@ -424,7 +492,7 @@ const initLineChart = () => {
     xAxis: {
       type: 'category',
       boundaryGap: false,
-      data: [],
+      data: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
       axisLine: {
         lineStyle: {
           color: '#dcdfe6'
@@ -444,7 +512,7 @@ const initLineChart = () => {
         name: '工单数量',
         type: 'line',
         smooth: true,
-        data: [],
+        data: [0, 0, 0, 0, 0, 0, 0],
         itemStyle: {
           color: '#409EFF'
         },
@@ -459,7 +527,7 @@ const initLineChart = () => {
         name: '完成数量',
         type: 'line',
         smooth: true,
-        data: [],
+        data: [0, 0, 0, 0, 0, 0, 0],
         itemStyle: {
           color: '#67C23A'
         },
@@ -491,6 +559,7 @@ onMounted(async () => {
   await fetchOverviewData()
   await fetchTodoData()
   await fetchStatusData()
+  await fetchHandleQuantityData()
 })
 
 // 监听时间范围变化
@@ -498,11 +567,19 @@ const handleTimeRangeChange = () => {
   fetchStatusData()
 }
 
+// 监听进度时间范围变化
+const handleProgressTimeRangeChange = () => {
+  fetchHandleQuantityData()
+}
+
 onUnmounted(() => {
   window.removeEventListener('resize', handleResize)
   pieInstance?.dispose()
   lineInstance?.dispose()
 })
+
+// 工单处理数量数据
+const handleQuantityData = ref([])
 </script>
 
 <style scoped>
