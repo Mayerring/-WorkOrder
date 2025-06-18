@@ -31,6 +31,7 @@ import com.example.spring_vue_demo.service.HandleUserInfoService;
 import com.example.spring_vue_demo.service.WorkOrderService;
 import com.example.spring_vue_demo.service.helper.WorkOrderExportHelper;
 import com.example.spring_vue_demo.service.helper.WorkOrderPdfGenerator;
+import com.example.spring_vue_demo.service.producer.WorkOrderMessageProducer;
 import com.example.spring_vue_demo.utils.StaffHolder;
 import com.example.spring_vue_demo.vo.*;
 import com.example.spring_vue_demo.service.convert.WorkOrderConverter;
@@ -92,6 +93,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     private final HandleUserInfoMapper handleUserInfoMapper;
     private final FlowService flowService;
     private final WorkOrderExportHelper workOrderExportHelper;
+    private final WorkOrderMessageProducer workOrderMessageProducer;
 
     private final DateTimeFormatter formatterDate = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -99,12 +101,12 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     @Override
     public IPage<WorkOrderPageVO> pageWorkOrder(WorkOrderPageParam param) {
         //查询操作信息对应orderIds，or关系
-        List<Long> queryOrderIds=new ArrayList<>();
-        if(param.getSubmitterInfo()!=null||param.getAuditorInfo()!=null||param.getDistributerInfo()!=null||param.getHandlerInfo()!=null||param.getCheckerInfo()!=null){
+        List<Long> queryOrderIds = new ArrayList<>();
+        if (param.getSubmitterInfo() != null || param.getAuditorInfo() != null || param.getDistributerInfo() != null || param.getHandlerInfo() != null || param.getCheckerInfo() != null) {
             List<HandleUserInfo> queryHandleUserInfos = workOrderHelper.getQueryWorkOrderIds(param);
             queryOrderIds = queryHandleUserInfos.stream().map(HandleUserInfo::getOrderId).distinct().toList();
-            if(CollectionUtils.isEmpty(queryOrderIds)){
-                return new Page<>(param.getPageNum(),param.getPageSize());
+            if (CollectionUtils.isEmpty(queryOrderIds)) {
+                return new Page<>(param.getPageNum(), param.getPageSize());
             }
         }
 
@@ -179,16 +181,20 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         workOrderHelper.updateNextStatus(handleType, workOrder, finished);
         boolean updateSuccess = updateById(workOrder);
         FlowVO flowVO = flowService.getByFlowId(new FlowIdParam(workOrder.getFlowId()));
-        List<FlowNodeVO>nodes=flowVO.getNodes();
+        List<FlowNodeVO> nodes = flowVO.getNodes();
         if(workOrder.getStatus()==WorkOrderStatusEnum.HANDLING.getValue()&& finished) {
             Long checkId = nodes.stream().filter(node -> Objects.equals(node.getNodeType(), HandleUserInfoHandleTypeEnum.CHECK.getValue()))
                     .toList().get(0).getHandlerId();
             workOrderHelper.addCheckInfo(workOrder.getId(), checkId);
         }
-        //发送信息
+        // 发送信息
         List<Long> receiverIds = workOrderHelper.getReceiverIds(handleType, workOrder.getId(), param.getAssignedUserId());
-        List<Message> messages = workOrderHelper.buildMessages(WorkOrderStatusEnum.getByValue(workOrder.getStatus()), workOrder.getCode(), receiverIds, finished);
-        List<BatchResult> msgSuccess = messageMapper.insert(messages);
+        workOrderMessageProducer.sendWorkOrderMessages(
+                workOrder.getStatus(),
+                workOrder.getCode(),
+                receiverIds,
+                finished
+        );
         //构建返回VO
         WorkOrderUpdateStatusVO vo = workOrderHelper.setUpdateReturnVO(updateSuccess, workOrder.getCode(), workOrder.getId());
         return vo;
@@ -241,7 +247,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         WorkOrder workOrder = workOrderHelper.createWorkOrder(param);
         //查询流程
         FlowVO flowList = flowService.getByFlowId(new FlowIdParam(param.getFlowId()));
-        if(flowList==null){
+        if (flowList == null) {
             throw new UserSideException(ErrorCode.FLOW_NOT_EXIST);
         }
         List<FlowNodeVO> nodes = flowList.getNodes();
@@ -256,13 +262,16 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         Long firstAuditId = nodes.stream().filter(node -> Objects.equals(node.getNodeType(), HandleUserInfoHandleTypeEnum.AUDIT.getValue()))
                 .toList().get(0).getHandlerId();
 
-
-        //发送信息
-        Message message = workOrderHelper.buildMessage(WorkOrderStatusEnum.getByValue(workOrder.getStatus()), workOrder.getCode(), staff.getId());
-        int msgSuccess = messageMapper.insert(message);
+        // 发送信息
+        workOrderMessageProducer.sendWorkOrderMessages(
+                workOrder.getStatus(),
+                workOrder.getCode(),
+                List.of(staff.getId()),
+                true
+        );
 //        long auditId = workOrderHelper.findAuditId(staff.getId());
         boolean isSuccess = dispatchToAuditor(workOrder.getId(), workOrder.getCode(), firstAuditId, true);
-        workOrderCreateVO.setIsSuccess(isSuccess && (msgSuccess == 1) && isSaved);
+        workOrderCreateVO.setIsSuccess(isSuccess && isSaved);
         return Result.success(workOrderCreateVO);
     }
 
@@ -284,11 +293,13 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
             workOrderHelper.updateNextStatus(handleType, workOrder, false);
             updateById(workOrder);
         }
-        Message message = workOrderHelper.buildMessage(AUDITING, workOrder.getCode(), auditId);
-        int msgSuccess = messageMapper.insert(message);
-        if (msgSuccess != 1) {
-            return false;
-        }
+        // 发送信息
+        workOrderMessageProducer.sendWorkOrderMessages(
+                AUDITING.getValue(),
+                workOrder.getCode(),
+                List.of(auditId),
+                true
+        );
         //添加操作信息
         workOrderHelper.addHandleInfo(workOrder.getId(), handleType, auditId, "");
         return true;
@@ -306,7 +317,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         workOrderHelper.checkApprovalWorkOrderStatus(workOrder);
         Long userId = StaffHolder.get().getId();
         // 校验当前用户是否有对应处理信息
-        workOrderHelper.checkHandleUserInfoExist(userId,workOrder.getId());
+        workOrderHelper.checkHandleUserInfoExist(userId, workOrder.getId());
         //找到对应的handle—user-info数据，添加审批意见,更新finished位
         workOrderHelper.updateHandleUserInfo(param);
         WorkOrderApprovalVO workOrderApprovalVO = new WorkOrderApprovalVO();
@@ -322,21 +333,21 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         }
 
         Long flowId = workOrder.getFlowId();
-        FlowNodeVO nextNode = flowService.getNextFlowNode(userId,flowId);
+        FlowNodeVO nextNode = flowService.getNextFlowNode(userId, flowId);
         if (nextNode == null) {
             //没有下一个，已经结束了,更新状态
             workOrder.setStatus(WorkOrderStatusEnum.UNDISTRIBUTED.getValue());
             updateById(workOrder);
             workOrderApprovalVO.setResult(Boolean.TRUE);
             FlowVO flowVO = flowService.getByFlowId(new FlowIdParam(workOrder.getFlowId()));
-            List<FlowNodeVO>nodes=flowVO.getNodes();
+            List<FlowNodeVO> nodes = flowVO.getNodes();
             Long distributeId = nodes.stream().filter(node -> Objects.equals(node.getNodeType(), HandleUserInfoHandleTypeEnum.DISTRIBUTE.getValue()))
                     .toList().get(0).getHandlerId();
             workOrderHelper.addDistributeInfo(workOrder.getId(), distributeId);
             return Result.success(workOrderApprovalVO);
         }
         workOrderApprovalVO.setResult(Boolean.FALSE);
-        Long nextAuditId=nextNode.getHandlerId();
+        Long nextAuditId = nextNode.getHandlerId();
         //转发
         dispatchToAuditor(workOrder.getId(), workOrder.getCode(), nextAuditId, false);
         return Result.success(workOrderApprovalVO);
@@ -359,13 +370,18 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
             // 查工单的处理人
             List<Long> handleUserIds = workOrderHelper.getHandleUserIds(order.getId());
             // 发送通知给用户
-            List<Message> messages = workOrderHelper.buildMessages(WorkOrderStatusEnum.DELAYED, order.getCode(), handleUserIds, true);
-            List<BatchResult> success = messageMapper.insert(messages);
+            // 发送信息
+            workOrderMessageProducer.sendWorkOrderMessages(
+                    WorkOrderStatusEnum.DELAYED.getValue(),
+                    order.getCode(),
+                    handleUserIds,
+                    true
+            );
         }
         log.info("已完成一次延期工单扫描");
     }
 
-//    @Override
+    //    @Override
 //    public void export(WorkOrderPageParam param, HttpServletResponse response) {
 //        ExcelWriter excelWriter = null;
 //        String fileName_zh = formatterDate.format(LocalDateTime.now()) + "工单";
@@ -420,58 +436,58 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
 //            excelWriter.finish();
 //        }
 //    }
-@Override
-public void export(WorkOrderPageParam param, HttpServletResponse response) {
-    // 线程池配置
-    ExecutorService exportExecutor = ThreadPoolManager.getInstance().getThreadPool("exportPool");
+    @Override
+    public void export(WorkOrderPageParam param, HttpServletResponse response) {
+        // 线程池配置
+        ExecutorService exportExecutor = ThreadPoolManager.getInstance().getThreadPool("exportPool");
 
-    try {
-        // 1. 先查询总记录数，计算总页数
-        int totalRecords = param.getPageSize();
-        int pageSize = 1; // 每页大小，可根据实际情况调整
-        int totalPages = (totalRecords + pageSize - 1) / pageSize;
+        try {
+            // 1. 先查询总记录数，计算总页数
+            int totalRecords = param.getPageSize();
+            int pageSize = 1;
+            int totalPages = (totalRecords + pageSize - 1) / pageSize;
 
-        // 2. 创建CompletableFuture列表
-        List<CompletableFuture<Void>> futures = new ArrayList<>();
+            // 2. 创建CompletableFuture列表
+            List<CompletableFuture<Void>> futures = new ArrayList<>();
 
-        // 3. 分页查询并导出
-        for (int i = 0; i < totalPages; i++) {
-            final int pageNum = i + 1;
-            CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-                try {
-                    // 创建分页参数
-                    WorkOrderPageParam pageParam = new WorkOrderPageParam();
-                    BeanUtils.copyProperties(param, pageParam);
-                    pageParam.setPageNum(pageNum);
-                    pageParam.setPageSize(pageSize);
+            // 3. 分页查询并导出
+            for (int i = 0; i < totalPages; i++) {
+                final int pageNum = i + 1;
+                CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+                    try {
+                        // 创建分页参数
+                        WorkOrderPageParam pageParam = new WorkOrderPageParam();
+                        BeanUtils.copyProperties(param, pageParam);
+                        pageParam.setPageNum(pageNum);
+                        pageParam.setPageSize(pageSize);
 
-                    // 查询数据
-                    List<WorkOrderPageVO> pageVOS = this.pageWorkOrder(pageParam).getRecords();
-                    List<WorkOrderExportVO> excelVOS = WorkOrderConverter.INSTANCE.toExcelVOS(pageVOS);
+                        // 查询数据
+                        List<WorkOrderPageVO> pageVOS = this.pageWorkOrder(pageParam).getRecords();
+                        List<WorkOrderExportVO> excelVOS = WorkOrderConverter.INSTANCE.toExcelVOS(pageVOS);
 
-                    // 处理数据
-                    workOrderExportHelper.processExportData(pageVOS, excelVOS);
+                        // 处理数据
+                        workOrderExportHelper.processExportData(pageVOS, excelVOS);
 
-                    // 导出到单独文件
-                    workOrderExportHelper.exportToSingleFile(excelVOS, pageNum);
-                } catch (Exception e) {
-                    log.error("导出第{}页数据失败", pageNum, e);
-                }
-            }, exportExecutor);
+                        // 导出到单独文件
+                        workOrderExportHelper.exportToSingleFile(excelVOS, pageNum);
+                    } catch (Exception e) {
+                        log.error("导出第{}页数据失败", pageNum, e);
+                    }
+                }, exportExecutor);
 
-            futures.add(future);
+                futures.add(future);
+            }
+
+            // 4. 等待所有任务完成
+            CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+
+            // 5. 将所有文件合并为一个文件（如果需要）
+            workOrderExportHelper.mergeFiles(response, totalPages);
+
+        } catch (Exception e) {
+            log.error("导出失败", e);
         }
-
-        // 4. 等待所有任务完成
-        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
-
-        // 5. 将所有文件合并为一个文件（如果需要）
-        workOrderExportHelper.mergeFiles(response, totalPages);
-
-    } catch (Exception e) {
-        log.error("导出失败", e);
     }
-}
 
     @Override
     public void print(WorkOrderDetailParam param, HttpServletResponse response) {

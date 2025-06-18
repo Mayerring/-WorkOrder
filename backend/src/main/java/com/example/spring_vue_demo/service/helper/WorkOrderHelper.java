@@ -169,7 +169,6 @@ public class WorkOrderHelper {
     }
 
     public Message buildMessage(WorkOrderStatusEnum status, String code, Long assignedUserId) {
-        //todo:消息队列
         Message message = new Message();
         String nextHandleType = "";
         switch (status) {
@@ -192,10 +191,17 @@ public class WorkOrderHelper {
         return message;
     }
 
-    public List<Message> buildMessages(WorkOrderStatusEnum status, String code, List<Long> assignedUserIds, boolean finished) {
-        //todo:消息队列
+    public List<Message> buildMessages(WorkOrderStatusEnum status, String code, List<Long> receiverIds,Long senderId, boolean finished) {
         String content = "";
         switch (status) {
+            case UNAUDITED->{
+                content="编号为"+code+"的工单已成功创建，等待审核";
+                break;
+            }
+            case AUDITING->{
+                content="编号为"+code+"的工单需要您审核";
+                break;
+            }
             case UNDISTRIBUTED -> {
                 content = "编号为" + code + "的工单已经审核完毕，需要您派单。";
                 break;
@@ -223,22 +229,14 @@ public class WorkOrderHelper {
                 break;
             }
         }
-        //设置发送人和接收人id
-        //系统delay信息默认发送人为0
-        Long userId;
-        if(StaffHolder.get()!=null) {
-            userId = StaffHolder.get().getId();
-        } else {
-            userId = 0L;
-        }
         List<Message> messages = new ArrayList<>();
         String finalContent = content;
-        assignedUserIds.forEach(assignedUserId -> {
+        receiverIds.forEach(assignedUserId -> {
             Message message = new Message();
             message.setContent(finalContent);
             message.setType(status.getValue());
             message.setTypeDesc(status.getDesc());
-            message.setSenderId(userId);
+            message.setSenderId(senderId);
             message.setReceiverId(assignedUserId);
             message.setSendTime(formatter.format(LocalDateTime.now()));
             messages.add(message);
