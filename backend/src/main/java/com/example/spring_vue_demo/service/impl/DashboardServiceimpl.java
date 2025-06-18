@@ -11,6 +11,7 @@ import com.example.spring_vue_demo.entity.WorkOrder;
 import com.example.spring_vue_demo.enums.HandleUserInfoHandleTypeEnum;
 import com.example.spring_vue_demo.enums.TimeTypeEnum;
 import com.example.spring_vue_demo.enums.WorkOrderStatusEnum;
+import com.example.spring_vue_demo.enums.WorkOrderTypeEnum;
 import com.example.spring_vue_demo.mapper.HandleUserInfoMapper;
 import com.example.spring_vue_demo.mapper.MessageMapper;
 import com.example.spring_vue_demo.mapper.WorkOrderMapper;
@@ -30,6 +31,7 @@ import com.example.spring_vue_demo.vo.WorkOrder.WorkOrderTodoVO;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
@@ -48,7 +50,8 @@ public class DashboardServiceimpl implements DashboardService {
     private final HandleUserInfoMapper handleUserInfoMapper;
     private final MessageMapper messageMapper;
 
-    private final DateTimeFormatter formatter=DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    private final DateTimeFormatter localDateTimeformatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
     @Override
     public WorkOrderDataVO getData() {
@@ -80,7 +83,7 @@ public class DashboardServiceimpl implements DashboardService {
                 HandleUserInfoHandleTypeEnum.HANDLE.getValue(), HandleUserInfoHandleTypeEnum.CHECK.getValue()), Boolean.FALSE);
         List<HandleUserInfo> handleUserInfos = handleUserInfoMapper.selectList(handleUserInfowrapper);
         List<Long> orderIds = handleUserInfos.stream().map(HandleUserInfo::getOrderId).distinct().toList();
-        LambdaQueryWrapper<WorkOrder>workOrderWrapper=WorkOrderQuery.getWorkOrderByIds(orderIds);
+        LambdaQueryWrapper<WorkOrder> workOrderWrapper = WorkOrderQuery.getWorkOrderByIds(orderIds);
         List<WorkOrder> workOrders = workOrderMapper.selectList(workOrderWrapper);
         List<WorkOrderTodoVO> workOrderTodoVOS = WorkOrderConverter.INSTANCE.toWorkTodoVOS(workOrders);
         return workOrderTodoVOS;
@@ -88,78 +91,133 @@ public class DashboardServiceimpl implements DashboardService {
 
     @Override
     public List<StatusDataVO> getStatus(StatusDataParam param) {
-        //所有数据
-        TimeTypeEnum timeTypeEnum=TimeTypeEnum.getByValue(param.getTimeType());
-        Long createTimeFrom=null;
-        Long createTimeTo=LocalDateTime.now().atZone(ZoneId.systemDefault()).toEpochSecond();
-        switch(timeTypeEnum){
-            case WEEK -> createTimeFrom=LocalDateTime.now().minusWeeks(1L).atZone(ZoneId.systemDefault()).toEpochSecond();
-            case MONTH -> createTimeFrom=LocalDateTime.now().minusMonths(1L).atZone(ZoneId.systemDefault()).toEpochSecond();
-            case YEAR -> createTimeFrom=LocalDateTime.now().minusYears(1L).atZone(ZoneId.systemDefault()).toEpochSecond();
+        TimeTypeEnum timeTypeEnum = TimeTypeEnum.getByValue(param.getTimeType());
+        Long createTimeFrom = null;
+        Long createTimeTo = LocalDateTime.now().atZone(ZoneId.systemDefault()).toEpochSecond();
+        switch (timeTypeEnum) {
+            case WEEK ->
+                    createTimeFrom = LocalDateTime.now().minusWeeks(1L).atZone(ZoneId.systemDefault()).toEpochSecond();
+            case MONTH ->
+                    createTimeFrom = LocalDateTime.now().minusMonths(1L).atZone(ZoneId.systemDefault()).toEpochSecond();
+            case YEAR ->
+                    createTimeFrom = LocalDateTime.now().minusYears(1L).atZone(ZoneId.systemDefault()).toEpochSecond();
         }
-        QueryWrapper<WorkOrder> workOrderWrapper=WorkOrderQuery.getCountGroupByStatusByDate(createTimeFrom,createTimeTo);
-        List<Map<String,Object>> statusMaps = workOrderMapper.selectMaps(workOrderWrapper);
-        List<StatusDataVO>vos= statusMaps.stream().map(map->{
-            StatusDataVO vo=new StatusDataVO();
-            Integer status=(Integer)map.get("status");
-            Long count=(Long)map.get("count");
-            vo.setStatus(status);
-            vo.setStatusDesc(Objects.requireNonNull(WorkOrderStatusEnum.getByValue(status)).getDesc());
-            vo.setQuantity(count);
-            return vo;
-        }).toList();
+        QueryWrapper<WorkOrder> workOrderWrapper = WorkOrderQuery.getCountGroupByStatusByDate(createTimeFrom, createTimeTo);
+        List<Map<String, Object>> statusMaps = workOrderMapper.selectMaps(workOrderWrapper);
+        List<StatusDataVO> vos = new ArrayList<>();
+        Map<Integer, Long> collect = new HashMap<>();
+        statusMaps.forEach(map -> {
+            Integer status = (Integer) map.get("status");
+            Long count = (Long) map.get("count");
+            collect.put(status, count);
+        });
+        for (WorkOrderStatusEnum statusEnum : WorkOrderStatusEnum.values()) {
+            StatusDataVO statusDataVO = new StatusDataVO();
+            statusDataVO.setStatus(statusEnum.getValue());
+            statusDataVO.setStatusDesc(statusEnum.getDesc());
+            statusDataVO.setQuantity(collect.getOrDefault(statusEnum.getValue(), 0L));
+            vos.add(statusDataVO);
+        }
+
         return vos;
     }
 
     @Override
-    public WeekHandleVO getWeekHandleQuantity(WeekHandleQuantityParam param) {
-        //取当天起始时间
-        LocalDate date = LocalDate.parse(param.getDate(), formatter);
-        LocalDateTime startOfDate=date.atStartOfDay();
-        LocalDateTime endOfDate=date.plusDays(1L).atStartOfDay();
-        Long startTimeFrom=startOfDate.atZone(ZoneId.systemDefault()).toEpochSecond();
-        Long startTimeEnd=endOfDate.atZone(ZoneId.systemDefault()).toEpochSecond();
-        //查当天所有完成的操作信息
-        LambdaQueryWrapper<HandleUserInfo> totalWrapper=HandleUserInfoQuery.getByHandleDateAndHandleType(startTimeFrom,startTimeEnd,List.of(HandleUserInfoHandleTypeEnum.HANDLE.getValue()));
-        List<HandleUserInfo>userInfos = handleUserInfoMapper.selectList(totalWrapper);
-        if(CollectionUtils.isEmpty(userInfos)){
-            return new WeekHandleVO(0L,0L, param.getDate());
+    public List<TypeDataVO> getType(StatusDataParam param) {
+        TimeTypeEnum timeTypeEnum = TimeTypeEnum.getByValue(param.getTimeType());
+        Long createTimeFrom = null;
+        Long createTimeTo = LocalDateTime.now().atZone(ZoneId.systemDefault()).toEpochSecond();
+        switch (timeTypeEnum) {
+            case WEEK ->
+                    createTimeFrom = LocalDateTime.now().minusWeeks(1L).atZone(ZoneId.systemDefault()).toEpochSecond();
+            case MONTH ->
+                    createTimeFrom = LocalDateTime.now().minusMonths(1L).atZone(ZoneId.systemDefault()).toEpochSecond();
+            case YEAR ->
+                    createTimeFrom = LocalDateTime.now().minusYears(1L).atZone(ZoneId.systemDefault()).toEpochSecond();
         }
-        //所有工单
-        Long dailyTotalNum=userInfos.stream().map(HandleUserInfo::getOrderId).distinct().count();
-        //已完成工单
-        Map<Long,List<HandleUserInfo>>collect=userInfos.stream().collect(Collectors.groupingBy(HandleUserInfo::getOrderId));
-        Long dailyFinishedNum=0L;
-        for(Map.Entry<Long,List<HandleUserInfo>>entry:collect.entrySet()){
-            List<HandleUserInfo>handleUserInfos=entry.getValue();
-            boolean finished=true;
-            for (HandleUserInfo handleUserInfo : handleUserInfos) {
-                //如果存在操作信息是未完成
-                if(handleUserInfo.getFinished().equals(Boolean.FALSE)){
-                    finished=false;
-                    break;
+        QueryWrapper<WorkOrder> workOrderWrapper = WorkOrderQuery.getCountGroupByTypeByDate(createTimeFrom, createTimeTo);
+        List<Map<String, Object>> statusMaps = workOrderMapper.selectMaps(workOrderWrapper);
+        List<TypeDataVO> vos = new ArrayList<>();
+        Map<Integer, Long> collect = new HashMap<>();
+        statusMaps.forEach(map -> {
+            Integer status = (Integer) map.get("type");
+            Long count = (Long) map.get("count");
+            collect.put(status, count);
+        });
+        for (WorkOrderTypeEnum typeEnum : WorkOrderTypeEnum.values()) {
+            TypeDataVO typeVO = new TypeDataVO();
+            typeVO.setType(typeEnum.getValue());
+            typeVO.setTypeDesc(typeEnum.getDesc());
+            typeVO.setQuantity(collect.getOrDefault(typeEnum.getValue(), 0L));
+            vos.add(typeVO);
+        }
+        return vos;
+    }
+
+    @Override
+    public List<WeekHandleVO> getWeekHandleQuantity(WeekHandleQuantityParam param) {
+        LocalDate today = LocalDate.now();
+        List<WeekHandleVO> VOList = new ArrayList<>();
+
+        LocalDate weekAgo = today.minusDays(6);
+
+        long weekAgoTimestamp = weekAgo.atStartOfDay(ZoneId.systemDefault()).toEpochSecond();
+        long todayEndTimestamp = today.plusDays(1).atStartOfDay(ZoneId.systemDefault()).toEpochSecond();
+        LambdaQueryWrapper<HandleUserInfo> handleUserInfoWrapper = HandleUserInfoQuery.getByHandleDate(weekAgoTimestamp, todayEndTimestamp);
+        List<HandleUserInfo> weekHandleUserInfos = handleUserInfoMapper.selectList(handleUserInfoWrapper);
+
+        for (long i = 6L; i >= 0L; i--) {
+            LocalDate date = today.minusDays(i);
+            LocalDateTime startOfDate = date.atStartOfDay();
+            LocalDateTime endOfDate = date.plusDays(1L).atStartOfDay();
+
+            List<HandleUserInfo> dateRecords = weekHandleUserInfos.stream()
+                    .filter(record -> {
+                        LocalDateTime recordTime = record.getHandleTime() != null ?
+                                LocalDateTime.parse(record.getHandleTime(), localDateTimeformatter) :
+                                LocalDateTime.parse(record.getCreateTime(), localDateTimeformatter);
+                        return !recordTime.isBefore(startOfDate) && recordTime.isBefore(endOfDate);
+                    })
+                    .collect(Collectors.toList());
+
+            Map<Long, List<HandleUserInfo>> workOrderGroups = dateRecords.stream()
+                    .collect(Collectors.groupingBy(HandleUserInfo::getOrderId));
+
+            long dailyFinishedNum = 0;
+            long dailyUnfinishedNum = 0;
+
+            for (Map.Entry<Long, List<HandleUserInfo>> entry : workOrderGroups.entrySet()) {
+                long workOrderId = entry.getKey();
+                List<HandleUserInfo> handlers = entry.getValue();
+
+                boolean allFinished = handlers.stream().allMatch(h -> h.getFinished() == true);
+
+                if (allFinished) {
+                    dailyFinishedNum++;
+                } else {
+                    dailyUnfinishedNum++;
                 }
             }
-            if(finished){
-                dailyFinishedNum++;
-            }
+
+            WeekHandleVO vo = new WeekHandleVO();
+            vo.setDate(formatter.format(date));
+            vo.setDailyTotalNum(dailyFinishedNum + dailyUnfinishedNum);
+            vo.setDailyFinishedNum(dailyFinishedNum);
+            VOList.add(vo);
         }
-        WeekHandleVO vo=new WeekHandleVO();
-        vo.setDate(param.getDate());
-        vo.setDailyTotalNum(dailyTotalNum);
-        vo.setDailyFinishedNum(dailyFinishedNum);
-        return vo;
+
+        return VOList;
     }
 
     @Override
     public IPage<MessageVO> pageMessages(MessageParam param) {
-        Long receiverId=StaffHolder.get().getId();
-        LambdaQueryWrapper<Message>wrapper= MessageQuery.getByReceiverIdWrapper(receiverId);
-        IPage<Message>pageWrapper=new Page<>();
+        Long receiverId = StaffHolder.get().getId();
+        LambdaQueryWrapper<Message> wrapper = MessageQuery.getByReceiverIdWrapper(receiverId);
+        IPage<Message> pageWrapper = new Page<>();
         pageWrapper.setSize(param.getPageSize());
         pageWrapper.setCurrent(param.getPageNum());
         IPage<Message> messageIPage = messageMapper.selectPage(pageWrapper, wrapper);
-        IPage<MessageVO> pageMessageVOS= MessageConverter.INSTANCE.toPageMessageVOS(messageIPage);
+        IPage<MessageVO> pageMessageVOS = MessageConverter.INSTANCE.toPageMessageVOS(messageIPage);
         return pageMessageVOS;
     }
 }

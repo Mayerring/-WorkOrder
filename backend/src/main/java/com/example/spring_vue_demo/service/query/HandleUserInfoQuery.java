@@ -9,6 +9,8 @@ import com.example.spring_vue_demo.entity.WorkOrder;
 import com.example.spring_vue_demo.enums.HandleUserInfoHandleTypeEnum;
 import com.example.spring_vue_demo.param.HandleUserInfoParam;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 /**
@@ -84,18 +86,21 @@ public class HandleUserInfoQuery {
         return wrapper;
     }
 
-    public static LambdaQueryWrapper<HandleUserInfo> getByHandleDateAndHandleType(Long startTimeFrom, Long startTimeEnd, List<Integer> handleTypes) {
-        LambdaQueryWrapper<HandleUserInfo> wrapper = new LambdaQueryWrapper<HandleUserInfo>()
-                .ge(true, HandleUserInfo::getHandleTime, startTimeFrom)
-                .le(true, HandleUserInfo::getHandleTime, startTimeEnd)
-                .in(true, HandleUserInfo::getHandleType, handleTypes);
-        return wrapper;
-    }
 
     public static LambdaQueryWrapper<WorkOrder> getByStatusAndDeadlineTime(Long nowTime, Integer status) {
         LambdaQueryWrapper<WorkOrder> wrapper = new LambdaQueryWrapper<WorkOrder>()
                 .le(true, WorkOrder::getDeadlineTime, nowTime)
                 .eq(true, WorkOrder::getStatus, status);
+        return wrapper;
+    }
+
+    public static LambdaQueryWrapper<HandleUserInfo> getByHandleDate(Long weekAgo, Long today) {
+        LambdaQueryWrapper<HandleUserInfo> wrapper = new LambdaQueryWrapper<HandleUserInfo>()
+                .ge(true,HandleUserInfo::getCreateTime,weekAgo)
+                .le(true,HandleUserInfo::getCreateTime,today)
+                .or()
+                .le(true,HandleUserInfo::getHandleTime,today)
+                .eq(HandleUserInfo::getHandleType,HandleUserInfoHandleTypeEnum.HANDLE.getValue());
         return wrapper;
     }
 }

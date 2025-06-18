@@ -82,6 +82,15 @@ public class WorkOrderQuery {
         return wrapper;
     }
 
+    public static QueryWrapper<WorkOrder> getCountGroupByTypeByDate(Long createTimeFrom, Long createTimeTo) {
+        QueryWrapper<WorkOrder>wrapper=new QueryWrapper<WorkOrder>()
+                .select("type","COUNT(*) as count")
+                .ge(true,"create_time", createTimeFrom)
+                .le(true,"create_time",createTimeTo)
+                .groupBy("type");
+        return wrapper;
+    }
+
     public static LambdaUpdateWrapper<WorkOrder> getUpdateStatusByIdWrapper(Long orderId, Integer status) {
         LambdaUpdateWrapper<WorkOrder>wrapper=new LambdaUpdateWrapper<WorkOrder>()
                 .set(true,WorkOrder::getStatus,status)

@@ -52,7 +52,7 @@ public class DashboardController {
     @ApiOperationSupport(order = 4)
     @Operation(summary = "本周处理数量")
     @PostMapping("/handleQuantity")
-    public WeekHandleVO getHandleQuantity(@RequestBody WeekHandleQuantityParam param){
+    public List<WeekHandleVO> getHandleQuantity(@RequestBody WeekHandleQuantityParam param){
         return dashboardService.getWeekHandleQuantity(param);
     }
 
@@ -61,5 +61,12 @@ public class DashboardController {
     @PostMapping("/pageMessages")
     public IPage<MessageVO> pageMessages(@RequestBody MessageParam param){
         return dashboardService.pageMessages(param);
+    }
+
+    @ApiOperationSupport(order = 6)
+    @Operation(summary = "工单类型统计")
+    @PostMapping("/type")
+    public List<TypeDataVO>  countType(@RequestBody StatusDataParam param){
+        return dashboardService.getType(param);
     }
 }

@@ -19,7 +19,9 @@ public interface DashboardService {
 
     List<StatusDataVO>  getStatus(StatusDataParam param);
 
-    WeekHandleVO getWeekHandleQuantity(WeekHandleQuantityParam param);
+    List<WeekHandleVO> getWeekHandleQuantity(WeekHandleQuantityParam param);
 
     IPage<MessageVO> pageMessages(MessageParam param);
+
+    List<TypeDataVO> getType(StatusDataParam param);
 }
