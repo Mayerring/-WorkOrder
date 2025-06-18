@@ -155,7 +155,7 @@ public class DashboardServiceimpl implements DashboardService {
     }
 
     @Override
-    public List<WeekHandleVO> getWeekHandleQuantity(WeekHandleQuantityParam param) {
+    public List<WeekHandleVO> getWeekHandleQuantity() {
         LocalDate today = LocalDate.now();
         List<WeekHandleVO> VOList = new ArrayList<>();
 

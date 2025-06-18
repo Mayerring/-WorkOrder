@@ -52,8 +52,8 @@ public class DashboardController {
     @ApiOperationSupport(order = 4)
     @Operation(summary = "本周处理数量")
     @PostMapping("/handleQuantity")
-    public List<WeekHandleVO> getHandleQuantity(@RequestBody WeekHandleQuantityParam param){
-        return dashboardService.getWeekHandleQuantity(param);
+    public List<WeekHandleVO> getHandleQuantity(){
+        return dashboardService.getWeekHandleQuantity();
     }
 
     @ApiOperationSupport(order = 5)
