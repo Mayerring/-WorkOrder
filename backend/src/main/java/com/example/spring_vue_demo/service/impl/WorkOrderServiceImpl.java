@@ -180,7 +180,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         boolean updateSuccess = updateById(workOrder);
         FlowVO flowVO = flowService.getByFlowId(new FlowIdParam(workOrder.getFlowId()));
         List<FlowNodeVO>nodes=flowVO.getNodes();
-        if(workOrder.getStatus()==WorkOrderStatusEnum.HANDLING.getValue()&& finished) {
+        if(Objects.equals(workOrder.getStatus(), WorkOrderStatusEnum.FINISHED.getValue())) {
             Long checkId = nodes.stream().filter(node -> Objects.equals(node.getNodeType(), HandleUserInfoHandleTypeEnum.CHECK.getValue()))
                     .toList().get(0).getHandlerId();
             workOrderHelper.addCheckInfo(workOrder.getId(), checkId);
