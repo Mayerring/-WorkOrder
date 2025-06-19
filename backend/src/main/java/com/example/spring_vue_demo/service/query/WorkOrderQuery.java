@@ -70,7 +70,7 @@ public class WorkOrderQuery {
             wrapper.apply("1=2");
             return wrapper;
         }
-        wrapper.in(true,WorkOrder::getId,orderIds);
+        wrapper.in(true,WorkOrder::getId,orderIds).orderBy(true,false,WorkOrder::getCreateTime);
         return wrapper;
     }
 
