@@ -30,6 +30,10 @@ service.interceptors.request.use(
 // 响应拦截器
 service.interceptors.response.use(
   response => {
+    // 关键：如果是文件流，直接返回，保证打印功能
+    if (response.config.responseType === 'blob') {
+      return response
+    }
     const res = response.data
     // 如果响应成功但业务状态码不为1，说明业务出错
     if (res.code !== 1) {
@@ -42,6 +46,7 @@ service.interceptors.response.use(
       }
       return Promise.reject(new Error(res.msg || '操作失败'))
     }
+    console.log('打印接口返回：', res)
     return res
   },
   error => {

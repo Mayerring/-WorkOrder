@@ -78,3 +78,14 @@ export function getAssignableStaff() {
     baseURL: 'http://localhost:8080'
   })
 }
+
+// 打印工单
+export function printWorkOrder(data) {
+  return request({
+    url: '/workOrder/print',
+    method: 'post',
+    baseURL: 'http://localhost:8080',
+    data,
+    responseType: 'blob'
+  })
+}

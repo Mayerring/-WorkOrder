@@ -12,6 +12,7 @@
           <el-tag :type="getStatusType(workorder.status)">
             {{ workorder.statusDesc }}
           </el-tag>
+          <el-button v-if="workorder.status === 600" @click="handlePrint" link>打印工单</el-button>
         </div>
       </template>
 
@@ -159,7 +160,7 @@
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getWorkOrderDetail } from '@/api/workorder'
+import { getWorkOrderDetail, printWorkOrder } from '@/api/workorder'
 
 const route = useRoute()
 const router = useRouter()
@@ -300,6 +301,37 @@ const submitHandle = async () => {
     }
   })
 }
+
+const handlePrint = async () => {
+  try {
+    const res = await printWorkOrder({ id: workorder.id })
+    // 适配 axios 封装
+    const blob = res instanceof Blob ? res : res.data
+
+    // 获取文件名（支持中文）
+    let filename = `工单_${workorder.code || workorder.id}.pdf`
+    let disposition = res.headers?.['content-disposition'] || res.headers?.get?.('content-disposition')
+    if (disposition) {
+      const match = disposition.match(/filename=([^;]+)/)
+      if (match && match[1]) {
+        filename = decodeURIComponent(match[1].replace(/['"]/g, ''))
+      }
+    }
+
+    // 直接下载
+    const url = window.URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    window.URL.revokeObjectURL(url)
+  } catch (e) {
+    ElMessage.error('打印失败')
+  }
+}
+
 
 // 初始化
 onMounted(() => {

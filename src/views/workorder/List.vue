@@ -26,9 +26,9 @@ const statusOptions = [
   { label: '未派单', value: 300 },
   { label: '处理中', value: 400 },
   { label: '已超时', value: 410 },
-  { label: '已完成', value: 500 },
-  { label: '已确认完成', value: 600 },
-  { label: '确认失败', value: 670 },
+  { label: '已处理', value: 500 },
+  { label: '已验收', value: 600 },
+  { label: '验收失败', value: 670 },
   { label: '已取消', value: 700 }
 ]
 
