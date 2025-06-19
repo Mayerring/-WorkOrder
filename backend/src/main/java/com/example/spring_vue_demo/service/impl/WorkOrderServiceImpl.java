@@ -352,7 +352,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         // 查询所有状态是handle且deadlineTime已过的工单
         LocalDateTime now = LocalDateTime.now();
         Long nowTime = now.atZone(ZoneId.systemDefault()).toEpochSecond();
-        LambdaQueryWrapper<WorkOrder> getDelayWrapper = HandleUserInfoQuery.getByStatusAndDeadlineTime(nowTime, WorkOrderStatusEnum.HANDLING.getValue());
+        LambdaQueryWrapper<WorkOrder> getDelayWrapper = HandleUserInfoQuery.getByStatusAndDeadlineTime(nowTime,List.of(WorkOrderStatusEnum.HANDLING.getValue(),WorkOrderStatusEnum.CHECK_FAILURE.getValue()));
         List<WorkOrder> overdueOrders = this.list(getDelayWrapper);
         for (WorkOrder order : overdueOrders) {
             //更新工单状态
