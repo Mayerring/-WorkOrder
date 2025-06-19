@@ -470,7 +470,7 @@ public class WorkOrderHelper {
 
     public void checkCancelWorkOrderStatus(WorkOrder workOrder) {
         if (workOrder.getStatus() >= WorkOrderStatusEnum.FINISHED.getValue()) {
-            throw new UserSideException(ErrorCode.AFTER_FINISHED_NOT_ALLOW_CANCELLED);
+            throw new UserSideException(ErrorCode.AFTER_FINISHED_NOT_ALLOW_CANCELLED_OR_DELETE);
         }
     }
 

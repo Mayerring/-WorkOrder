@@ -202,6 +202,8 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         LambdaQueryWrapper<WorkOrder> workOrderWrapper = WorkOrderQuery.getWorkOrderWrapper(param.getId(), param.getCode());
         WorkOrder workOrder = getOne(workOrderWrapper);
         workOrderHelper.checkWorkOrderExist(workOrder);
+        //校验工单状态，已完成、已确认完成的工单不能删除
+        workOrderHelper.checkCancelWorkOrderStatus(workOrder);
         //删除工单
         boolean success = removeById(workOrder.getId());
         WorkOrderUpdateStatusVO vo = workOrderHelper.setUpdateReturnVO(success, workOrder.getCode(), workOrder.getId());

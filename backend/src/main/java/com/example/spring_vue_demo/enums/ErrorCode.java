@@ -22,7 +22,7 @@ public enum ErrorCode {
     ASSIGNED_USER_EQUALS_CURRENT_USER("用户协助对象不能为自己",10010),
     NOT_NEED_ASSIGNED_USER_ID("该操作不需要填写安排用户id",10011),
     ASSIGNED_USER_ALREADY_EXIST("安排的用户已经被执行过相同操作",10012),
-    AFTER_FINISHED_NOT_ALLOW_CANCELLED("已完成、已确认完成的工单不能取消",10013),
+    AFTER_FINISHED_NOT_ALLOW_CANCELLED_OR_DELETE("已完成、已确认完成的工单不能取消或删除",10013),
     ONLY_SUBMIT_USER_CAN_CANCEL_WORK_ORDER("只有提交的用户可以取消工单",10014),
     AUDIT_ING_STATUS_WRONG("只有待审核和审核中的工单才能进行审核操作",10015),
     UNAUDITED_AUDITING_STATUS_WRONG("待审核、审核中工单才能审核",10016 ),
