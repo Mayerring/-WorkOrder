@@ -25,6 +25,10 @@ public class StaffBelongInfoVO {
     private String managerNumber;
     @Schema(description = "直属领导")
     private String managerName;
+    @Schema(description = "手机号码")
+    private String phone;
+    @Schema(description = "邮箱")
+    private String email;
     @Schema(description = "角色：admin/user")
     private String role;
     @Schema(description = "创建时间")
