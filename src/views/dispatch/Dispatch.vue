@@ -59,13 +59,13 @@
         <el-table-column prop="createTime" label="创建时间" width="180" />
         <el-table-column label="操作" width="180" fixed="right">
           <template #default="{ row }">
-            <!-- 分派：状态为未分派(300)且用户为分派者 -->
             <el-button v-if="row.status === 300 && isUserDistributer(row)" type="primary" link
               @click="handleAssign(row)">分派</el-button>
-            <!-- 转派：状态为处理中(400)且用户为处理人 -->
             <el-button v-if="row.status === 400 && isUserHandler(row)" type="warning" link
               @click="handleReassign(row)">转派</el-button>
             <el-button type="info" link @click="handleView(row)">查看</el-button>
+            <el-button type="danger" link @click="handleDelete(row)"
+              :disabled="row.status === 500 || row.status === 600">删除</el-button>
           </template>
         </el-table-column>
       </el-table>
@@ -107,8 +107,8 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { getWorkOrderPage, handleWorkOrder } from '@/api/workorder'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { getWorkOrderPage, handleWorkOrder, deleteWorkOrder } from '@/api/workorder'
 import { getUserInfo, getAllStaff } from '@/api/user'
 
 
@@ -367,6 +367,20 @@ const handleSizeChange = (val) => {
 const handleCurrentChange = (val) => {
   pagination.pageNum = val
   loadDispatchList()
+}
+
+// 删除操作
+const handleDelete = async (row) => {
+  try {
+    await ElMessageBox.confirm('确定要删除该工单吗？', '警告', { type: 'warning' })
+    const res = await deleteWorkOrder({ id: row.id })
+    if (res.code === 1) {
+      ElMessage.success('删除成功')
+      loadDispatchList()
+    } else {
+      ElMessage.error(res.msg || '删除失败')
+    }
+  } catch { }
 }
 
 // 初始化

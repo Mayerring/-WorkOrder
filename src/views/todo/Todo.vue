@@ -23,10 +23,12 @@
           <el-table-column prop="submitterInfo.userName" label="提交人" width="120" />
           <el-table-column prop="createTime" label="创建时间" width="180" />
           <el-table-column prop="deadlineTime" label="截止时间" width="180" />
-          <el-table-column label="操作" fixed="right" width="150">
+          <el-table-column label="操作" fixed="right" width="180">
             <template #default="{ row }">
               <el-button type="primary" link @click="handleWorkOrderAction(row)">处理</el-button>
               <el-button type="info" link @click="getWorkOrderDetailAction(row)">查看</el-button>
+              <el-button type="danger" link @click="handleDelete(row)"
+                :disabled="row.status === 500 || row.status === 600">删除</el-button>
             </template>
           </el-table-column>
         </el-table>
@@ -75,9 +77,9 @@
 <script setup>
 import { ref, reactive, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { getWorkOrderPage, handleWorkOrder } from '@/api/workorder'
+import { getWorkOrderPage, handleWorkOrder, deleteWorkOrder } from '@/api/workorder'
 import { getUserInfo } from '@/api/user'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 const router = useRouter()
 
@@ -247,6 +249,20 @@ const handleWorkOrderAction = async (row) => {
 const getWorkOrderDetailAction = async (row) => {
   // 直接跳转到详情页面
   router.push(`/workorder/detail/${row.id}`)
+}
+
+// 删除工单
+const handleDelete = async (row) => {
+  try {
+    await ElMessageBox.confirm('确定要删除该工单吗？', '警告', { type: 'warning' })
+    const res = await deleteWorkOrder({ id: row.id })
+    if (res.code === 1) {
+      ElMessage.success('删除成功')
+      loadWorkOrderList()
+    } else {
+      ElMessage.error(res.msg || '删除失败')
+    }
+  } catch { }
 }
 
 // 监听标签页切换

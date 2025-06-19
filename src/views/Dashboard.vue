@@ -47,17 +47,17 @@
     </el-card>
 
     <el-row :gutter="20" class="chart-section">
-      <!-- 待办事项 -->
+      <!-- 个人工单 -->
       <el-col :xs="24" :sm="24" :md="12">
         <el-card class="section-card todo-list">
           <template #header>
             <div class="card-header">
-              <span class="header-title">待办事项</span>
-              <el-button link type="primary" @click="viewMore('todo')">
+              <span class="header-title">个人工单</span>
+              <!-- <el-button link type="primary" @click="viewMore('todo')">
                 查看更多<el-icon>
                   <ArrowRight />
                 </el-icon>
-              </el-button>
+              </el-button> -->
             </div>
           </template>
           <el-scrollbar height="300px">
@@ -403,14 +403,14 @@ const handleAction = (action) => {
   router.push(action.route)
 }
 
-// 查看更多
-const viewMore = (type) => {
-  const routeMap = {
-    todo: '/todo',
-    statistics: '/statistics'
-  }
-  router.push(routeMap[type])
-}
+// // 查看更多
+// const viewMore = (type) => {
+//   const routeMap = {
+//     todo: '/todo',
+//     statistics: '/statistics'
+//   }
+//   router.push(routeMap[type])
+// }
 
 // 初始化饼图 - 移除静态数据
 const initPieChart = () => {

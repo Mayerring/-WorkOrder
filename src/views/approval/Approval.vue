@@ -47,6 +47,8 @@
               <template #default="{ row }">
                 <el-button type="primary" link @click="handleApprove(row)">审批</el-button>
                 <el-button type="info" link @click="handleView(row)">查看</el-button>
+                <el-button type="danger" link @click="handleDelete(row)"
+                  :disabled="row.status === 500 || row.status === 600">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -123,6 +125,8 @@
             <el-table-column label="操作" width="100" fixed="right">
               <template #default="{ row }">
                 <el-button type="info" link @click="handleView(row)">查看</el-button>
+                <el-button type="danger" link @click="handleDelete(row)"
+                  :disabled="row.status === 500 || row.status === 600">删除</el-button>
               </template>
             </el-table-column>
           </el-table>
@@ -164,8 +168,8 @@
 <script setup>
 import { ref, reactive, onMounted, watch } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import { getWorkOrderPage, approvalWorkOrder } from '@/api/workorder'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { getWorkOrderPage, approvalWorkOrder, deleteWorkOrder } from '@/api/workorder'
 import { getUserInfo } from '@/api/user'
 
 const router = useRouter()
@@ -491,6 +495,24 @@ watch(activeTab, (newTab) => {
     loadProcessedList()
   }
 })
+
+// 删除工单
+const handleDelete = async (row) => {
+  try {
+    await ElMessageBox.confirm('确定要删除该工单吗？', '警告', { type: 'warning' })
+    const res = await deleteWorkOrder({ id: row.id })
+    if (res.code === 1) {
+      ElMessage.success('删除成功')
+      if (activeTab.value === 'pending') {
+        loadPendingList()
+      } else {
+        loadProcessedList()
+      }
+    } else {
+      ElMessage.error(res.msg || '删除失败')
+    }
+  } catch { }
+}
 
 // 初始化
 onMounted(async () => {
