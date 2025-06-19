@@ -124,7 +124,7 @@
     </el-dialog>
 
     <!-- 消息通知对话框 -->
-    <el-dialog v-model="notificationDialogVisible" title="消息通知" width="600px">
+    <el-dialog v-model="notificationDialogVisible" title="消息通知" width="800px">
       <el-table :data="messageList" v-loading="messageLoading" max-height="400px">
         <el-table-column prop="content" label="消息内容" min-width="300" show-overflow-tooltip />
         <el-table-column prop="typeDesc" label="类型" width="100">
