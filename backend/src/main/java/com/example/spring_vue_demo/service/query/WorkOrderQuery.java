@@ -33,6 +33,7 @@ public class WorkOrderQuery {
                 .le(Objects.nonNull(param.getCreateTimeTo()),WorkOrder::getCreateTime,param.getCreateTimeTo())
                 .ge(Objects.nonNull(param.getDeadLineFrom()),WorkOrder::getDeadlineTime,param.getDeadLineFrom())
                 .le(Objects.nonNull(param.getDeadLineTo()),WorkOrder::getDeadlineTime,param.getDeadLineTo())
+                .orderBy(true,false,WorkOrder::getCreateTime)
                 ;
         return pageWrapper;
     }
