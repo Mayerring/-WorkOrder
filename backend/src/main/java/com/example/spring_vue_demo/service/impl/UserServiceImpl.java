@@ -62,7 +62,8 @@ public class UserServiceImpl extends ServiceImpl<StaffMapper, Staff> implements 
         vo.setUpdateTime(staff.getUpdateTime());
         vo.setManagerNumber(staff.getManagerNumber());
         vo.setManagerName(staff.getManagerName());
-
+        vo.setEmail(staff.getEmail());
+        vo.setPhone(staff.getPhone());
         // 3. 返回
         return Result.success(vo);
     }
