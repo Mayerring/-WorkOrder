@@ -61,7 +61,7 @@
           <div class="timeline-content">
             <div class="action">{{ workorder.submitterInfo.handleTypeDesc }}</div>
             <div class="operator">操作人：{{ workorder.submitterInfo.userName }} ({{ workorder.submitterInfo.departmentName
-              }})
+            }})
             </div>
             <div class="comment" v-if="workorder.submitterInfo.remark">
               备注：{{ workorder.submitterInfo.remark }}
@@ -88,7 +88,7 @@
             <div class="action">{{ workorder.distributerInfo.handleTypeDesc }}</div>
             <div class="operator">操作人：{{ workorder.distributerInfo.userName }} ({{
               workorder.distributerInfo.departmentName
-              }})</div>
+            }})</div>
             <div class="comment" v-if="workorder.distributerInfo.remark">
               备注：{{ workorder.distributerInfo.remark }}
             </div>
@@ -305,12 +305,14 @@ const submitHandle = async () => {
 const handlePrint = async () => {
   try {
     const res = await printWorkOrder({ id: workorder.id })
-    // 适配 axios 封装
-    const blob = res instanceof Blob ? res : res.data
+
+    // 由于设置了responseType: 'blob'，响应拦截器会直接返回response对象
+    // 所以这里res就是完整的axios响应对象
+    const blob = res.data
 
     // 获取文件名（支持中文）
     let filename = `工单_${workorder.code || workorder.id}.pdf`
-    let disposition = res.headers?.['content-disposition'] || res.headers?.get?.('content-disposition')
+    const disposition = res.headers?.['content-disposition']
     if (disposition) {
       const match = disposition.match(/filename=([^;]+)/)
       if (match && match[1]) {
@@ -318,7 +320,7 @@ const handlePrint = async () => {
       }
     }
 
-    // 直接下载
+    // 创建下载链接
     const url = window.URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
@@ -327,8 +329,11 @@ const handlePrint = async () => {
     a.click()
     document.body.removeChild(a)
     window.URL.revokeObjectURL(url)
-  } catch (e) {
-    ElMessage.error('打印失败')
+
+    ElMessage.success('打印文件已下载')
+  } catch (error) {
+    console.error('打印失败：', error)
+    ElMessage.error('打印失败，请稍后重试')
   }
 }
 

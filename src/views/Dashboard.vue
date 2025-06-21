@@ -13,12 +13,12 @@
             <div class="overview-info">
               <div class="overview-title">{{ item.title }}</div>
               <div class="overview-number">{{ item.number }}</div>
-              <div class="overview-desc">
+              <!-- <div class="overview-desc">
                 较上周
                 <span :class="item.trend === 'up' ? 'trend-up' : 'trend-down'">
                   {{ item.trend === 'up' ? '↑' : '↓' }} {{ item.rate }}
                 </span>
-              </div>
+              </div> -->
             </div>
           </div>
         </el-card>
@@ -342,16 +342,16 @@ const updateLineChart = () => {
 const getStatusColor = (status, statusDesc) => {
   // 马卡龙配色方案
   const colorMap = {
-    100: '#F5A3A8', // 未审核 - 深粉色
-    200: '#F5C4A3', // 审核中 - 深橙色
-    270: '#F5A3D1', // 审核失败 - 深紫粉
-    300: '#F5D4A3', // 未派单 - 深黄色
-    400: '#A3C4F5', // 处理中 - 深蓝色
-    410: '#F5A3A3', // 已超时 - 深红色
-    500: '#A3F5A3', // 已处理 - 深绿色
-    600: '#A3F5C4', // 已验收 - 深青绿
-    670: '#F5A3D1', // 确认失败 - 深紫粉
-    700: '#D1A3F5'  // 已取消 - 深紫色
+    100: '#FF8A80', // 未审核 - 深粉色
+    200: '#FFB74D', // 审核中 - 深橙色
+    270: '#E57373', // 审核失败 - 深紫粉
+    300: '#FFD54F', // 未派单 - 深黄色
+    400: '#64B5F6', // 处理中 - 深蓝色
+    410: '#BA68C8', // 已超时 - 深红色
+    500: '#81C784', // 已处理 - 深绿色
+    600: '#4DB6AC', // 已验收 - 深青绿
+    670: '#F06292', // 确认失败 - 深紫粉
+    700: '#A1887F'  // 已取消 - 深紫色
   }
 
   // 优先使用状态码，如果没有则使用描述
@@ -359,19 +359,19 @@ const getStatusColor = (status, statusDesc) => {
     return colorMap[status]
   }
 
-  // 根据描述匹配颜色
+  // 根据描述匹配颜色（全新配色，美观且有区分度）
   const descColorMap = {
-    '未审核': '#F5A3A8',
-    '审核中': '#F5C4A3',
-    '审核失败': '#F5A3D1',
-    '未派单': '#F5D4A3',
-    '处理中': '#A3C4F5',
-    '已超时': '#F5A3A3',
-    '已处理': '#A3F5A3',
-    '已验收': '#A3F5C4',
-    '确认失败': '#F5A3D1',
-    '已取消': '#D1A3F5'
-  }
+    '未审核': '#FF8A80',     // 鲜艳珊瑚红
+    '审核中': '#FFB74D',     // 温暖橙
+    '审核失败': '#E57373',   // 柔和红
+    '未派单': '#FFD54F',     // 柔亮黄
+    '处理中': '#64B5F6',     // 天空蓝
+    '已超时': '#BA68C8',     // 紫丁香
+    '已处理': '#81C784',     // 绿意盎然
+    '已验收': '#4DB6AC',     // 冷静绿松石
+    '确认失败': '#F06292',   // 樱花粉
+    '已取消': '#A1887F'      // 摩卡灰棕
+  };
 
   return descColorMap[statusDesc] || '#E0E0E0'
 }

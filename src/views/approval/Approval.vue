@@ -11,14 +11,14 @@
               </el-form-item>
               <el-form-item label="工单类型">
                 <el-select v-model="pendingSearchForm.type" placeholder="请选择工单类型" clearable>
-                  <el-option label="故障报修" :value="0" />
-                  <el-option label="需求申请" :value="1" />
+                  <el-option label="需求申请" :value="0" />
+                  <el-option label="故障报修" :value="1" />
                 </el-select>
               </el-form-item>
-              <el-form-item label="提交时间">
+              <!-- <el-form-item label="提交时间">
                 <el-date-picker v-model="pendingSearchForm.dateRange" type="daterange" range-separator="至"
                   start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" />
-              </el-form-item>
+              </el-form-item> -->
               <el-form-item>
                 <el-button type="primary" @click="handlePendingSearch">搜索</el-button>
                 <el-button @click="resetPendingSearch">重置</el-button>
@@ -73,8 +73,8 @@
               </el-form-item>
               <el-form-item label="工单类型">
                 <el-select v-model="processedSearchForm.type" placeholder="请选择工单类型" clearable>
-                  <el-option label="故障报修" :value="0" />
-                  <el-option label="需求申请" :value="1" />
+                  <el-option label="需求申请" :value="0" />
+                  <el-option label="故障报修" :value="1" />
                 </el-select>
               </el-form-item>
               <el-form-item label="审批结果">
@@ -83,10 +83,10 @@
                   <el-option label="驳回" :value="false" />
                 </el-select>
               </el-form-item>
-              <el-form-item label="处理时间">
+              <!-- <el-form-item label="处理时间">
                 <el-date-picker v-model="processedSearchForm.dateRange" type="daterange" range-separator="至"
                   start-placeholder="开始日期" end-placeholder="结束日期" value-format="YYYY-MM-DD" />
-              </el-form-item>
+              </el-form-item> -->
               <el-form-item>
                 <el-button type="primary" @click="handleProcessedSearch">搜索</el-button>
                 <el-button @click="resetProcessedSearch">重置</el-button>
@@ -122,7 +122,7 @@
                 <span v-else>-</span>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="100" fixed="right">
+            <el-table-column label="操作" width="180" fixed="right">
               <template #default="{ row }">
                 <el-button type="info" link @click="handleView(row)">查看</el-button>
                 <el-button type="danger" link @click="handleDelete(row)"
@@ -536,6 +536,15 @@ onMounted(async () => {
 .search-form {
   display: flex;
   flex-wrap: wrap;
+}
+
+/* 为工单类型选择框设置最小宽度 */
+.search-form :deep(.el-form-item) {
+  margin-right: 20px;
+}
+
+.search-form :deep(.el-select) {
+  min-width: 150px;
 }
 
 .pagination-container {

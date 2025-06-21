@@ -21,10 +21,10 @@
               <el-option label="已完成" :value="500" />
             </el-select>
           </el-form-item>
-          <el-form-item label="创建时间">
+          <!-- <el-form-item label="创建时间">
             <el-date-picker v-model="searchForm.dateRange" type="daterange" range-separator="至" start-placeholder="开始日期"
               end-placeholder="结束日期" value-format="YYYY-MM-DD" />
-          </el-form-item>
+          </el-form-item> -->
           <el-form-item>
             <el-button type="primary" @click="handleSearch">搜索</el-button>
             <el-button @click="resetSearch">重置</el-button>
@@ -398,6 +398,16 @@ onMounted(async () => {
   border-radius: 4px;
   height: 100%;
 }
+
+/* 为工单类型选择框设置最小宽度 */
+.search-form :deep(.el-form-item) {
+  margin-right: 20px;
+}
+
+.search-form :deep(.el-select) {
+  min-width: 150px;
+}
+
 
 .search-area {
   margin-bottom: 20px;

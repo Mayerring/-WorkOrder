@@ -54,7 +54,7 @@
           <template #header>
             <div class="card-header">
               <span>工单处理数量趋势</span>
-              <el-tag type="info">{{ getTimeTypeText(filterForm.timeType) }}</el-tag>
+              <el-tag type="info">{{ "按周统计" }}</el-tag>
             </div>
           </template>
           <div class="chart" ref="trendChartRef"></div>
@@ -86,10 +86,10 @@
           </template>
         </el-table-column>
         <el-table-column prop="createTime" label="创建时间" width="180" />
-        <el-table-column prop="timeoutHours" label="超时时长" width="120">
-          <template #default="{ row }">
+        <el-table-column prop="deadlineTime" label="截止时间" width="180">
+          <!-- <template #default="{ row }">
             <span class="timeout">{{ row.timeoutHours || '未知' }}小时</span>
-          </template>
+          </template> -->
         </el-table-column>
         <el-table-column label="操作" width="100" fixed="right">
           <template #default="{ row }">

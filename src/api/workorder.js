@@ -85,6 +85,7 @@ export function printWorkOrder(data) {
     url: '/workOrder/print',
     method: 'post',
     baseURL: 'http://localhost:8080',
+    responseType: 'blob',
     data
   })
 }

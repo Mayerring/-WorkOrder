@@ -3,16 +3,20 @@
     <!-- 搜索表单 -->
     <el-form :inline="true" :model="queryParams" class="search-form">
       <el-form-item label="工号">
-        <el-input v-model="queryParams.staffNumber" placeholder="请输入工号" clearable />
+        <el-input v-model="queryParams.staffNumber" placeholder="请输入工号" clearable @keyup.enter="handleQuery"
+          @clear="handleQuery" />
       </el-form-item>
       <el-form-item label="姓名">
-        <el-input v-model="queryParams.name" placeholder="请输入姓名" clearable />
+        <el-input v-model="queryParams.name" placeholder="请输入姓名" clearable @keyup.enter="handleQuery"
+          @clear="handleQuery" />
       </el-form-item>
       <el-form-item label="部门">
-        <el-input v-model="queryParams.department" placeholder="请输入部门" clearable />
+        <el-input v-model="queryParams.department" placeholder="请输入部门" clearable @keyup.enter="handleQuery"
+          @clear="handleQuery" />
       </el-form-item>
       <el-form-item label="状态">
-        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 120px;">
+        <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 120px;"
+          @change="handleQuery">
           <el-option v-for="item in statusOptions" :key="item.value" :label="item.label" :value="item.value" />
         </el-select>
       </el-form-item>
@@ -27,13 +31,14 @@
       <el-button type="primary" @click="handleAdd">新增员工</el-button>
     </div>
 
+
     <!-- 员工表格 -->
     <div class="table-container">
       <el-table v-loading="loading" :data="tableData" style="width: 100%">
-        <el-table-column prop="staffNumber" label="工号" width="180" />
+        <el-table-column prop="staffNumber" label="工号" width="210" />
         <el-table-column prop="name" label="姓名" width="120" />
         <el-table-column prop="phone" label="手机号" width="120" />
-        <el-table-column prop="email" label="邮箱" width="180" />
+        <el-table-column prop="email" label="邮箱" width="190" />
         <el-table-column prop="company" label="公司" width="150" />
         <el-table-column prop="department" label="部门" width="150" />
         <el-table-column prop="position" label="职位" width="120" />
@@ -111,7 +116,7 @@ const isAdmin = ref(false)
 // 查询参数
 const queryParams = reactive({
   pageNum: 1,
-  pageSize: 8,  // 设置一个较大的初始值
+  pageSize: 10,  // 设置一个较大的初始值
   staffNumber: '',
   name: '',
   department: '',
@@ -213,26 +218,45 @@ const getUserRole = async () => {
 const getList = async () => {
   loading.value = true
   try {
+    // 构建查询参数，确保所有参数都正确传递
     const params = {
       pageNum: queryParams.pageNum,
-      pageSize: queryParams.pageSize,
-      staffNumber: queryParams.staffNumber || undefined,
-      name: queryParams.name || undefined,
-      department: queryParams.department || undefined,
-      status: queryParams.status || undefined
+      pageSize: queryParams.pageSize
     }
-    console.log('查询参数：', params)
+
+    // 处理筛选条件，确保空值不会影响查询
+    if (queryParams.staffNumber && queryParams.staffNumber.trim() !== '') {
+      params.staffNumber = queryParams.staffNumber.trim()
+    }
+    if (queryParams.name && queryParams.name.trim() !== '') {
+      params.name = queryParams.name.trim()
+    }
+    if (queryParams.department && queryParams.department.trim() !== '') {
+      params.department = queryParams.department.trim()
+    }
+    if (queryParams.status !== '' && queryParams.status !== null && queryParams.status !== undefined) {
+      params.status = queryParams.status
+    }
+
+    console.log('发送到后端的查询参数：', params)
     const res = await getStaffList(params)
-    console.log('返回数据：', res)
+    console.log('后端返回数据：', res)
+
     if (res.code === 1) {
-      console.log('records长度：', res.data.records.length)
+      console.log('查询成功，记录数：', res.data.records.length)
       tableData.value = res.data.records.map(item => ({
         ...item,
-        key: item.id // 确保每条记录都有唯一的key
+        key: item.id
       }))
       total.value = res.data.total || 0
-      console.log('表格数据:', tableData.value)
+      console.log('处理后的表格数据:', tableData.value)
+
+      // 显示查询结果提示
+      if (hasActiveFilters.value) {
+        ElMessage.success(`查询完成，共找到 ${total.value} 条记录`)
+      }
     } else {
+      console.error('查询失败，错误信息：', res.msg)
       ElMessage.error(res.msg || '查询失败')
     }
   } catch (error) {
@@ -251,15 +275,36 @@ const handleQuery = () => {
 
 // 重置按钮
 const resetQuery = () => {
-  // 先重置查询条件
+  // 重置查询条件
   queryParams.pageNum = 1
-  queryParams.pageSize = 8// 重置时也使用较大的pageSize
+  queryParams.pageSize = 10
   queryParams.staffNumber = ''
   queryParams.name = ''
   queryParams.department = ''
   queryParams.status = ''
-  // 然后调用查询接口获取所有数据
+
+  // 重新加载所有数据
   getList()
+  ElMessage.success('筛选条件已重置')
+}
+
+// 清除单个筛选条件
+const clearFilter = (field) => {
+  queryParams[field] = ''
+  queryParams.pageNum = 1
+  getList()
+  // ElMessage.success(`已清除${getFieldLabel(field)}筛选条件`)
+}
+
+// 获取字段标签
+const getFieldLabel = (field) => {
+  const labels = {
+    staffNumber: '工号',
+    name: '姓名',
+    department: '部门',
+    status: '状态'
+  }
+  return labels[field] || field
 }
 
 // 新增按钮
@@ -381,6 +426,14 @@ const handleCurrentChange = (val) => {
   getList()
 }
 
+// 计算属性：判断是否有活跃的筛选条件
+const hasActiveFilters = computed(() => {
+  return queryParams.staffNumber ||
+    queryParams.name ||
+    queryParams.department ||
+    (queryParams.status !== '' && queryParams.status !== null && queryParams.status !== undefined)
+})
+
 // 在组件挂载时加载数据
 onMounted(async () => {
   await getUserRole() // 先获取用户角色
@@ -423,4 +476,43 @@ onMounted(async () => {
 :deep(.el-table) {
   height: 100% !important;
 }
+
+/* 
+.filter-info {
+  margin-bottom: 10px;
+  padding: 8px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+}
+
+.filter-info .el-tag {
+  margin-right: 8px;
+}
+
+.filter-info span {
+  margin-right: 12px;
+  font-weight: 500;
+}
+
+.filter-title {
+  margin-bottom: 8px;
+  font-weight: 500;
+}
+
+.filter-tags {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.filter-tags .el-tag {
+  margin-right: 8px;
+  margin-bottom: 8px;
+}
+
+.debug-info {
+  margin-top: 10px;
+  padding: 8px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+} */
 </style>
