@@ -181,9 +181,12 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         FlowVO flowVO = flowService.getByFlowId(new FlowIdParam(workOrder.getFlowId()));
         List<FlowNodeVO>nodes=flowVO.getNodes();
         if(Objects.equals(workOrder.getStatus(), WorkOrderStatusEnum.FINISHED.getValue())) {
-            Long checkId = nodes.stream().filter(node -> Objects.equals(node.getNodeType(), HandleUserInfoHandleTypeEnum.CHECK.getValue()))
-                    .toList().get(0).getHandlerId();
-            workOrderHelper.addCheckInfo(workOrder.getId(), checkId);
+            // 检查是否是验收失败已经创建过检查人信息的工单
+            if(workOrderHelper.checkInfoExist(workOrder.getId())) {
+                Long checkId = nodes.stream().filter(node -> Objects.equals(node.getNodeType(), HandleUserInfoHandleTypeEnum.CHECK.getValue()))
+                        .toList().get(0).getHandlerId();
+                workOrderHelper.addCheckInfo(workOrder.getId(), checkId);
+            }
         }
         //发送信息
         List<Long> receiverIds = workOrderHelper.getReceiverIds(handleType, workOrder.getId(), param.getAssignedUserId());

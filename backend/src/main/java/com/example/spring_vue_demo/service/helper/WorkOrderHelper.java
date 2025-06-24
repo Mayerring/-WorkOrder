@@ -49,6 +49,8 @@ public class WorkOrderHelper {
     private final FlowService flowService;
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
 
+
+
     private void gatherQueryWorkOrderId(List<HandleUserInfo> handleUserInfos, HandleUserInfoParam userInfoParam, HandleUserInfoHandleTypeEnum userInfoType) {
         if (userInfoParam==null) {
             return;
@@ -642,5 +644,14 @@ public class WorkOrderHelper {
         if (currentHandleInfo == null) {
             throw new UserSideException(ErrorCode.CURRENT_USER_IS_NOT_HANDLE_USER);
         }
+    }
+
+    public boolean checkInfoExist(Long workOrderId) {
+        LambdaQueryWrapper<HandleUserInfo> handleTypeWrapper = HandleUserInfoQuery.getHandleTypeWrapper(workOrderId, HandleUserInfoHandleTypeEnum.CHECK.getValue());
+        HandleUserInfo checkInfo = handleUserInfoMapper.selectOne(handleTypeWrapper);
+        if(checkInfo==null){
+            return true;
+        }
+        return false;
     }
 }
