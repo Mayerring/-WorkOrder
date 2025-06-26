@@ -61,7 +61,7 @@
           <div class="timeline-content">
             <div class="action">{{ workorder.submitterInfo.handleTypeDesc }}</div>
             <div class="operator">操作人：{{ workorder.submitterInfo.userName }} ({{ workorder.submitterInfo.departmentName
-            }})
+              }})
             </div>
             <div class="comment" v-if="workorder.submitterInfo.remark">
               备注：{{ workorder.submitterInfo.remark }}
@@ -88,7 +88,7 @@
             <div class="action">{{ workorder.distributerInfo.handleTypeDesc }}</div>
             <div class="operator">操作人：{{ workorder.distributerInfo.userName }} ({{
               workorder.distributerInfo.departmentName
-            }})</div>
+              }})</div>
             <div class="comment" v-if="workorder.distributerInfo.remark">
               备注：{{ workorder.distributerInfo.remark }}
             </div>
@@ -120,38 +120,6 @@
           </div>
         </el-timeline-item>
       </el-timeline>
-
-      <!-- 处理表单 -->
-      <div v-if="canHandle" class="handle-form">
-        <div class="section-title">处理</div>
-        <el-form ref="handleFormRef" :model="handleForm" :rules="handleRules">
-          <el-form-item prop="action">
-            <el-radio-group v-model="handleForm.action">
-              <el-radio label="approve">通过</el-radio>
-              <el-radio label="reject">驳回</el-radio>
-              <el-radio label="transfer">转派</el-radio>
-            </el-radio-group>
-          </el-form-item>
-
-          <el-form-item v-if="handleForm.action === 'transfer'" prop="handler">
-            <el-select v-model="handleForm.handler" placeholder="请选择处理人">
-              <el-option label="张三" value="zhangsan" />
-              <el-option label="李四" value="lisi" />
-              <el-option label="王五" value="wangwu" />
-            </el-select>
-          </el-form-item>
-
-          <el-form-item prop="comment">
-            <el-input v-model="handleForm.comment" type="textarea" :rows="3" placeholder="请输入处理意见" />
-          </el-form-item>
-
-          <el-form-item>
-            <el-button type="primary" @click="submitHandle" :loading="submitting">
-              提交
-            </el-button>
-          </el-form-item>
-        </el-form>
-      </div>
     </el-card>
   </div>
 </template>

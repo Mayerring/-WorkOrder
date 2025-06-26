@@ -70,15 +70,6 @@ export function approvalWorkOrder(data) {
   })
 }
 
-// 获取可分配的员工列表（用于派单）
-export function getAssignableStaff() {
-  return request({
-    url: '/workOrder/assignableStaff',
-    method: 'post',
-    baseURL: 'http://localhost:8080'
-  })
-}
-
 // 打印工单
 export function printWorkOrder(data) {
   return request({

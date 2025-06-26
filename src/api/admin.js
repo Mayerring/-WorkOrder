@@ -5,7 +5,6 @@ import request from '@/utils/request'
 export function deleteStaff(staffId) {
   const params = new URLSearchParams()
   params.append('id', staffId)
-
   return request({
     url: '/admin/staff/delete',
     method: 'post',
@@ -27,16 +26,6 @@ export function updateStaff(data) {
   })
 }
 
-//分页查询员工
-export function getStaffPage(params) {
-  return request({
-    url: '/admin/staff/page',
-    method: 'post',
-    baseURL: 'http://localhost:8080',
-    params
-  })
-}
-
 //新增员工
 export function addStaff(data) {
   return request({
@@ -46,15 +35,6 @@ export function addStaff(data) {
     data
   })
 }
-
-// //查询所有员工
-// export function getAllStaff() {
-//   return request({
-//     url: '/admin/staff/all',
-//     method: 'post',
-//     baseURL: 'http://localhost:8080',
-//   })
-// }
 
 // 部门相关接口
 // 新增部门，这个只有管理员可以操作
