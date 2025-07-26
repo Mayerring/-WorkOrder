@@ -12,7 +12,5 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 public class WeekHandleQuantityParam {
-    @NotBlank
-    @Schema(description = "日期，采用yyyy-MM-dd格式")
-    private String date;
+
 }

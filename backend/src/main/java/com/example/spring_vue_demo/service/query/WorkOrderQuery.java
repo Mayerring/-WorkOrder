@@ -33,6 +33,7 @@ public class WorkOrderQuery {
                 .le(Objects.nonNull(param.getCreateTimeTo()),WorkOrder::getCreateTime,param.getCreateTimeTo())
                 .ge(Objects.nonNull(param.getDeadLineFrom()),WorkOrder::getDeadlineTime,param.getDeadLineFrom())
                 .le(Objects.nonNull(param.getDeadLineTo()),WorkOrder::getDeadlineTime,param.getDeadLineTo())
+                .orderBy(true,false,WorkOrder::getCreateTime)
                 ;
         return pageWrapper;
     }
@@ -69,7 +70,7 @@ public class WorkOrderQuery {
             wrapper.apply("1=2");
             return wrapper;
         }
-        wrapper.in(true,WorkOrder::getId,orderIds);
+        wrapper.in(true,WorkOrder::getId,orderIds).orderBy(true,false,WorkOrder::getCreateTime);
         return wrapper;
     }
 
@@ -79,6 +80,15 @@ public class WorkOrderQuery {
                 .ge(true,"create_time", createTimeFrom)
                 .le(true,"create_time",createTimeTo)
                 .groupBy("status");
+        return wrapper;
+    }
+
+    public static QueryWrapper<WorkOrder> getCountGroupByTypeByDate(Long createTimeFrom, Long createTimeTo) {
+        QueryWrapper<WorkOrder>wrapper=new QueryWrapper<WorkOrder>()
+                .select("type","COUNT(*) as count")
+                .ge(true,"create_time", createTimeFrom)
+                .le(true,"create_time",createTimeTo)
+                .groupBy("type");
         return wrapper;
     }
 

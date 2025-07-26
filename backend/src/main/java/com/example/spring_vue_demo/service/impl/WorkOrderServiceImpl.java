@@ -181,11 +181,14 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         workOrderHelper.updateNextStatus(handleType, workOrder, finished);
         boolean updateSuccess = updateById(workOrder);
         FlowVO flowVO = flowService.getByFlowId(new FlowIdParam(workOrder.getFlowId()));
-        List<FlowNodeVO> nodes = flowVO.getNodes();
-        if(workOrder.getStatus()==WorkOrderStatusEnum.HANDLING.getValue()&& finished) {
-            Long checkId = nodes.stream().filter(node -> Objects.equals(node.getNodeType(), HandleUserInfoHandleTypeEnum.CHECK.getValue()))
-                    .toList().get(0).getHandlerId();
-            workOrderHelper.addCheckInfo(workOrder.getId(), checkId);
+        List<FlowNodeVO>nodes=flowVO.getNodes();
+        if(Objects.equals(workOrder.getStatus(), WorkOrderStatusEnum.FINISHED.getValue())) {
+            // 检查是否是验收失败已经创建过检查人信息的工单
+            if(workOrderHelper.checkInfoExist(workOrder.getId())) {
+                Long checkId = nodes.stream().filter(node -> Objects.equals(node.getNodeType(), HandleUserInfoHandleTypeEnum.CHECK.getValue()))
+                        .toList().get(0).getHandlerId();
+                workOrderHelper.addCheckInfo(workOrder.getId(), checkId);
+            }
         }
         // 发送信息
         List<Long> receiverIds = workOrderHelper.getReceiverIds(handleType, workOrder.getId(), param.getAssignedUserId());
@@ -208,6 +211,8 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         LambdaQueryWrapper<WorkOrder> workOrderWrapper = WorkOrderQuery.getWorkOrderWrapper(param.getId(), param.getCode());
         WorkOrder workOrder = getOne(workOrderWrapper);
         workOrderHelper.checkWorkOrderExist(workOrder);
+        //校验工单状态，已完成、已确认完成的工单不能删除
+        workOrderHelper.checkCancelWorkOrderStatus(workOrder);
         //删除工单
         boolean success = removeById(workOrder.getId());
         WorkOrderUpdateStatusVO vo = workOrderHelper.setUpdateReturnVO(success, workOrder.getCode(), workOrder.getId());
@@ -361,7 +366,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         // 查询所有状态是handle且deadlineTime已过的工单
         LocalDateTime now = LocalDateTime.now();
         Long nowTime = now.atZone(ZoneId.systemDefault()).toEpochSecond();
-        LambdaQueryWrapper<WorkOrder> getDelayWrapper = HandleUserInfoQuery.getByStatusAndDeadlineTime(nowTime, WorkOrderStatusEnum.HANDLING.getValue());
+        LambdaQueryWrapper<WorkOrder> getDelayWrapper = HandleUserInfoQuery.getByStatusAndDeadlineTime(nowTime,List.of(WorkOrderStatusEnum.HANDLING.getValue(),WorkOrderStatusEnum.CHECK_FAILURE.getValue()));
         List<WorkOrder> overdueOrders = this.list(getDelayWrapper);
         for (WorkOrder order : overdueOrders) {
             //更新工单状态
@@ -381,7 +386,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         log.info("已完成一次延期工单扫描");
     }
 
-    //    @Override
+//    @Override
 //    public void export(WorkOrderPageParam param, HttpServletResponse response) {
 //        ExcelWriter excelWriter = null;
 //        String fileName_zh = formatterDate.format(LocalDateTime.now()) + "工单";
