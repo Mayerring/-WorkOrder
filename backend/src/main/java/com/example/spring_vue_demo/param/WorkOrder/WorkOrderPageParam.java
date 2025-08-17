@@ -31,6 +31,9 @@ public class WorkOrderPageParam extends BasePageParam {
     @Schema(description = "工单标题")
     private String title;
 
+    @Schema(description = "工单关键词")
+    private String content;
+
     @Schema(description = "提交信息")
     private HandleUserInfoParam submitterInfo;
 

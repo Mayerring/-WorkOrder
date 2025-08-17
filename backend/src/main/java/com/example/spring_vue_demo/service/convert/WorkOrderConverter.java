@@ -51,4 +51,5 @@ public interface WorkOrderConverter {
     @Mapping(target="handlers",expression = "java(pageVO.getHandlerInfo()!=null?pageVO.getHandlerInfo().stream().map(com.example.spring_vue_demo.vo.HandleUserInfoVO::getUserName).collect(java.util.stream.Collectors.joining(\"、\")) :null )")
     @Mapping(target="checkTime",expression = "java( pageVO.getCheckerInfo()!=null?pageVO.getCheckerInfo().getHandleTime():null )")
     WorkOrderExportVO toExcelVO(WorkOrderPageVO pageVO);
+
 }

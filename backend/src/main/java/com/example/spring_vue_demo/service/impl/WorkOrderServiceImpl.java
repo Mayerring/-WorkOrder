@@ -1,10 +1,11 @@
 package com.example.spring_vue_demo.service.impl;
-
-import com.alibaba.excel.EasyExcel;
-import com.alibaba.excel.ExcelWriter;
-import com.alibaba.excel.support.ExcelTypeEnum;
-import com.alibaba.excel.write.metadata.WriteSheet;
-import com.alibaba.excel.write.metadata.style.WriteCellStyle;
+import co.elastic.clients.elasticsearch.ElasticsearchClient;
+import co.elastic.clients.elasticsearch._types.SortOrder;
+import co.elastic.clients.elasticsearch.core.BulkRequest;
+import co.elastic.clients.elasticsearch.core.SearchRequest;
+import co.elastic.clients.elasticsearch.core.SearchResponse;
+import co.elastic.clients.elasticsearch.core.search.Highlight;
+import co.elastic.clients.elasticsearch.core.search.HighlightField;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -33,7 +34,7 @@ import com.example.spring_vue_demo.service.helper.WorkOrderExportHelper;
 import com.example.spring_vue_demo.service.helper.WorkOrderPdfGenerator;
 import com.example.spring_vue_demo.service.producer.WorkOrderMessageProducer;
 import com.example.spring_vue_demo.utils.StaffHolder;
-import com.example.spring_vue_demo.vo.*;
+import co.elastic.clients.elasticsearch.core.search.Hit;
 import com.example.spring_vue_demo.service.convert.WorkOrderConverter;
 import com.example.spring_vue_demo.service.helper.WorkOrderHelper;
 import com.example.spring_vue_demo.service.query.HandleUserInfoQuery;
@@ -44,9 +45,6 @@ import com.example.spring_vue_demo.vo.WorkOrder.*;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
-import org.apache.ibatis.executor.BatchResult;
-import org.apache.poi.ss.usermodel.HorizontalAlignment;
-import org.apache.poi.ss.usermodel.VerticalAlignment;
 import org.springframework.beans.BeanUtils;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
@@ -94,6 +92,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     private final FlowService flowService;
     private final WorkOrderExportHelper workOrderExportHelper;
     private final WorkOrderMessageProducer workOrderMessageProducer;
+    private final ElasticsearchClient elasticsearchClient;
 
     private final DateTimeFormatter formatterDate = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -181,10 +180,10 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         workOrderHelper.updateNextStatus(handleType, workOrder, finished);
         boolean updateSuccess = updateById(workOrder);
         FlowVO flowVO = flowService.getByFlowId(new FlowIdParam(workOrder.getFlowId()));
-        List<FlowNodeVO>nodes=flowVO.getNodes();
-        if(Objects.equals(workOrder.getStatus(), WorkOrderStatusEnum.FINISHED.getValue())) {
+        List<FlowNodeVO> nodes = flowVO.getNodes();
+        if (Objects.equals(workOrder.getStatus(), WorkOrderStatusEnum.FINISHED.getValue())) {
             // 检查是否是验收失败已经创建过检查人信息的工单
-            if(workOrderHelper.checkInfoExist(workOrder.getId())) {
+            if (workOrderHelper.checkInfoExist(workOrder.getId())) {
                 Long checkId = nodes.stream().filter(node -> Objects.equals(node.getNodeType(), HandleUserInfoHandleTypeEnum.CHECK.getValue()))
                         .toList().get(0).getHandlerId();
                 workOrderHelper.addCheckInfo(workOrder.getId(), checkId);
@@ -366,7 +365,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         // 查询所有状态是handle且deadlineTime已过的工单
         LocalDateTime now = LocalDateTime.now();
         Long nowTime = now.atZone(ZoneId.systemDefault()).toEpochSecond();
-        LambdaQueryWrapper<WorkOrder> getDelayWrapper = HandleUserInfoQuery.getByStatusAndDeadlineTime(nowTime,List.of(WorkOrderStatusEnum.HANDLING.getValue(),WorkOrderStatusEnum.CHECK_FAILURE.getValue()));
+        LambdaQueryWrapper<WorkOrder> getDelayWrapper = HandleUserInfoQuery.getByStatusAndDeadlineTime(nowTime, List.of(WorkOrderStatusEnum.HANDLING.getValue(), WorkOrderStatusEnum.CHECK_FAILURE.getValue()));
         List<WorkOrder> overdueOrders = this.list(getDelayWrapper);
         for (WorkOrder order : overdueOrders) {
             //更新工单状态
@@ -386,7 +385,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         log.info("已完成一次延期工单扫描");
     }
 
-//    @Override
+    //   @Override
 //    public void export(WorkOrderPageParam param, HttpServletResponse response) {
 //        ExcelWriter excelWriter = null;
 //        String fileName_zh = formatterDate.format(LocalDateTime.now()) + "工单";
@@ -510,5 +509,144 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+    }
+
+    public void fullSyncWorkOrdersToEs() throws IOException {
+        int pageSize = 500;
+        int pageNum = 1;
+        boolean hasMore = true;
+
+        // 删除旧索引(如果存在)
+        try {
+            elasticsearchClient.indices().delete(d -> d.index("work_order_index"));
+        } catch (Exception e) {
+            // 忽略索引不存在的异常
+        }
+
+        // 创建新索引
+        elasticsearchClient.indices().create(c -> c.index("work_order_index"));
+
+        while (hasMore) {
+            // 使用MyBatis Plus分页查询
+            Page<WorkOrder> pageWrapper = new Page<>();
+            pageWrapper.setSize(pageSize);
+            pageWrapper.setCurrent(pageNum);
+            IPage<WorkOrder> pageWorkOrders = page(pageWrapper);
+
+            // 为每个工单加载关联信息
+            List<WorkOrder> workOrders = pageWorkOrders.getRecords();
+
+            // 批量导入ES
+            if (!workOrders.isEmpty()) {
+                BulkRequest.Builder br = new BulkRequest.Builder();
+
+                for (WorkOrder order : workOrders) {
+                    br.operations(op -> op
+                            .index(idx -> idx
+                                    .index("work_order_index")
+                                    .id(order.getId().toString())
+                                    .document(order)
+                            )
+                    );
+                }
+
+                elasticsearchClient.bulk(br.build());
+            }
+
+            // 判断是否还有下一页
+            hasMore = pageNum * pageSize < pageWorkOrders.getTotal();
+            pageNum++;
+        }
+    }
+
+    public SearchResult<WorkOrder> searchWorkOrders(String keyword, int pageNum, int pageSize) throws IOException {
+        // 处理keyword为null或空字符串的情况
+        if (StringUtils.isBlank(keyword)) {
+            return getAllWorkOrders(pageNum, pageSize);
+        }
+        Highlight highlight = Highlight.of(h -> h
+                .fields("content", HighlightField.of(f -> f
+                        .preTags("<em>")
+                        .postTags("</em>")
+                ))
+                .fields("title", HighlightField.of(f -> f
+                        .preTags("<em>")
+                        .postTags("</em>")
+                )));
+
+        SearchRequest request = SearchRequest.of(s -> s
+                .index("work_order_index")
+                .query(q -> q
+                        .bool(b -> b
+                                .should(sh -> sh
+                                        .match(m -> m
+                                                .field("content")
+                                                .query(keyword)
+                                        ))
+                                .should(sh -> sh
+                                        .match(m -> m
+                                                .field("title")
+                                                .query(keyword)
+                                        ))
+                        ))
+                .highlight(highlight)
+                .from((pageNum - 1) * pageSize)
+                .size(pageSize)
+//                .sort(so -> so.field(f -> f.field("createTime").order(SortOrder.Desc)))
+        );
+
+        SearchResponse<WorkOrder> response = elasticsearchClient.search(request, WorkOrder.class);
+
+        List<WorkOrder> results = response.hits().hits().stream()
+                .map(hit -> {
+                    WorkOrder order = hit.source();
+                    // 处理高亮
+                    if (hit.highlight() != null) {
+                        if (hit.highlight().containsKey("content")) {
+                            order.setContent(String.join("", hit.highlight().get("content")));
+                        }
+                        if (hit.highlight().containsKey("title")) {
+                            order.setTitle(String.join("", hit.highlight().get("title")));
+                        }
+                    }
+                    return order;
+                })
+                .collect(Collectors.toList());
+
+        return new SearchResult<>(
+                results,
+                response.hits().total().value(),
+                pageNum,
+                pageSize
+        );
+    }
+
+    private SearchResult<WorkOrder> getAllWorkOrders(int pageNum, int pageSize) throws IOException {
+        // 构建搜索请求 - 查询所有文档
+        SearchRequest request = new SearchRequest.Builder()
+                .index("work_order_index")
+                .query(q -> q.matchAll(m -> m)) // 查询所有文档
+                .from((pageNum - 1) * pageSize)
+                .size(pageSize)
+//                .sort(s -> s
+//                        .field(f -> f
+//                                .field("createTime")
+//                                .order(SortOrder.Desc)
+//                        )
+//                )
+                .build();
+
+        SearchResponse<WorkOrder> response = elasticsearchClient.search(request, WorkOrder.class);
+
+        List<WorkOrder> results = response.hits().hits().stream()
+                .map(Hit::source)
+                .collect(Collectors.toList());
+
+        return new SearchResult<>(
+                results,
+                response.hits().total().value(),
+                pageNum,
+                pageSize
+        );
     }
 }

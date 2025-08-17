@@ -6,6 +6,9 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.elasticsearch.annotations.Document;
+import org.springframework.data.elasticsearch.annotations.Setting;
 
 import java.util.List;
 
@@ -14,11 +17,13 @@ import java.util.List;
  * @date 2025/05/24
  */
 @Data
+@Document(indexName = "work_order_index")
+@Setting(settingPath = "index-config/work-order-analyzer.json")
 @TableName(value="work_order",autoResultMap = true)
 @AllArgsConstructor
 @NoArgsConstructor
 public class WorkOrder {
-
+    @Id
     @TableId(type = IdType.AUTO)
     @Schema(description = "工单id")
     private Long id;

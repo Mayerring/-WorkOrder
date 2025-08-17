@@ -3,12 +3,15 @@ package com.example.spring_vue_demo.service;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.example.spring_vue_demo.entity.Result;
+import com.example.spring_vue_demo.entity.SearchResult;
 import com.example.spring_vue_demo.entity.WorkOrder;
 import com.example.spring_vue_demo.param.WorkOrder.*;
 import com.example.spring_vue_demo.vo.WorkOrder.WorkOrderDetailVO;
 import com.example.spring_vue_demo.vo.WorkOrder.WorkOrderPageVO;
 import com.example.spring_vue_demo.vo.WorkOrder.WorkOrderUpdateStatusVO;
 import jakarta.servlet.http.HttpServletResponse;
+
+import java.io.IOException;
 
 
 public interface WorkOrderService extends IService<WorkOrder> {
@@ -33,4 +36,8 @@ public interface WorkOrderService extends IService<WorkOrder> {
     void export(WorkOrderPageParam param,HttpServletResponse response);
 
     void print(WorkOrderDetailParam param,HttpServletResponse response);
+
+    void fullSyncWorkOrdersToEs()throws IOException;
+
+    SearchResult<WorkOrder> searchWorkOrders(String keyword,int pageNum,int pageSize) throws IOException ;
 }

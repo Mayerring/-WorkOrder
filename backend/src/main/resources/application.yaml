@@ -17,8 +17,14 @@ spring:
         url: jdbc:mysql://localhost/wos?useUnicode=true&characterEncoding=UTF-8
         username: root
         password: 123456
+    elasticsearch:
+        rest:
+            uris: https://localhost:9200
+            connection-timeout: 5s
+            socket-timeout: 30s
 
 knife4j:
     enable: true
     setting:
         language: zh_cn
+

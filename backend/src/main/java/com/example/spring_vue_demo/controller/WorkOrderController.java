@@ -2,6 +2,8 @@ package com.example.spring_vue_demo.controller;
 
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.example.spring_vue_demo.entity.Result;
+import com.example.spring_vue_demo.entity.SearchResult;
+import com.example.spring_vue_demo.entity.WorkOrder;
 import com.example.spring_vue_demo.param.WorkOrder.*;
 import com.example.spring_vue_demo.param.WorkOrder.WorkOrderPageParam;
 import com.example.spring_vue_demo.service.WorkOrderService;
@@ -15,6 +17,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import java.io.IOException;
 
 
 /**
@@ -88,5 +92,15 @@ public class WorkOrderController {
     @Operation(summary = "打印工单")
     @PostMapping("/print")
     public void print(@RequestBody WorkOrderDetailParam param, HttpServletResponse response){workOrderService.print(param,response);}
+
+    @ApiOperationSupport(order = 10)
+    @Operation(summary = "关键词查询")
+    @GetMapping("/search")
+    public SearchResult<WorkOrder> search(
+            @RequestParam String keyword,
+            @RequestParam(defaultValue = "1") int pageNum,
+            @RequestParam(defaultValue = "10") int pageSize) throws IOException {
+        return workOrderService.searchWorkOrders(keyword, pageNum, pageSize);
+    }
 
 }
