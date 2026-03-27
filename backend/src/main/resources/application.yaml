@@ -18,13 +18,40 @@ spring:
         username: root
         password: 123456
     elasticsearch:
-        rest:
             uris: https://localhost:9200
             connection-timeout: 5s
             socket-timeout: 30s
+    ai:
+        mcp:
+            server:
+                enabled: true
+                name: test_mcp_server
+                version: 1.0.0
+                protocol: STREAMABLE
+#                sse-endpoint: /api/v1/sse
+#                sse-message-endpoint: /api/v1/mcp
+                streamable-http:
+                    mcp-endpoint: /api/v1/mcp
+                    keep-alive-interval: 30s
+                capabilities:
+                    tool: true
+
+
+canal:
+    host: 127.0.0.1
+    port: 11111
+    destination: example
+    username: root
+    password: 123456
+
+logging:
+    level:
+        # 查看MCP详细日志
+        io.modelcontextprotocol: TRACE
+        org.springframework.ai.mcp: TRACE
+        org.springframework.ai.tool: DEBUG
 
 knife4j:
     enable: true
     setting:
         language: zh_cn
-

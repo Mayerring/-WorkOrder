@@ -14,6 +14,7 @@ import com.baomidou.mybatisplus.core.toolkit.StringUtils;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.example.spring_vue_demo.common.ThreadPoolManager;
+import com.example.spring_vue_demo.config.CanalClient;
 import com.example.spring_vue_demo.entity.*;
 import com.example.spring_vue_demo.enums.ErrorCode;
 import com.example.spring_vue_demo.enums.HandleTypeEnum;
@@ -27,6 +28,7 @@ import com.example.spring_vue_demo.mapper.WorkOrderMapper;
 import com.example.spring_vue_demo.param.Flow.FlowIdParam;
 import com.example.spring_vue_demo.param.WorkOrder.*;
 import com.example.spring_vue_demo.param.WorkOrder.WorkOrderPageParam;
+import com.example.spring_vue_demo.service.ElasticSearchService;
 import com.example.spring_vue_demo.service.FlowService;
 import com.example.spring_vue_demo.service.HandleUserInfoService;
 import com.example.spring_vue_demo.service.WorkOrderService;
@@ -46,6 +48,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import lombok.extern.slf4j.Slf4j;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -93,6 +96,8 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
     private final WorkOrderExportHelper workOrderExportHelper;
     private final WorkOrderMessageProducer workOrderMessageProducer;
     private final ElasticsearchClient elasticsearchClient;
+    private final ElasticSearchService elasticSearchService;
+    private final CanalClient canalClient;
 
     private final DateTimeFormatter formatterDate = DateTimeFormatter.ofPattern("yyyy-MM-dd");
     private final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -511,54 +516,65 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         }
     }
 
+    @Transactional
     public void fullSyncWorkOrdersToEs() throws IOException {
+        // 先删除旧索引
+        deleteIndexIfExists();
+
+        // 创建新索引
+        createIndex();
+
+        // 分页全量同步
         int pageSize = 500;
         int pageNum = 1;
         boolean hasMore = true;
 
-        // 删除旧索引(如果存在)
-        try {
-            elasticsearchClient.indices().delete(d -> d.index("work_order_index"));
-        } catch (Exception e) {
-            // 忽略索引不存在的异常
-        }
-
-        // 创建新索引
-        elasticsearchClient.indices().create(c -> c.index("work_order_index"));
-
         while (hasMore) {
-            // 使用MyBatis Plus分页查询
+            // 分页查询工单
             Page<WorkOrder> pageWrapper = new Page<>();
             pageWrapper.setSize(pageSize);
             pageWrapper.setCurrent(pageNum);
             IPage<WorkOrder> pageWorkOrders = page(pageWrapper);
 
-            // 为每个工单加载关联信息
             List<WorkOrder> workOrders = pageWorkOrders.getRecords();
 
-            // 批量导入ES
             if (!workOrders.isEmpty()) {
-                BulkRequest.Builder br = new BulkRequest.Builder();
-
-                for (WorkOrder order : workOrders) {
-                    br.operations(op -> op
-                            .index(idx -> idx
-                                    .index("work_order_index")
-                                    .id(order.getId().toString())
-                                    .document(order)
-                            )
-                    );
-                }
-
-                elasticsearchClient.bulk(br.build());
+                elasticSearchService.bulkIndex(workOrders);
+                log.info("Synced page {}: {} records", pageNum, workOrders.size());
             }
 
-            // 判断是否还有下一页
-            hasMore = pageNum * pageSize < pageWorkOrders.getTotal();
+            hasMore = pageWorkOrders.getCurrent() < pageWorkOrders.getPages();
             pageNum++;
+        }
+
+        log.info("Full sync completed");
+
+        // 全量同步完成后，Canal客户端会自动启动并处理增量数据
+    }
+
+    private void deleteIndexIfExists() {
+        try {
+            elasticsearchClient.indices().delete(d -> d.index("work_order_index"));
+        } catch (Exception e) {
+            // 忽略索引不存在的异常
         }
     }
 
+    private void createIndex() throws IOException {
+        elasticsearchClient.indices().create(c -> c
+                .index("work_order_index")
+                .mappings(m -> m
+                                .properties("id", p -> p.keyword(k -> k))
+                                .properties("createTime", p -> p.date(d -> d.format("yyyy-MM-dd HH:mm:ss")))
+                                .properties("updateTime", p -> p.date(d -> d.format("yyyy-MM-dd HH:mm:ss")))
+                                .properties("title", p -> p.text(t -> t.analyzer("ik_max_word")))
+                                .properties("content", p -> p.text(t -> t.analyzer("ik_max_word")))
+                        // 添加其他字段映射
+                )
+        );
+    }
+
+    @Override
     public SearchResult<WorkOrder> searchWorkOrders(String keyword, int pageNum, int pageSize) throws IOException {
         // 处理keyword为null或空字符串的情况
         if (StringUtils.isBlank(keyword)) {
@@ -566,12 +582,12 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
         }
         Highlight highlight = Highlight.of(h -> h
                 .fields("content", HighlightField.of(f -> f
-                        .preTags("<em>")
-                        .postTags("</em>")
+                        .preTags("<b>")
+                        .postTags("</b>")
                 ))
                 .fields("title", HighlightField.of(f -> f
-                        .preTags("<em>")
-                        .postTags("</em>")
+                        .preTags("<b>")
+                        .postTags("</b>")
                 )));
 
         SearchRequest request = SearchRequest.of(s -> s
@@ -592,7 +608,7 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
                 .highlight(highlight)
                 .from((pageNum - 1) * pageSize)
                 .size(pageSize)
-//                .sort(so -> so.field(f -> f.field("createTime").order(SortOrder.Desc)))
+                .sort(so -> so.field(f -> f.field("createTime").order(SortOrder.Desc)))
         );
 
         SearchResponse<WorkOrder> response = elasticsearchClient.search(request, WorkOrder.class);
@@ -628,12 +644,12 @@ public class WorkOrderServiceImpl extends ServiceImpl<WorkOrderMapper, WorkOrder
                 .query(q -> q.matchAll(m -> m)) // 查询所有文档
                 .from((pageNum - 1) * pageSize)
                 .size(pageSize)
-//                .sort(s -> s
-//                        .field(f -> f
-//                                .field("createTime")
-//                                .order(SortOrder.Desc)
-//                        )
-//                )
+                .sort(s -> s
+                        .field(f -> f
+                                .field("createTime")
+                                .order(SortOrder.Desc)
+                        )
+                )
                 .build();
 
         SearchResponse<WorkOrder> response = elasticsearchClient.search(request, WorkOrder.class);

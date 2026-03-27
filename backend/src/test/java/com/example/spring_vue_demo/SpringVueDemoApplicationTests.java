@@ -30,12 +30,12 @@ class SpringVueDemoApplicationTests {
 
     @Test
     void testFullSyncWorkOrdersToEs()throws IOException {
-//        workOrderService.fullSyncWorkOrdersToEs();
+        workOrderService.fullSyncWorkOrdersToEs();
     }
 
     @Test
     void testElasticSearch (){
-        String keyword="服务器";
+        String keyword="";
         int pageNum=1;
         int pageSize=10;
         try {

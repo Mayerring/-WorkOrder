@@ -32,7 +32,9 @@ public class ResponseAdvice implements ResponseBodyAdvice<Object> {
             if (requestURI.startsWith("/doc.html")
                     || requestURI.startsWith("/webjars/")
                     || requestURI.startsWith("/v3/api-docs")
-                    || requestURI.startsWith("/swagger-resources")) {
+                    || requestURI.startsWith("/swagger-resources")
+                    || requestURI.startsWith("/api/v1/sse/")
+                    ||requestURI.startsWith("/api/v1/mcp")) {
                 return false;
             }
         }

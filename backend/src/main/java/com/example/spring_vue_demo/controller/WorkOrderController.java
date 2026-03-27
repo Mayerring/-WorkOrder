@@ -94,7 +94,7 @@ public class WorkOrderController {
     public void print(@RequestBody WorkOrderDetailParam param, HttpServletResponse response){workOrderService.print(param,response);}
 
     @ApiOperationSupport(order = 10)
-    @Operation(summary = "关键词查询")
+    @Operation(summary = "根据关键词搜索工单信息")
     @GetMapping("/search")
     public SearchResult<WorkOrder> search(
             @RequestParam String keyword,
