@@ -1,0 +1,58 @@
+mybatis-plus:
+    configuration:
+        log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+    global-config:
+        db-config:
+            logic-delete-field: deleted
+            logic-delete-value: 1
+            logic-not-delete-value: 0
+    type-aliases-package: com.example.spring_vue_demo.entity
+
+server:
+    port: 8080
+
+spring:
+    datasource:
+        driver-class-name: com.mysql.cj.jdbc.Driver
+        url: jdbc:mysql://localhost/wos?useUnicode=true&characterEncoding=UTF-8
+        username: root
+        password: 123456
+    elasticsearch:
+            uris: https://localhost:9200
+            connection-timeout: 5s
+            socket-timeout: 30s
+    ai:
+        mcp:
+            server:
+                enabled: true
+                name: test_mcp_server
+                version: 1.0.0
+                protocol: STREAMABLE
+#                sse-endpoint: /api/v1/sse
+#                sse-message-endpoint: /api/v1/mcp
+                streamable-http:
+                    mcp-endpoint: /api/v1/mcp
+                    keep-alive-interval: 30s
+                capabilities:
+                    tool: true
+
+
+canal:
+    host: 127.0.0.1
+    port: 11111
+    destination: example
+    username: root
+    password: 123456
+
+logging:
+    level:
+        io.modelcontextprotocol: TRACE
+        org.springframework.ai.mcp: TRACE
+        org.springframework.ai.tool: DEBUG
+    pattern:
+        console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} [%X{traceId}] - %msg%n"
+
+knife4j:
+    enable: true
+    setting:
+        language: zh_cn

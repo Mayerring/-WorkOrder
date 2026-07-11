@@ -1,0 +1,21 @@
+server:
+    port: 5000
+
+workorder:
+    backend:
+        url: http://localhost:8080
+
+logging:
+    pattern:
+        console: "%d{yyyy-MM-dd HH:mm:ss.SSS} [%thread] %-5level %logger{36} [%X{traceId}] - %msg%n"
+    level:
+        com.example.workorder.cli: DEBUG
+        com.example.workorder.cli.feign: DEBUG
+
+feign:
+    client:
+        config:
+            default:
+                connectTimeout: 5000
+                readTimeout: 10000
+                loggerLevel: BASIC

@@ -1,0 +1,147 @@
+{
+  "work_order_page": {
+    "name": "工单分页查询",
+    "description": "分页查询工单列表",
+    "inputSchema": {
+      "pageNum": {"type": "Integer", "required": true, "description": "当前页数"},
+      "pageSize": {"type": "Integer", "required": true, "description": "每页大小"},
+      "id": {"type": "Long", "required": false, "description": "工单id"},
+      "code": {"type": "String", "required": false, "description": "工单编号"},
+      "type": {"type": "Integer", "required": false, "description": "工单类型（0需求，1故障）"},
+      "title": {"type": "String", "required": false, "description": "工单标题"},
+      "content": {"type": "String", "required": false, "description": "工单关键词"},
+      "priorityLevel": {"type": "Integer", "required": false, "description": "优先级（0高，1中，2低）"},
+      "status": {"type": "List<Integer>", "required": false, "description": "状态列表"},
+      "createTimeFrom": {"type": "Long", "required": false, "description": "创建时间起"},
+      "createTimeTo": {"type": "Long", "required": false, "description": "创建时间止"},
+      "deadLineFrom": {"type": "Long", "required": false, "description": "截止时间起"},
+      "deadLineTo": {"type": "Long", "required": false, "description": "截止时间止"}
+    },
+    "outputSchema": {
+      "records": {"type": "List<Object>", "description": "工单列表"},
+      "records[].id": {"type": "Long", "description": "工单id"},
+      "records[].code": {"type": "String", "description": "工单编号"},
+      "records[].type": {"type": "Integer", "description": "工单类型"},
+      "records[].typeDesc": {"type": "String", "description": "工单类型描述"},
+      "records[].title": {"type": "String", "description": "工单标题"},
+      "records[].priorityLevel": {"type": "Integer", "description": "优先级"},
+      "records[].priorityLevelDesc": {"type": "String", "description": "优先级描述"},
+      "records[].status": {"type": "Integer", "description": "状态"},
+      "records[].statusDesc": {"type": "String", "description": "状态描述"},
+      "records[].createTime": {"type": "String", "description": "创建时间"},
+      "records[].updateTime": {"type": "String", "description": "更新时间"},
+      "records[].deadlineTime": {"type": "String", "description": "截止时间"}
+    }
+  },
+  "work_order_detail": {
+    "name": "工单详情",
+    "description": "查询工单详细信息",
+    "inputSchema": {
+      "id": {"type": "Long", "required": false, "description": "工单id"},
+      "code": {"type": "String", "required": false, "description": "工单编号"}
+    },
+    "outputSchema": {
+      "id": {"type": "Long", "description": "工单id"},
+      "code": {"type": "String", "description": "工单编号"},
+      "type": {"type": "Integer", "description": "工单类型"},
+      "typeDesc": {"type": "String", "description": "工单类型描述"},
+      "title": {"type": "String", "description": "工单标题"},
+      "content": {"type": "String", "description": "详情内容"},
+      "priorityLevel": {"type": "Integer", "description": "优先级"},
+      "priorityLevelDesc": {"type": "String", "description": "优先级描述"},
+      "status": {"type": "Integer", "description": "状态"},
+      "statusDesc": {"type": "String", "description": "状态描述"},
+      "createTime": {"type": "String", "description": "创建时间"},
+      "updateTime": {"type": "String", "description": "更新时间"},
+      "cancelTime": {"type": "String", "description": "取消时间"},
+      "deleteTime": {"type": "String", "description": "删除时间"},
+      "deadlineTime": {"type": "String", "description": "截止时间"},
+      "accessoryUrl": {"type": "String", "description": "附件URL"},
+      "accessoryName": {"type": "String", "description": "附件文件名"}
+    }
+  },
+  "work_order_search": {
+    "name": "工单搜索",
+    "description": "根据关键词搜索工单",
+    "inputSchema": {
+      "keyword": {"type": "String", "required": true, "description": "搜索关键词"},
+      "pageNum": {"type": "Integer", "required": false, "description": "当前页数（默认1）"},
+      "pageSize": {"type": "Integer", "required": false, "description": "每页大小（默认10）"}
+    },
+    "outputSchema": {
+      "list": {"type": "List<Object>", "description": "工单列表"},
+      "list[].id": {"type": "Long", "description": "工单id"},
+      "list[].code": {"type": "String", "description": "工单编号"},
+      "list[].type": {"type": "Integer", "description": "工单类型"},
+      "list[].title": {"type": "String", "description": "工单标题"},
+      "list[].priorityLevel": {"type": "Integer", "description": "优先级"},
+      "list[].status": {"type": "Integer", "description": "状态"},
+      "list[].createTime": {"type": "String", "description": "创建时间"},
+      "total": {"type": "Long", "description": "总数量"},
+      "pageNum": {"type": "Integer", "description": "当前页数"},
+      "pageSize": {"type": "Integer", "description": "每页大小"}
+    }
+  },
+  "dashboard_data": {
+    "name": "数据看板",
+    "description": "获取数据统计概览",
+    "inputSchema": {},
+    "outputSchema": {
+      "monthFinishedNum": {"type": "Long", "description": "本月已处理工单数"},
+      "unHandledNum": {"type": "Long", "description": "待处理工单数"},
+      "unAuditedNum": {"type": "Long", "description": "未审核工单数"},
+      "delayNum": {"type": "Long", "description": "超时工单数"}
+    }
+  },
+  "dashboard_handle_quantity": {
+    "name": "本周处理数量",
+    "description": "获取本周处理统计",
+    "inputSchema": {},
+    "outputSchema": {
+      "dailyTotalNum": {"type": "Long", "description": "当天工单总数"},
+      "dailyFinishedNum": {"type": "Long", "description": "当天已完成工单总数"},
+      "date": {"type": "String", "description": "日期"}
+    }
+  },
+  "dashboard_messages": {
+    "name": "消息中心",
+    "description": "获取消息列表",
+    "inputSchema": {
+      "pageNum": {"type": "Integer", "required": true, "description": "当前页数"},
+      "pageSize": {"type": "Integer", "required": true, "description": "每页大小"}
+    },
+    "outputSchema": {
+      "records": {"type": "List<Object>", "description": "消息列表"},
+      "total": {"type": "Long", "description": "总数量"}
+    }
+  },
+  "flow_get_by_id": {
+    "name": "流程详情",
+    "description": "查询流程详细信息",
+    "inputSchema": {
+      "flowId": {"type": "Long", "required": true, "description": "流程ID"}
+    },
+    "outputSchema": {
+      "flowId": {"type": "String", "description": "流程ID"},
+      "flowName": {"type": "String", "description": "流程名称"},
+      "nodes": {"type": "List<Object>", "description": "节点列表"},
+      "nodes[].nodeId": {"type": "String", "description": "节点ID"},
+      "nodes[].nodeName": {"type": "String", "description": "节点名称"},
+      "nodes[].nodeType": {"type": "Integer", "description": "节点类型"}
+    }
+  },
+  "flow_page": {
+    "name": "流程分页",
+    "description": "分页查询流程列表",
+    "inputSchema": {
+      "pageNum": {"type": "Integer", "required": true, "description": "当前页数"},
+      "pageSize": {"type": "Integer", "required": true, "description": "每页大小"}
+    },
+    "outputSchema": {
+      "records": {"type": "List<Object>", "description": "流程列表"},
+      "records[].flowId": {"type": "String", "description": "流程ID"},
+      "records[].flowName": {"type": "String", "description": "流程名称"},
+      "total": {"type": "Long", "description": "总数量"}
+    }
+  }
+}
