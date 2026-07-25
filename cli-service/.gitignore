@@ -21,13 +21,7 @@ build/
 Thumbs.db
 
 # Configuration files with personal information
-workorder-server/src/main/resources/application.yaml
-
-# Database/data directories
-.elastic/
-.esdata/
-mongo-data/
-mongodb/
+src/main/resources/application.yaml
 
 # Log files
 *.log

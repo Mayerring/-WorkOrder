@@ -53,7 +53,7 @@ public class QueryService {
             if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null) {
                 Object normalized = normalizeResponse(response.getBody());
                 log.info("Query success, dataCode: {}, traceId: {}", dataCode, traceId);
-                return createSuccess(normalized, traceId);
+                return normalized;
             } else {
                 log.error("Backend returned non-2xx: {}, traceId: {}", response.getStatusCode(), traceId);
                 return createError(500, "Backend service error: " + response.getStatusCode(), traceId);
@@ -152,37 +152,84 @@ public class QueryService {
             String jsonStr = JSON.toJSONString(responseBody);
             JSONObject json = JSON.parseObject(jsonStr);
 
-            if (json.containsKey("code") && json.containsKey("msg")) {
+            if (json.containsKey("code") && json.containsKey("data")) {
                 int code = json.getIntValue("code");
-                if (code == 1) {
-                    return json.get("data");
+                if (code == 0 || code == 1) {
+                    Object data = json.get("data");
+                    if (data == null || "".equals(data) || "null".equals(data)) {
+                        Map<String, Object> result = new java.util.HashMap<>();
+                        result.put("code", (long) 0);
+                        result.put("message", "success");
+                        result.put("data", null);
+                        result.put("traceId", "");
+                        return result;
+                    }
+                    Map<String, Object> result = new java.util.HashMap<>();
+                    result.put("code", (long) 0);
+                    result.put("message", "success");
+                    result.put("data", data);
+                    result.put("traceId", json.getString("traceId"));
+                    return result;
                 } else {
-                    return json.get("data");
+                    Map<String, Object> errorResult = new java.util.HashMap<>();
+                    errorResult.put("code", (long) code);
+                    String message = json.getString("message");
+                    if (message == null) {
+                        message = json.getString("msg");
+                    }
+                    errorResult.put("message", message);
+                    errorResult.put("data", json.get("data"));
+                    errorResult.put("traceId", json.getString("traceId"));
+                    return errorResult;
                 }
             }
 
-            return json;
+            if (json.containsKey("code") || json.containsKey("msg")) {
+                int code = json.getIntValue("code");
+                Map<String, Object> result = new java.util.HashMap<>();
+                result.put("code", (long) code);
+                String message = json.getString("message");
+                if (message == null) {
+                    message = json.getString("msg");
+                }
+                result.put("message", message);
+                result.put("data", json.get("data"));
+                result.put("traceId", json.getString("traceId"));
+                return result;
+            }
+
+            Map<String, Object> result = new java.util.HashMap<>();
+            result.put("code", (long) 0);
+            result.put("message", "success");
+            result.put("data", json);
+            result.put("traceId", "");
+            return result;
         } catch (Exception e) {
             log.warn("Failed to parse response as JSON, returning raw object", e);
-            return responseBody;
+            Map<String, Object> result = new java.util.HashMap<>();
+            result.put("code", (long) 0);
+            result.put("message", "success");
+            result.put("data", responseBody);
+            result.put("traceId", "");
+            return result;
         }
     }
 
     private Map<String, Object> createSuccess(Object data, String traceId) {
-        return Map.of(
-                "code", 0,
-                "message", "success",
-                "data", data != null ? data : "",
-                "traceId", traceId
-        );
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+        result.put("code", 0);
+        result.put("message", "success");
+        result.put("data", data != null ? data : "");
+        result.put("traceId", traceId != null ? traceId : "");
+        return result;
     }
 
     private Map<String, Object> createError(int code, String message, String traceId) {
-        return Map.of(
-                "code", code,
-                "message", message,
-                "data", "",
-                "traceId", traceId
-        );
+        java.util.Map<String, Object> result = new java.util.HashMap<>();
+        result.put("code", code);
+        result.put("message", message != null ? message : "Unknown error");
+        result.put("data", "");
+        result.put("traceId", traceId != null ? traceId : "");
+        return result;
     }
 }

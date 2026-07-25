@@ -26,6 +26,8 @@ public class AuthInterceptor implements HandlerInterceptor {
     @Override
     public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
         String authHeader = request.getHeader(AUTHORIZATION_HEADER);
+        log.info("AuthInterceptor.preHandle called, path: {}, authHeader length: {}", 
+                request.getRequestURI(), authHeader != null ? authHeader.length() : 0);
 
         if (!StringUtils.hasText(authHeader)) {
             log.warn("Missing Authorization header");
@@ -35,16 +37,27 @@ public class AuthInterceptor implements HandlerInterceptor {
             return false;
         }
 
-        ValidateTokenResult result = authService.validateToken(authHeader);
-        if (!result.isValid()) {
-            log.warn("Invalid token: {}", authHeader);
+        try {
+            ValidateTokenResult result = authService.validateToken(authHeader);
+            log.info("Token validation result: valid={}, userId={}, role={}, message={}", 
+                    result.isValid(), result.getUserId(), result.getRole(), result.getMessage());
+            
+            if (!result.isValid()) {
+                log.warn("Invalid token: {}", authHeader.length() > 20 ? authHeader.substring(0, 20) + "..." : authHeader);
+                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write("{\"code\":401,\"message\":\"" + result.getMessage() + "\",\"data\":null}");
+                return false;
+            }
+
+            request.setAttribute(STAFF_INFO_ATTR, result);
+            return true;
+        } catch (Exception e) {
+            log.error("Token validation exception: {}", e.getMessage(), e);
             response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             response.setContentType("application/json;charset=UTF-8");
-            response.getWriter().write("{\"code\":401,\"message\":\"" + result.getMessage() + "\",\"data\":null}");
+            response.getWriter().write("{\"code\":401,\"message\":\"Token validation failed: " + e.getMessage() + "\",\"data\":null}");
             return false;
         }
-
-        request.setAttribute(STAFF_INFO_ATTR, result);
-        return true;
     }
 }

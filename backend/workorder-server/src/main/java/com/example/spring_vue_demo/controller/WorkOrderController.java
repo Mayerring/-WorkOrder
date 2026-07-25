@@ -97,9 +97,9 @@ public class WorkOrderController {
     @Operation(summary = "根据关键词搜索工单信息")
     @GetMapping("/search")
     public SearchResult<WorkOrder> search(
-            @RequestParam String keyword,
-            @RequestParam(defaultValue = "1") int pageNum,
-            @RequestParam(defaultValue = "10") int pageSize) throws IOException {
+            @RequestParam("keyword") String keyword,
+            @RequestParam(value = "pageNum", defaultValue = "1") int pageNum,
+            @RequestParam(value = "pageSize", defaultValue = "10") int pageSize) throws IOException {
         return workOrderService.searchWorkOrders(keyword, pageNum, pageSize);
     }
 

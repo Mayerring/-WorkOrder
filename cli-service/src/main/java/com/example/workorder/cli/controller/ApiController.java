@@ -49,7 +49,7 @@ public class ApiController {
     }
 
     @PostMapping("/query")
-    public ApiResponse<Object> query(
+    public ResponseEntity<Object> query(
             @Valid @RequestBody QueryRequest request,
             @RequestHeader("Authorization") String token,
             HttpServletRequest httpRequest) {
@@ -63,6 +63,6 @@ public class ApiController {
                 token,
                 traceId);
 
-        return ApiResponse.success(result, traceId);
+        return ResponseEntity.ok(result);
     }
 }

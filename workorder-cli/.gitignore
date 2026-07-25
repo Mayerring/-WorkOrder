@@ -1,0 +1,38 @@
+# Build outputs
+workorder-cli
+workorder-cli.exe
+*.exe
+*.dll
+*.so
+*.a
+
+# IDE configurations
+.idea/
+*.iws
+*.iml
+*.ipr
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Log files
+*.log
+*.tmp
+*.bak
+
+# Go cache
+go.sum
+__pycache__/
+
+# Test script outputs
+test_*.log
+*.testresult
+
+# Token/auth files
+.auth_token
+TOKEN_FILE
+.token
+*.token
+~/.workorder/token
